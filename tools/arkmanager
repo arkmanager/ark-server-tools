@@ -1,0 +1,120 @@
+#!/bin/bash
+
+# ARK: survival evolved manager
+#
+# Original author:      LeXaT
+# Maintainer:           FezVrasta
+
+# config SteamCMD
+steamcmdroot="/home/steam/steamcmd"
+steamcmdexec="steamcmd.sh"
+steamuser="anonymous"
+steampass=""
+
+# config Server
+arkserverroot="/home/steam/ARK"
+arkserverexec="ShooterGameServer"
+arkserversession="GameServerSetup"
+arkserverport="27016"
+arkserverpass="SERVERPASSWORD"
+akrserverapass="ADMINPASSWORD"
+
+# config Service
+servicename="arkserv"
+logdir="$arkserverroot/logs"
+
+# init
+if [ ! -d "$arkserverroot" ]; then
+    mkdir $arkserverroot
+fi
+
+info=""
+thejob=""
+update=1
+timestamp=$( date +%T )
+cd $arkserverroot
+instver=`cat "arkversion"`
+cd $steamcmdroot
+bnumber=`./$steamcmdexec +login anonymous +app_info_print "376030" +quit | grep -EA 5 "^\s+\"public\"$" | grep -E "^\s+\"buildid\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -f3 | sed 's/^ //' | cut -c9-14`
+
+case "$bnumber" in
+    *$instver*)
+        update=0
+    ;; esac
+    
+# start function
+doStart() {
+    arkserveropts="TheIsland?SessionName=$arkserversession?QueryPort=$arkserverport?ServerPassword=$arkserverpass?ServerAdminPassword=$arkserverapass?listen"
+    thejob="$arkserverroot/$arkserverexec $arkserveropts"
+    screen -dmS "$servicename" "$thejob"
+    echo "$timestamp: start" >> "$logdir/arkserver.log"
+}
+
+# stop function
+doStop() {
+    screen -S "$servicename" -p 0 -X stuff "quit$(printf \\r)"
+    # screen -S "$servicename" -X quit
+    sleep 30
+    echo "$timestamp: stop" >> "$logdir/arkserver.log"
+}
+
+# update function
+doUpdate() {
+    if (($update == 1))
+    then
+        if [ -f "$arkserverroot/arkupdate.timed" ]
+            then
+                doStop
+                cd $steamcmdroot
+                ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update 376030 validate +quit
+                cd $logdir
+                echo "$bnumber" > "$arkserverroot/arkversion"
+                cd $steamcmdroot
+                doStart
+                echo "$timestamp: update to $bnumber complete" >> "$logdir/update.log"
+                mail -a $logdir/update.log -s "Update-Log" mail@domain.com < /dev/null
+                rm "$arkserverroot/arkupdate.timed"
+            else
+                touch "$arkserverroot/arkupdate.timed"
+                info="There is a update for ark, server will restart in 60mins!!!!!"
+                doInfo $info
+        fi;
+    else
+        echo "$timestamp: No update needed." >> "$logdir/update.log"
+    fi;
+}
+
+#broadcast info
+doInfo() {
+	if [ ! -z $1 ]; then
+		info=$1
+	fi
+    screen -S "$servicename" -p 0 -X stuff "broadcast $info $(printf \\r)"
+}
+
+# parameter select
+case "$1" in
+    start)
+        doStart
+    ;;
+    stop)
+        doStop
+    ;;
+    restart)
+        doStop
+        doStart
+        echo "$timestamp: stop" >> "$logdir/arkserver.log"
+        sleep 60
+        echo "$timestamp: start" >> "$logdir/arkserver.log"
+        echo "$timestamp: restart" >> "$logdir/arkserver.log"
+    ;;
+    update)
+        doUpdate
+    ;;
+	broadcast)
+		doInfo "$2"
+    ;;
+    *)
+        echo "use ./arkserver.sh <start|stop|restart|update>"
+    ;;
+esac
