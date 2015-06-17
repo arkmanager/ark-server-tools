@@ -10,7 +10,7 @@ We assume you have created the `steam` user to store steamcmd and your ARK serve
 
 ## Install ARK Server Tools
 
-To install ARK Server Tools run these commands as root:
+To install ARK Server Tools run these commands:
 
 ```sh
 cd ~
@@ -18,7 +18,7 @@ wget https://github.com/FezVrasta/ark-server-tools/archive/master.zip
 unzip master.zip -d arktools
 cd arktools/tools
 chmod u+x install.sh
-./install.sh steam
+sudo sh install.sh steam
 ```
 
 NB: You may want to change the `install.sh` parameter to fit your steam user if different from `steam`.
