@@ -32,3 +32,7 @@ To install ARK Server just run this command:
 ```sh
 arkmanager install
 ```
+
+## Credits
+
+Original author of arkmanager: LeXaT
