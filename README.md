@@ -10,7 +10,7 @@ We assume you have created the `steam` user to store steamcmd and your ARK serve
 
 ## Install ARK Server Tools
 
-To install ARK Server Tools run these commands:
+To install ARK Server Tools run these commands as root:
 
 ```sh
 cd ~
@@ -27,7 +27,7 @@ This will copy the `arkmanager` and the `arkdaemon` to the proper directories an
 
 ## Install ARK Server
 
-To install ARK Server just run this command:
+To install ARK Server just run this command as normal user:
 
 ```sh
 arkmanager install
