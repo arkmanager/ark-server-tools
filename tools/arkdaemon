@@ -1,13 +1,18 @@
 #!/bin/bash
 
+# Global variables
+source /etc/arkdaemon.cfg
+source /home/${steamuser}/.arkmanager.cfg
+
 NAME=arkmanager_daemon
 DESC="ARK manager daemon used to start the server and keep it updated"
 PIDFILE="/var/run/${NAME}.pid"
-LOGFILE="/var/log/${NAME}.log"
+LOGFILE="${logdir}/${NAME}.log"
 
-DAEMON="sh /usr/bin/arkmanager daemon"
 
-START_OPTS="--start --background --make-pidfile --pidfile ${PIDFILE} --exec ${DAEMON}"
+DAEMON="sh /usr/bin/arkmanager update"
+
+START_OPTS="--start --background --make-pidfile --pidfile ${PIDFILE} --exec ${DAEMON} --user=${steamuser}"
 STOP_OPTS="--stop --pidfile ${PIDFILE}"
 
 test -x $DAEMON || exit 0
