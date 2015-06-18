@@ -4,6 +4,81 @@
 source /etc/arkdaemon.cfg
 source /home/${steamuser}/.arkmanager.cfg
 
+# A function to start a program.
+daemon() {
+  # Test syntax.
+  local gotbase= force= nicelevel corelimit
+  local pid base= user= nice= bg= pid_file=
+  nicelevel=0
+  while [ "$1" != "${1##[-+]}" ]; do
+    case $1 in
+      '')    echo $"$0: Usage: daemon [+/-nicelevel] {program}"
+             return 1;;
+      --check)
+             base=$2
+             gotbase="yes"
+             shift 2
+             ;;
+      --check=?*)
+             base=${1#--check=}
+             gotbase="yes"
+             shift
+             ;;
+      --user)
+             user=$2
+             shift 2
+             ;;
+      --user=?*)
+             user=${1#--user=}
+             shift
+             ;;
+      --pidfile)
+             pid_file=$2
+             shift 2
+             ;;
+      --pidfile=?*)
+             pid_file=${1#--pidfile=}
+             shift
+             ;;
+      --force)
+             force="force"
+             shift
+             ;;
+      [-+][0-9]*)
+             nice="nice -n $1"
+             shift
+             ;;
+      *)     echo $"$0: Usage: daemon [+/-nicelevel] {program}"
+             return 1;;
+    esac
+  done
+
+  # Save basename.
+  [ -z "$gotbase" ] && base=${1##*/}
+
+  # See if it's already running. Look *only* at the pid file.
+  __pids_var_run "$base" "$pid_file"
+
+  [ -n "$pid" -a -z "$force" ] && return
+
+  # make sure it doesn't core dump anywhere unless requested
+  corelimit="ulimit -S -c ${DAEMON_COREFILE_LIMIT:-0}"
+
+  # if they set NICELEVEL in /etc/sysconfig/foo, honor it
+  [ -n "${NICELEVEL:-}" ] && nice="nice -n $NICELEVEL"
+
+  # Echo daemon
+  [ "${BOOTUP:-}" = "verbose" -a -z "${LSB:-}" ] && echo -n " $base"
+
+  # And start it up.
+  if [ -z "$user" ]; then
+     $nice /bin/bash -c "$corelimit >/dev/null 2>&1 ; $*"
+  else
+     $nice runuser -s /bin/bash - $user -c "$corelimit >/dev/null 2>&1 ; $*"
+  fi
+  [ "$?" -eq 0 ] && success $"$base startup" || failure $"$base startup"
+}
+
 NAME=arkmanager_daemon
 DESC="ARK manager daemon used to start the server and keep it updated"
 PIDFILE="/var/run/${NAME}.pid"
@@ -12,8 +87,7 @@ LOGFILE="${logdir}/${NAME}.log"
 
 DAEMON="sh /usr/bin/arkmanager update"
 
-START_OPTS="--start --background --make-pidfile --pidfile ${PIDFILE} --exec ${DAEMON} --user=${steamuser}"
-STOP_OPTS="--stop --pidfile ${PIDFILE}"
+START_OPTS="--pidfile ${PIDFILE} --user=${steamuser} ${DAEMON}"
 
 test -x $DAEMON || exit 0
 
@@ -22,20 +96,20 @@ set -e
 case "$1" in
   start)
     echo -n "Starting ${DESC}: "
-    start-stop-daemon $START_OPTS >> $LOGFILE
+    daemon $START_OPTS >> $LOGFILE
     echo "$NAME."
   ;;
   stop)
     echo -n "Stopping $DESC: "
-    start-stop-daemon $STOP_OPTS
+    kill -TERM ${cat $PIDFILE}
     echo "$NAME."
     rm -f $PIDFILE
   ;;
   restart|force-reload)
     echo -n "Restarting $DESC: "
-    start-stop-daemon $STOP_OPTS
+    kill -TERM ${cat $PIDFILE}
     sleep 1
-    start-stop-daemon $START_OPTS >> $LOGFILE
+    daemon $START_OPTS >> $LOGFILE
     echo "$NAME."
   ;;
   *)
