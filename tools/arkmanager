@@ -41,7 +41,7 @@ case "$bnumber" in
     *$instver*)
         update=0
     ;; esac
-    
+
 # start function
 doStart() {
     arkserveropts="TheIsland?SessionName=$arkserversession?QueryPort=$arkserverport?ServerPassword=$arkserverpass?ServerAdminPassword=$arkserverapass?listen"
@@ -66,7 +66,7 @@ doUpdate() {
             then
                 doStop
                 cd $steamcmdroot
-                ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update 376030 validate +quit
+                ./$steamcmdexec +login $steamuser $steampass +force_install_dir "$arkserverroot" +app_update 376030 validate +quit
                 cd $logdir
                 echo "$bnumber" > "$arkserverroot/arkversion"
                 cd $steamcmdroot
@@ -89,7 +89,7 @@ doInfo() {
 	if [ ! -z $1 ]; then
 		info=$1
 	fi
-    screen -S "$servicename" -p 0 -X stuff "broadcast $info $(printf \\r)"
+	screen -S "$servicename" -p 0 -X stuff "broadcast $info $(printf \\r)"
 }
 
 # parameter select
@@ -102,19 +102,19 @@ case "$1" in
     ;;
     restart)
         doStop
-        doStart
-        echo "$timestamp: stop" >> "$logdir/arkserver.log"
+	echo "$timestamp: stop" >> "$logdir/arkserver.log"
         sleep 60
+	doStart
         echo "$timestamp: start" >> "$logdir/arkserver.log"
         echo "$timestamp: restart" >> "$logdir/arkserver.log"
     ;;
     update)
         doUpdate
     ;;
-	broadcast)
-		doInfo "$2"
+    broadcast)
+	doInfo $2
     ;;
     *)
-        echo "use ./arkserver.sh <start|stop|restart|update>"
+        echo "use ./arkserver <start|stop|restart|update|broadcast>"
     ;;
 esac
