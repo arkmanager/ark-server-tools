@@ -37,6 +37,30 @@ arkmanager install
 
 All the needed variables are stored in the `steam` home directory inside `.arkmanager.cfg`, change them following the comments.
 
+## Commands
+
+#### arkmanager install
+installs arkmanager to the directory specified in `.arkmanager.cfg`
+
+#### arkmanager start
+starts ARK server
+
+#### arkmanager stop
+stops ARK server
+
+#### arkmanager restart
+restarts ARK server
+
+#### arkmanager update
+manually updates ARK server
+
+#### arkmanager broadcast [message]
+broadcast a message to ARK server chat
+
+```sh
+arkmanager boradcast here\ your\ message
+```
+
 ## Credits
 
 Original author of arkmanager: LeXaT
