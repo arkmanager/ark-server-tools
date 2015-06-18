@@ -66,7 +66,7 @@ doUpdate() {
             then
                 doStop
                 cd $steamcmdroot
-                ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update 376030 validate +quit
+                ./$steamcmdexec +login $steamuser $steampass +force_install_dir "$arkserverroot" +app_update 376030 validate +quit
                 cd $logdir
                 echo "$bnumber" > "$arkserverroot/arkversion"
                 cd $steamcmdroot
