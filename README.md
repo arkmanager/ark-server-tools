@@ -58,7 +58,7 @@ manually updates ARK server
 broadcast a message to ARK server chat
 
 ```sh
-arkmanager boradcast here\ your\ message
+arkmanager boradcast "here\ your\ message"
 ```
 
 ## Credits
