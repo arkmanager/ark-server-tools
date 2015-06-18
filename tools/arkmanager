@@ -58,6 +58,12 @@ doStop() {
     echo "$timestamp: stop" >> "$logdir/arkserver.log"
 }
 
+# install function
+doInstall() {
+    cd $steamcmdroot
+    ./$steamcmdexec +login $steamuser $steampass +force_install_dir "$arkserverroot" +app_update 376030 validate +quit
+}
+
 # update function
 doUpdate() {
     if (($update == 1))
@@ -108,13 +114,16 @@ case "$1" in
         echo "$timestamp: start" >> "$logdir/arkserver.log"
         echo "$timestamp: restart" >> "$logdir/arkserver.log"
     ;;
+    install)
+        doInstall
+    ;;
     update)
         doUpdate
     ;;
     broadcast)
-	doInfo $2
+        doInfo $2
     ;;
     *)
-        echo "use ./arkserver <start|stop|restart|update|broadcast>"
+        echo "use arkmanager <start|stop|restart|install|update|broadcast>"
     ;;
 esac
