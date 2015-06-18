@@ -10,6 +10,20 @@ if [ "$(id -u)" == "0" ]; then
    exit 1
 fi
 
+# To speedup stuff, if you have not specified a command or the command is invalid, we skip everything and just give you the usage message
+case "$1" in
+    start);;
+    stop);;
+    restart);;
+    install);;
+    update);;
+    broadcast);;
+    *)
+        echo "use arkmanager <start|stop|restart|install|update|broadcast>"
+        exit 0
+    ;;
+esac
+
 # Global variables
 source ~/.arkmanager.cfg
 
@@ -51,7 +65,7 @@ doStop() {
 # install function
 doInstall() {
     cd $steamcmdroot
-    ./$steamcmdexec +login $steamuser $steampass +force_install_dir "$arkserverroot" +app_update 376030 validate +quit
+    ./$steamcmdexec +login $steamuser $steampass +force_install_dir "$arkserverroot" +app_update $appid validate +quit
 }
 
 # update function
@@ -62,7 +76,7 @@ doUpdate() {
             then
                 doStop
                 cd $steamcmdroot
-                ./$steamcmdexec +login $steamuser $steampass +force_install_dir "$arkserverroot" +app_update 376030 validate +quit
+                ./$steamcmdexec +login $steamuser $steampass +force_install_dir "$arkserverroot" +app_update $appid validate +quit
                 cd $logdir
                 echo "$bnumber" > "$arkserverroot/arkversion"
                 cd $steamcmdroot
@@ -98,9 +112,9 @@ case "$1" in
     ;;
     restart)
         doStop
-	echo "$timestamp: stop" >> "$logdir/arkserver.log"
+        echo "$timestamp: stop" >> "$logdir/arkserver.log"
         sleep 60
-	doStart
+        doStart
         echo "$timestamp: start" >> "$logdir/arkserver.log"
         echo "$timestamp: restart" >> "$logdir/arkserver.log"
     ;;
