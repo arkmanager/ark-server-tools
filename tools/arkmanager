@@ -115,6 +115,6 @@ case "$1" in
 	doInfo $2
     ;;
     *)
-        echo "use ./arkserver.sh <start|stop|restart|update|broadcast>"
+        echo "use ./arkserver <start|stop|restart|update|broadcast>"
     ;;
 esac
