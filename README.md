@@ -15,8 +15,8 @@ To install ARK Server Tools run these commands:
 ```sh
 cd ~
 wget https://github.com/FezVrasta/ark-server-tools/archive/master.zip
-unzip master.zip -d arktools
-cd arktools/tools
+unzip master.zip
+cd ark-server-tools-master/tools
 chmod u+x install.sh
 sudo sh install.sh steam
 ```
