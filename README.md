@@ -33,6 +33,10 @@ To install ARK Server just run this command as normal user:
 arkmanager install
 ```
 
+## Configure ARK Server
+
+All the needed variables are stored in the `steam` home directory inside `.arkmanager.cfg`, change them following the comments.
+
 ## Credits
 
 Original author of arkmanager: LeXaT

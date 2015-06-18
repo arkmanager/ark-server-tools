@@ -12,6 +12,12 @@ if [ ! -z $1 ]; then
     # Create a folder in /var/log to let Ark tools write its own log files
     mkdir /var/log/arktools
     chown $1 /var/log/arktools
+
+    # Copy .arkmanager.cfg inside user home
+    mv arkmanager.cfg /home/$1/.arkmanager.cfg
+    chown $1 /home/$1/.arkmanager.cfg
+
+
 else
     echo "You must specify your steam user to install ARK Tools. Usage: ./install.sh steam"
 fi

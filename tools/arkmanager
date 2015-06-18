@@ -5,23 +5,8 @@
 # Original author:      LeXaT
 # Maintainer:           FezVrasta
 
-# config SteamCMD
-steamcmdroot="/home/steam/steamcmd"
-steamcmdexec="steamcmd.sh"
-steamuser="anonymous"
-steampass=""
-
-# config Server
-arkserverroot="/home/steam/ARK"
-arkserverexec="ShooterGameServer"
-arkserversession="GameServerSetup"
-arkserverport="27016"
-arkserverpass="SERVERPASSWORD"
-akrserverapass="ADMINPASSWORD"
-
-# config Service
-servicename="arkserv"
-logdir="$arkserverroot/logs"
+# Global variables
+source ~/.arkmanager.cfg
 
 # init
 if [ ! -d "$arkserverroot" ]; then
