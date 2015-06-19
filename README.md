@@ -8,6 +8,10 @@ https://developer.valvesoftware.com/wiki/SteamCMD#Linux
 
 We assume you have created the `steam` user to store steamcmd and your ARK server.
 
+```sh
+sudo apt-get install unzip
+```
+
 ## Install ARK Server Tools
 
 To install ARK Server Tools run these commands:
