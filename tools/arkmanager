@@ -40,7 +40,7 @@ cd $arkserverroot
 touch arkversion # If the file doesn't exist
 instver=`cat "arkversion"`
 cd $steamcmdroot
-bnumber=`./$steamcmdexec +login anonymous +app_info_print "376030" +quit | grep -EA 5 "^\s+\"public\"$" | grep -E "^\s+\"buildid\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -f3 | sed 's/^ //' | cut -c9-14`
+bnumber=`./$steamcmdexec +login anonymous +app_info_print "$appid" +quit | grep -EA 5 "^\s+\"public\"$" | grep -E "^\s+\"buildid\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -f3 | sed 's/^ //' | cut -c9-14`
 
 case "$bnumber" in
     *$instver*)
