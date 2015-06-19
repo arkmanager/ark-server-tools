@@ -34,22 +34,20 @@ fi
 
 info=""
 thejob=""
-update=1
+patch=1
 timestamp=$( date +%T )
 cd $arkserverroot
 touch arkversion # If the file doesn't exist
 instver=`cat "arkversion"`
-cd $steamcmdroot
-bnumber=`./$steamcmdexec +login anonymous +app_info_print "$appid" +quit | grep -EA 5 "^\s+\"public\"$" | grep -E "^\s+\"buildid\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -f3 | sed 's/^ //' | cut -c9-14`
+bnumber=`$steamcmdroot/$steamcmdexec +login anonymous +app_info_print "$appid" +quit | grep -EA 5 "^\s+\"public\"$" | grep -E "^\s+\"buildid\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -f3 | sed 's/^ //' | cut -c9-14`
 
-case "$bnumber" in
-    *$instver*)
-        update=0
-    ;; esac
+if ["$bnumber" = "$instver"]; then
+    patch=0
+fi
 
 # start function
 doStart() {
-    arkserveropts="TheIsland?SessionName=$arkserversession?QueryPort=$arkserverport?ServerPassword=$arkserverpass?ServerAdminPassword=$arkserverapass?listen"
+    arkserveropts="TheIsland?QueryPort=$arkserverport?ServerPassword=$arkserverpass?ServerAdminPassword=$arkserverapass?listen"
     thejob="$arkserverroot/$arkserverexec $arkserveropts"
     screen -dmS "$servicename" $thejob
     echo "$timestamp: start" >> "$logdir/arkserver.log"
@@ -74,7 +72,7 @@ doInstall() {
 
 # update function
 doUpdate() {
-    if (($update == 1))
+    if (($patch == 1))
     then
         if [ -f "$arkserverroot/arkupdate.timed" ]
             then
