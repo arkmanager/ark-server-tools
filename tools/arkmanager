@@ -57,10 +57,13 @@ doStart() {
 
 # stop function
 doStop() {
-    screen -S "$servicename" -p 0 -X stuff "quit$(printf \\r)"
-    # screen -S "$servicename" -X quit
-    sleep 30
-    echo "$timestamp: stop" >> "$logdir/arkserver.log"
+    read -p "This operation will quit the server without saving, are your really sure?" -n 1 -r
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        screen -S "$servicename" -p 0 -X stuff "quit$(printf \\r)"
+        # screen -S "$servicename" -X quit
+        sleep 30
+        echo "$timestamp: stop" >> "$logdir/arkserver.log"
+    fi
 }
 
 # install function
