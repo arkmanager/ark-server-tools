@@ -10,7 +10,7 @@ if [ ! -z $1 ]; then
     chmod +x /etc/init.d/arkdaemon
 
     # Create a folder in /var/log to let Ark tools write its own log files
-    mkdir /var/log/arktools
+    mkdir -p /var/log/arktools
     chown $1 /var/log/arktools
 
     # Copy .arkmanager.cfg inside user home
