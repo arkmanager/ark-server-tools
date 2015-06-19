@@ -83,7 +83,7 @@ doUpdate() {
                 cd $steamcmdroot
                 doStart
                 echo "$timestamp: update to $bnumber complete" >> "$logdir/update.log"
-                mail -a $logdir/update.log -s "Update-Log" mail@domain.com < /dev/null
+                mail -a $logdir/update.log -s "Update-Log" $servermail < /dev/null
                 rm "$arkserverroot/arkupdate.timed"
             else
                 touch "$arkserverroot/arkupdate.timed"
