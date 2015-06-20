@@ -13,17 +13,14 @@ if [ ! -z $1 ]; then
     mkdir -p /var/log/arktools
     chown $1 /var/log/arktools
 
-    # Copy .arkmanager.cfg inside user home
-    mv arkmanager.cfg /home/$1/.arkmanager.cfg
-    chown $1 /home/$1/.arkmanager.cfg
-
-    # Copy arkdaemon.cfg inside /etc folder
-    mv arkdaemon.cfg /etc/arkdaemon.cfg
-    chown $1 /etc/arkdaemon.cfg
-    echo ${1} >> /etc/arkdaemon.cfg
+    # Copy arkmanager.cfg inside linux configuation folder
+    mkdir /etc/arkmanager
+    mv arkmanager.cfg /etc/arkmanager/arkmanager.cfg
+    chown $1 /etc/arkmanager/arkmanager.cfg    
 
 else
-    echo "You must specify your steam user to install ARK Tools. Usage: ./install.sh steam"
+    echo "You must specify your system steam user who own steamcmd directory to install ARK Tools."
+    echo "Usage: ./install.sh steam"
 fi
 
 exit 0

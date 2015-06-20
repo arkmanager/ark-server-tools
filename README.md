@@ -8,6 +8,26 @@ https://developer.valvesoftware.com/wiki/SteamCMD#Linux
 
 We assume you have created the `steam` user to store steamcmd and your ARK server.
 
+## Requirements
+Use this command to install soft requirement on your system
+```
+apt-get install screen unzip
+```
+
+Edit /etc/sysctl.conf and set:
+```
+fs.file-max=100000
+```
+Edit /etc/security/limits.conf and set these limits:
+```
+* soft nofile 100000
+* hard nofile 100000
+```
+Add the following line to /etc/pam.d/common-session:
+```
+session required pam_limits.so
+```
+
 ## Install ARK Server Tools
 
 To install ARK Server Tools run these commands:
@@ -25,6 +45,10 @@ NB: You may want to change the `install.sh` parameter to fit your steam user if 
 
 This will copy the `arkmanager` and the `arkdaemon` to the proper directories and will create an empty log directory in `/var/log` for ARK Server Tools.
 
+## Configure ARK Server
+
+All the needed variables are stored in the /etc/arkmanager/arkmanager.cfg configuration file change them following the comments.
+
 ## Install ARK Server
 
 To install ARK Server just run this command as normal user:
@@ -32,11 +56,6 @@ To install ARK Server just run this command as normal user:
 ```sh
 arkmanager install
 ```
-
-## Configure ARK Server
-
-All the needed variables are stored in the `steam` home directory inside `.arkmanager.cfg`, change them following the comments.
-
 ## Commands
 
 #### arkmanager install
@@ -53,6 +72,12 @@ restarts ARK server
 
 #### arkmanager update
 manually updates ARK server
+
+#### arkmanager status
+Get the status of the server. Show if the process is running, if the server is up and the current version number
+
+#### arkmanager checkupdate
+Check if a new version of the server is available but not apply it
 
 #### arkmanager broadcast [message]
 broadcast a message to ARK server chat
