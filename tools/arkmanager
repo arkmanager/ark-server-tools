@@ -197,6 +197,7 @@ doUpdate() {
   else
       echo "No update available"
       echo "$timestamp: No update needed." >> "$logdir/update.log"
+        tail -n 1 "$logdir/update.log"
   fi;
 }
 
@@ -242,6 +243,7 @@ case "$1" in
         doStart
         echo "$timestamp: start" >> "$logdir/arkserver.log"
         echo "$timestamp: restart" >> "$logdir/arkserver.log"
+        tail -n 1 "$logdir/arkserver.log"
     ;;
     install)
         doInstall
