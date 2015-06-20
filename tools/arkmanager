@@ -51,6 +51,7 @@ doStart() {
     thejob="$arkserverroot/$arkserverexec $arkserveropts"
     screen -dmS "$servicename" $thejob
     echo "$timestamp: start" >> "$logdir/arkserver.log"
+    tail -n 1 "$logdir/arkserver.log"
 }
 
 # stop function
@@ -60,6 +61,7 @@ doStop() {
         screen -X -S "$servicename" stuff "^C"
         sleep 30
         echo "$timestamp: stop" >> "$logdir/arkserver.log"
+        tail -n 1 "$logdir/arkserver.log"
     fi
 }
 
@@ -85,6 +87,7 @@ doUpdate() {
                 echo "$timestamp: update to $bnumber complete" >> "$logdir/update.log"
                 mail -a $logdir/update.log -s "Update-Log" $servermail < /dev/null
                 rm "$arkserverroot/arkupdate.timed"
+                tail -n 1 "$logdir/update.log"
             else
                 touch "$arkserverroot/arkupdate.timed"
                 info="There is a update for ark, server will restart in 60mins!!!!!"
@@ -92,6 +95,7 @@ doUpdate() {
         fi;
     else
         echo "$timestamp: No update needed." >> "$logdir/update.log"
+        tail -n 1 "$logdir/update.log"
     fi;
 }
 
@@ -118,6 +122,7 @@ case "$1" in
         doStart
         echo "$timestamp: start" >> "$logdir/arkserver.log"
         echo "$timestamp: restart" >> "$logdir/arkserver.log"
+        tail -n 1 "$logdir/arkserver.log"
     ;;
     install)
         doInstall
