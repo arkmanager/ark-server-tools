@@ -108,19 +108,20 @@ case "$1" in
     broadcast);;
     status);;
     *)
-        echo "use arkmanager <start|stop|restart|install|update|broadcast|status>"
+        echo "use arkmanager <start|stop|restart|install|update|broadcast|status|checkupdate>"
         exit 0
     ;;
 esac
 
-# start function
 doStart() {
-    arkserveropts="TheIsland?QueryPort=$arkqueryport?Port=$arkserverport?ServerPassword=$arkserverpass?ServerAdminPassword=$arkserverapass?listen"
-    thejob="$arkserverroot/$arkserverexec $arkserveropts"
-    screen -dmS "$servicename" $thejob
-    echo "$timestamp: start" >> "$logdir/arkserver.log"
+  #
+  # start function
+  #
+  arkserveropts="TheIsland?QueryPort=$arkqueryport?Port=$arkserverport?ServerPassword=$arkserverpass?ServerAdminPassword=$arkserverapass?listen"
+  thejob="$arkserverroot/$arkserverexec $arkserveropts"
+  screen -dmS "$servicename" $thejob
+  echo "$timestamp: start" >> "$logdir/arkserver.log"
 }
-
 
 doStop() {
   #
@@ -154,25 +155,21 @@ doUpdate() {
   #
   cd $arkserverroot
   if isUpdateNeeded; then
-      if [ -f "$arkserverroot/arkupdate.timed" ]; then
-              doStop
-              cd $steamcmdroot
-              ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid validate +quit
-              cd $logdir
-              echo "$bnumber" > "$arkserverroot/arkversion"
-              cd $steamcmdroot
-              doStart
-              echo "$timestamp: update to $bnumber complete" >> "$logdir/update.log"
-              if [ $servermail != "" ]; then
-                mail -a $logdir/update.log -s "Update-Log" $servermail < /dev/null
-              fi
-              rm "$arkserverroot/arkupdate.timed"
-          else
-              touch "$arkserverroot/arkupdate.timed"
-              info="There is a update for ark, server will restart in 60mins!!!!!"
-              doInfo $info
-      fi;
+      doStop
+      cd $steamcmdroot
+      ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid +quit
+      cd $logdir
+      echo "$bnumber" > "$arkserverroot/arkversion"
+      cd $steamcmdroot
+      doStart
+      echo "$timestamp: update to $bnumber complete" >> "$logdir/update.log"
+      if [ $servermail -ne "" ]; then
+        mail -a $logdir/update.log -s "Update-Log" $servermail < /dev/null
+      fi
+      rm "$arkserverroot/arkupdate.timed"
+
   else
+      echo "No update available"
       echo "$timestamp: No update needed." >> "$logdir/update.log"
   fi;
 }
@@ -224,8 +221,7 @@ case "$1" in
         doInstall
     ;;
     update)
-        testupdate
-        #doUpdate
+        doUpdate
     ;;
     checkupdate)
       checkForUpdate
