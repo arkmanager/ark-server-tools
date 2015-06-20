@@ -41,7 +41,7 @@ touch arkversion # If the file doesn't exist
 instver=`cat "arkversion"`
 bnumber=`$steamcmdroot/$steamcmdexec +login anonymous +app_info_print "$appid" +quit | grep -EA 5 "^\s+\"public\"$" | grep -E "^\s+\"buildid\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -f3 | sed 's/^ //' | cut -c9-14`
 
-if ["$bnumber" = "$instver"]; then
+if [ "$bnumber" = "$instver" ]; then
     patch=0
 fi
 
