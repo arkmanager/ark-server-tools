@@ -14,11 +14,11 @@ if [ ! -z $1 ]; then
     chown $1 /var/log/arktools
 
     # Copy .arkmanager.cfg inside user home
-    mv arkmanager.cfg /home/$1/.arkmanager.cfg
+    cp arkmanager.cfg /home/$1/.arkmanager.cfg
     chown $1 /home/$1/.arkmanager.cfg
 
     # Copy arkdaemon.cfg inside /etc folder
-    mv arkdaemon.cfg /etc/arkdaemon.cfg
+    cp arkdaemon.cfg /etc/arkdaemon.cfg
     chown $1 /etc/arkdaemon.cfg
     echo ${1} >> /etc/arkdaemon.cfg
 
