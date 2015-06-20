@@ -41,7 +41,7 @@ touch arkversion # If the file doesn't exist
 instver=`cat "arkversion"`
 bnumber=`$steamcmdroot/$steamcmdexec +login anonymous +app_info_print "$appid" +quit | grep -EA 5 "^\s+\"public\"$" | grep -E "^\s+\"buildid\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -f3 | sed 's/^ //' | cut -c9-14`
 
-if ["$bnumber" = "$instver"]; then
+if [ "$bnumber" = "$instver" ]; then
     patch=0
 fi
 
@@ -51,16 +51,17 @@ doStart() {
     thejob="$arkserverroot/$arkserverexec $arkserveropts"
     screen -dmS "$servicename" $thejob
     echo "$timestamp: start" >> "$logdir/arkserver.log"
+    tail -n 1 "$logdir/arkserver.log"
 }
 
 # stop function
 doStop() {
     read -p "This operation will quit the server without saving, are your really sure?" -n 1 -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        screen -S "$servicename" -p 0 -X stuff "quit$(printf \\r)"
-        # screen -S "$servicename" -X quit
+        screen -X -S "$servicename" stuff "^C"
         sleep 30
         echo "$timestamp: stop" >> "$logdir/arkserver.log"
+        tail -n 1 "$logdir/arkserver.log"
     fi
 }
 
@@ -86,6 +87,7 @@ doUpdate() {
                 echo "$timestamp: update to $bnumber complete" >> "$logdir/update.log"
                 mail -a $logdir/update.log -s "Update-Log" $servermail < /dev/null
                 rm "$arkserverroot/arkupdate.timed"
+                tail -n 1 "$logdir/update.log"
             else
                 touch "$arkserverroot/arkupdate.timed"
                 info="There is a update for ark, server will restart in 60mins!!!!!"
@@ -93,6 +95,7 @@ doUpdate() {
         fi;
     else
         echo "$timestamp: No update needed." >> "$logdir/update.log"
+        tail -n 1 "$logdir/update.log"
     fi;
 }
 
@@ -119,6 +122,7 @@ case "$1" in
         doStart
         echo "$timestamp: start" >> "$logdir/arkserver.log"
         echo "$timestamp: restart" >> "$logdir/arkserver.log"
+        tail -n 1 "$logdir/arkserver.log"
     ;;
     install)
         doInstall
