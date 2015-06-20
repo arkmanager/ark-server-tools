@@ -8,6 +8,12 @@ https://developer.valvesoftware.com/wiki/SteamCMD#Linux
 
 We assume you have created the `steam` user to store steamcmd and your ARK server.
 
+## Install requirement
+Use this command to install soft requirement on your system
+```
+apt-get install screen unzip
+```
+
 ## Install ARK Server Tools
 
 To install ARK Server Tools run these commands:
@@ -55,6 +61,9 @@ manually updates ARK server
 
 #### arkmanager status
 Get the status of the server. Show if the process is running, if the server is up and the current version number
+
+#### arkmanager checkupdate
+Check if a new version of the server is available but not apply it
 
 #### arkmanager broadcast [message]
 broadcast a message to ARK server chat
