@@ -19,6 +19,8 @@ source /etc/arkmanager/arkmanager.cfg
 # Local variables
 info=""
 thejob=""
+instver=""
+bnumber=""
 timestamp=$( date +%T )
 GREEN="\\033[1;32m"
 RED="\\033[1;31m"
@@ -27,6 +29,22 @@ NORMAL="\\033[0;39m"
 #---------------------
 # functions
 #---------------------
+function isUpdateNeeded(){
+  #
+  # Check if the server need to be updated
+  # Return 1 if update is needed, else return 0
+  #
+  getCurrentVersion
+  getAvailableVersion
+  echo $instver
+  echo $bnumber
+  if ["$bnumber" = "$instver"]; then
+      return 0
+  else
+      return 1
+  fi
+
+}
 function getCurrentVersion(){
   #
   # Return the current version number
@@ -113,15 +131,7 @@ doInstall() {
 # update function
 doUpdate() {
     cd $arkserverroot
-    touch arkversion # If the file doesn't exist
-    instver=`cat "arkversion"`
-    bnumber=`$steamcmdroot/$steamcmdexec +login anonymous +app_info_print "$appid" +quit | grep -EA 5 "^\s+\"public\"$" | grep -E "^\s+\"buildid\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -f3 | sed 's/^ //' | cut -c9-14`
-    if ["$bnumber" = "$instver"]; then
-        patch=0
-    fi
-
-    if (($patch == 1))
-    then
+    if isUpdateNeeded; then
         if [ -f "$arkserverroot/arkupdate.timed" ]
             then
                 doStop
