@@ -29,19 +29,32 @@ NORMAL="\\033[0;39m"
 #---------------------
 # functions
 #---------------------
+function checkForUpdate(){
+  if isUpdateNeeded; then
+    echo "Current version:" $instver
+    echo "Available version:" $bnumber
+    echo "Your server needs to be restarted in order to receive the latest update."
+    echo "Run \"arkmanager update\" to do so"
+  else
+    echo "No update available"
+  fi
+}
+function setCurrentVersion(){
+  # set the new current version in a file
+  cd $arkserverroot
+  echo $bnumber > arkversion
+}
 function isUpdateNeeded(){
   #
   # Check if the server need to be updated
-  # Return 1 if update is needed, else return 0
+  # Return 0 if update is needed, else return 1
   #
   getCurrentVersion
   getAvailableVersion
-  echo $instver
-  echo $bnumber
-  if ["$bnumber" = "$instver"]; then
-      return 0
+  if [ "$bnumber" -eq "$instver" ]; then
+    return 1   # no update needed
   else
-      return 1
+    return 0   # update needed
   fi
 
 }
@@ -59,9 +72,8 @@ function getAvailableVersion(){
   #
   # Get the current available server version on steamdb
   #
-  echo "Checking for update, this may take a while"
   bnumber=`$steamcmdroot/$steamcmdexec +login anonymous +app_info_print "$appid" +quit | grep -EA 5 "^\s+\"public\"$" | grep -E "^\s+\"buildid\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -f3 | sed 's/^ //' | cut -c9-14`
-  echo "Available server version: "$bnumber
+  return $bnumber
 }
 
 function isTheServerRunning(){
@@ -92,6 +104,7 @@ case "$1" in
     restart);;
     install);;
     update);;
+    checkupdate);;
     broadcast);;
     status);;
     *)
@@ -108,52 +121,60 @@ doStart() {
     echo "$timestamp: start" >> "$logdir/arkserver.log"
 }
 
-# stop function
+
 doStop() {
-    read -p "This operation will quit the server without saving, are your really sure?" -n 1 -r
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        screen -S "$servicename" -p 0 -X stuff "quit$(printf \\r)"
-        # screen -S "$servicename" -X quit
-        sleep 30
-        echo "$timestamp: stop" >> "$logdir/arkserver.log"
-    fi
+  #
+  # stop the ARK server
+  #
+  screen -S "$servicename" -p 0 -X stuff "quit$(printf \\r)"
+  # screen -S "$servicename" -X quit
+  sleep 30
+  echo "$timestamp: stop" >> "$logdir/arkserver.log"
+
 }
 
-# install function
 doInstall() {
-    if [ ! -d "$arkserverroot" ]; then
-        mkdir $arkserverroot
-    fi
-    cd $steamcmdroot
-    ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid validate +quit
+  #
+  # install of ARK server
+  #
+  if [ ! -d "$arkserverroot" ]; then
+      mkdir $arkserverroot
+  fi
+  cd $steamcmdroot
+  # install the server
+  ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid validate +quit
+  # the current version should be the last version. We set our version
+  getAvailableVersion
+  setCurrentVersion
 }
 
-# update function
 doUpdate() {
-    cd $arkserverroot
-    if isUpdateNeeded; then
-        if [ -f "$arkserverroot/arkupdate.timed" ]
-            then
-                doStop
-                cd $steamcmdroot
-                ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid validate +quit
-                cd $logdir
-                echo "$bnumber" > "$arkserverroot/arkversion"
-                cd $steamcmdroot
-                doStart
-                echo "$timestamp: update to $bnumber complete" >> "$logdir/update.log"
-                if [ $servermail != "" ]; then
-                  mail -a $logdir/update.log -s "Update-Log" $servermail < /dev/null
-                fi
-                rm "$arkserverroot/arkupdate.timed"
-            else
-                touch "$arkserverroot/arkupdate.timed"
-                info="There is a update for ark, server will restart in 60mins!!!!!"
-                doInfo $info
-        fi;
-    else
-        echo "$timestamp: No update needed." >> "$logdir/update.log"
-    fi;
+  #
+  # Stop the server, update it and then start it back.
+  #
+  cd $arkserverroot
+  if isUpdateNeeded; then
+      if [ -f "$arkserverroot/arkupdate.timed" ]; then
+              doStop
+              cd $steamcmdroot
+              ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid validate +quit
+              cd $logdir
+              echo "$bnumber" > "$arkserverroot/arkversion"
+              cd $steamcmdroot
+              doStart
+              echo "$timestamp: update to $bnumber complete" >> "$logdir/update.log"
+              if [ $servermail != "" ]; then
+                mail -a $logdir/update.log -s "Update-Log" $servermail < /dev/null
+              fi
+              rm "$arkserverroot/arkupdate.timed"
+          else
+              touch "$arkserverroot/arkupdate.timed"
+              info="There is a update for ark, server will restart in 60mins!!!!!"
+              doInfo $info
+      fi;
+  else
+      echo "$timestamp: No update needed." >> "$logdir/update.log"
+  fi;
 }
 
 #broadcast info
@@ -203,7 +224,11 @@ case "$1" in
         doInstall
     ;;
     update)
-        doUpdate
+        testupdate
+        #doUpdate
+    ;;
+    checkupdate)
+      checkForUpdate
     ;;
     broadcast)
         doInfo $2
