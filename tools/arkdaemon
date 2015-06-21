@@ -1,3 +1,4 @@
+#!/bin/bash
 ### BEGIN INIT INFO
 # Provides:          ARK manager deamon
 # Required-Start:    networking
@@ -9,21 +10,15 @@
 #
 ### END INIT INFO
 
-# NOTICE: this daemon can work only if your system supports start-stop-daemon
-
 # Using the lsb functions to perform the operations.
 . /lib/lsb/init-functions
 
 # Global variables
-source /etc/arkdaemon.cfg
-source /home/${steamuser}/.arkmanager.cfg
+source /etc/arkmanager/arkmanager.cfg
 
-NAME=arkmanager_daemon
-DESC="ARK manager daemon used to start the server and keep it updated"
-PIDFILE="/var/run/${NAME}.pid"
+NAME="ShooterGameServer"
 LOGFILE="${logdir}/${NAME}.log"
-DAEMON="arkmanager"
-START_OPTS="--pidfile ${PIDFILE} --user=${steamuser} ${DAEMON}"
+DAEMON="/usr/bin/arkmanager"
 
 set -e
 
@@ -33,7 +28,9 @@ test -x $DAEMON || exit 5
 case "$1" in
   start)
     log_daemon_msg "Starting" "$NAME"
-    if start-stop-daemon -b --start --quiet --oknodo --pidfile $PIDFILE --exec $DAEMON ; then
+    sudo -u $steamcmd_user $DAEMON start
+    PID=`ps -ef | grep $NAME | grep -v grep | awk '{print $2}'`
+    if  [ -n "$PID" ];  then
       log_end_msg 0
     else
       log_end_msg 1
@@ -42,28 +39,26 @@ case "$1" in
 
   stop)
     log_daemon_msg "Stopping" "$NAME"
-    kill ${cat $PIDFILE}
-    echo "$NAME."
-    rm -f $PIDFILE
+    sudo -u $steamcmd_user $DAEMON stop
+    PID=`ps -ef | grep $NAME | grep -v grep | awk '{print $2}'`
+    if  [ -n "$PID" ];  then
+      log_end_msg 1
+    else
+      log_end_msg 0
+    fi
   ;;
 
-  restart|force-reload)
-    $0 stop && sleep 2 && $0 start
+  restart)
+    sudo -u $steamcmd_user $DAEMON restart
   ;;
 
   status)
-    # Check the status of the process.
-    PID=`ps -ef | grep $DAEMON | grep -v grep | awk '{print $2}'`
-    if  [ -n "$PID" ];  then
-      echo "$NAME is running on PID $PID"
-    else
-  	echo "$NAME is not running"
-    fi
+    sudo -u $steamcmd_user $DAEMON status
   ;;
 
   *)
     # For invalid arguments, print the usage message.
-    echo "Usage: $0 {start|stop|restart|status|force-reload}"
+    echo "Usage: $0 {start|stop|restart|status}"
     exit 2
   ;;
 esac
