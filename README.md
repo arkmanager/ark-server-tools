@@ -11,7 +11,11 @@ We assume you have created the `steam` user to store steamcmd and your ARK serve
 ## Requirements
 Use this command to install soft requirement on your system
 ```
-apt-get install screen unzip
+# Debian based/ Ubuntu
+apt-get install screen
+
+# RHEL / CentOS / Fedora
+yum install screen
 ```
 
 Edit /etc/sysctl.conf and set:
@@ -23,27 +27,24 @@ Edit /etc/security/limits.conf and set these limits:
 * soft nofile 100000
 * hard nofile 100000
 ```
-Add the following line to /etc/pam.d/common-session:
+Add the following line to `/etc/pam.d/common-session` (Debian/Ubuntu) or `/etc/pam.d/system-auth` (RHEL/CentOS/Fedora):
 ```
 session required pam_limits.so
 ```
 
+After these edits, you'll need to restart your bash session or reconnect to your SSH shell to make the changes effective.
+
 ## Install ARK Server Tools
 
-To install ARK Server Tools run these commands:
+To install ARK Server Tools run this command:
 
 ```sh
-cd ~
-wget https://github.com/FezVrasta/ark-server-tools/archive/master.zip
-unzip master.zip
-cd ark-server-tools-master/tools
-chmod u+x install.sh
-sudo sh install.sh steam
+curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/master/netinstall.sh | sudo bash -s steam
 ```
 
-NB: You may want to change the `install.sh` parameter to fit your steam user if different from `steam`.
+NB: You may want to change the `bash -s` parameter to fit your steam user if different from `steam`.
 
-This will copy the `arkmanager` and the `arkdaemon` to the proper directories and will create an empty log directory in `/var/log` for ARK Server Tools.
+This will copy the `arkmanager` and the `arkdaemon` to the proper directories and will create an empty log directory in `/var/log` for ARK Server Tools.  
 
 ## Configure ARK Server
 
@@ -83,7 +84,7 @@ Check if a new version of the server is available but not apply it
 broadcast a message to ARK server chat
 
 ```sh
-arkmanager boradcast "here your message"
+arkmanager broadcast "your message here"
 ```
 
 ## Credits
