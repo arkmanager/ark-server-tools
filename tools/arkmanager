@@ -136,6 +136,7 @@ doStart() {
 #
 doStop() {
   if isTheServerRunning; then
+    echo "Stopping server..."
     screen -X -S "$servicename" -X stuff "^C"
     sleep 30
     echo "$timestamp: stop" >> "$logdir/arkserver.log"
