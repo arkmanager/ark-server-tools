@@ -12,10 +12,13 @@ tar -zxvf master.tar.gz
 # Install ARK Server Tools
 cd ark-server-tools-master/tools
 chmod +x install.sh
-sh install.sh $1
+if [[ -n $(sh install.sh $1) ]]; then
+  echo "Something where wrong :("
+else
+  echo "ARK Server Tools were correctly installed in your system inside the home directory of $1!"
+fi
 
 # Remove the installation files
 rm -f master.tar.gz
 rm -rf /tmp/ark-server-tools-master
 
-echo "ARK Server Tools were correctly installed in your system inside the home directory of $1!"

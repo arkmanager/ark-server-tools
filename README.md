@@ -39,17 +39,12 @@ After these edits, you'll need to restart your bash session or reconnect to your
 To install ARK Server Tools run these commands:
 
 ```sh
-cd ~
-wget https://github.com/FezVrasta/ark-server-tools/archive/master.tar.gz
-tar -zxvf master.tar.gz
-cd ark-server-tools-master/tools
-chmod u+x install.sh
-sudo sh install.sh steam
+curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/master/netinstall.sh | bash -s steam
 ```
 
-NB: You may want to change the `install.sh` parameter to fit your steam user if different from `steam`.
+NB: You may want to change the `bash -s` parameter to fit your steam user if different from `steam`.
 
-This will copy the `arkmanager` and the `arkdaemon` to the proper directories and will create an empty log directory in `/var/log` for ARK Server Tools.
+This will copy the `arkmanager` and the `arkdaemon` to the proper directories and will create an empty log directory in `/var/log` for ARK Server Tools.  
 
 ## Configure ARK Server
 
