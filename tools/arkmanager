@@ -29,7 +29,16 @@ NORMAL="\\033[0;39m"
 #---------------------
 # functions
 #---------------------
+function testfunction(){
+  if [ -z $servermail ]; then
+    echo "mail ok"
+  fi
+
+}
 function checkForUpdate(){
+  #
+  # Check if a new version is available but not apply it
+  #
   if isUpdateNeeded; then
     echo "Current version:" $instver
     echo "Available version:" $bnumber
@@ -40,7 +49,9 @@ function checkForUpdate(){
   fi
 }
 function setCurrentVersion(){
+  #
   # set the new current version in a file
+  #
   cd $arkserverroot
   echo $bnumber > arkversion
 }
@@ -81,7 +92,7 @@ function isTheServerRunning(){
   # Check id the server process is alive
   #
   SERVICE="ShooterGameServer"
-  ps -a | grep -v grep | grep $SERVICE > /dev/null
+  ps aux | grep -v grep | grep $SERVICE > /dev/null
   result=$?
   return $result
 }
@@ -91,7 +102,7 @@ function IsTheServerUp(){
   # Check if the server is up and visible in steam server list
   # If the server is listenning on his port return 0, else return 1
   #
-  PORT="7776"
+  PORT="7779"
   lsof -i |grep $PORT > /dev/null
   result=$?
   return $result
@@ -147,21 +158,42 @@ doStart() {
   #
   # start function
   #
+<<<<<<< HEAD
   arkserveropts="TheIsland?QueryPort=$arkqueryport?Port=$arkserverport?ServerPassword=$arkserverpass?ServerAdminPassword=$arkserverapass?listen"
   thejob="$arkserverroot/$arkserverexec $arkserveropts"
   screen -dmS "$servicename" $thejob
   echo "$timestamp: start" >> "$logdir/arkserver.log"
 >>>>>>> fix indentation
+=======
+  if isTheServerRunning; then
+    echo "The server is already running"
+  else
+    arkserveropts="TheIsland?SessionName=$sessioname?QueryPort=$arkqueryport?Port=$arkserverport?ServerPassword=$arkserverpass?ServerAdminPassword=$arkserverapass?listen"
+    thejob="$arkserverroot/$arkserverexec $arkserveropts"
+    screen -dmS "$servicename" $thejob
+    echo "$timestamp: start" >> "$logdir/arkserver.log"
+  fi
+>>>>>>> check if the server is not already up before try to run it
 }
 
 doStop() {
   #
   # stop the ARK server
   #
+<<<<<<< HEAD
   screen -S "$servicename" -p 0 -X stuff "quit$(printf \\r)"
   # screen -S "$servicename" -X quit
   sleep 30
   echo "$timestamp: stop" >> "$logdir/arkserver.log"
+=======
+  if isTheServerRunning; then
+    screen -X -S "$servicename" -X stuff "^C"
+    sleep 30
+    echo "$timestamp: stop" >> "$logdir/arkserver.log"
+  else
+    echo "The server is already stopped"
+  fi
+>>>>>>> check if the server is not already up before try to run it
 }
 
 doInstall() {
@@ -212,20 +244,29 @@ doUpdate() {
   # Stop the server, update it and then start it back.
   #
   cd $arkserverroot
-  if isUpdateNeeded; then
-      doStop
-      cd $steamcmdroot
-      ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid +quit
-      cd $logdir
-      echo "$bnumber" > "$arkserverroot/arkversion"
-      cd $steamcmdroot
-      doStart
-      echo "$timestamp: update to $bnumber complete" >> "$logdir/update.log"
-      if [ $servermail -ne "" ]; then
-        mail -a $logdir/update.log -s "Update-Log" $servermail < /dev/null
-      fi
-      rm "$arkserverroot/arkupdate.timed"
 
+  if isUpdateNeeded; then
+    # check if the server was alive before the update so we can launch it back after the update
+    serverWasAlive=0
+    if isTheServerRunning ;then
+      serverWasAlive=1
+    fi
+    doStop
+    cd $steamcmdroot
+    ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid +quit
+    cd $logdir
+    echo "$bnumber" > "$arkserverroot/arkversion"
+    cd $steamcmdroot
+    echo "$timestamp: update to $bnumber complete" >> "$logdir/update.log"
+
+    # we restart the server only if it was started before the update
+    if [ $serverWasAlive -eq 1 ]; then
+      doStart
+    fi
+    # send mail to admin
+    #if [ -z $servermail ]; then
+    #  mail -a $logdir/update.log -s "Update-Log" $servermail < /dev/null
+    #fi
   else
       echo "No update available"
       echo "$timestamp: No update needed." >> "$logdir/update.log"
@@ -271,7 +312,7 @@ case "$1" in
     restart)
         doStop
         echo "$timestamp: stop" >> "$logdir/arkserver.log"
-        sleep 60
+        sleep 10
         doStart
         echo "$timestamp: start" >> "$logdir/arkserver.log"
         echo "$timestamp: restart" >> "$logdir/arkserver.log"
@@ -282,6 +323,7 @@ case "$1" in
     ;;
     update)
         doUpdate
+        #testfunction
     ;;
     checkupdate)
       checkForUpdate
