@@ -60,9 +60,9 @@ case "$1" in
   ;;
 
   *)
-    N=/etc/init.d/$NAME
-    echo "Usage: $N {start|stop|restart|force-reload}" >&2
-    exit 1
+    # For invalid arguments, print the usage message.
+    echo "Usage: $0 {start|stop|restart|status|force-reload}"
+    exit 2
   ;;
 esac
 
