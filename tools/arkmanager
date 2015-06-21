@@ -14,8 +14,10 @@ fi
 #---------------------
 # Variables
 #---------------------
+
 # Global variables
 source /etc/arkmanager/arkmanager.cfg
+
 # Local variables
 info=""
 thejob=""
@@ -35,10 +37,11 @@ function testfunction(){
   fi
 
 }
+
+#
+# Check if a new version is available but not apply it
+#
 function checkForUpdate(){
-  #
-  # Check if a new version is available but not apply it
-  #
   if isUpdateNeeded; then
     echo "Current version:" $instver
     echo "Available version:" $bnumber
@@ -48,18 +51,20 @@ function checkForUpdate(){
     echo "No update available"
   fi
 }
+
+#
+# Set the new current version in a file
+#
 function setCurrentVersion(){
-  #
-  # set the new current version in a file
-  #
   cd $arkserverroot
   echo $bnumber > arkversion
 }
+
+#
+# Check if the server need to be updated
+# Return 0 if update is needed, else return 1
+#
 function isUpdateNeeded(){
-  #
-  # Check if the server need to be updated
-  # Return 0 if update is needed, else return 1
-  #
   getCurrentVersion
   getAvailableVersion
   if [ "$bnumber" -eq "$instver" ]; then
@@ -69,65 +74,52 @@ function isUpdateNeeded(){
   fi
 
 }
+
+#
+# Return the current version number
+#
 function getCurrentVersion(){
-  #
-  # Return the current version number
-  #
   cd $arkserverroot
   touch arkversion # If the file doesn't exist
   instver=`cat "arkversion"`
   return $instver
 
 }
+
+#
+# Get the current available server version on steamdb
+#
 function getAvailableVersion(){
-  #
-  # Get the current available server version on steamdb
-  #
   bnumber=`$steamcmdroot/$steamcmdexec +login anonymous +app_info_print "$appid" +quit | grep -EA 5 "^\s+\"public\"$" | grep -E "^\s+\"buildid\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -f3 | sed 's/^ //' | cut -c9-14`
   return $bnumber
 }
 
+#
+# Check id the server process is alive
+#
 function isTheServerRunning(){
-  #
-  # Check id the server process is alive
-  #
   SERVICE="ShooterGameServer"
   ps aux | grep -v grep | grep $SERVICE > /dev/null
   result=$?
   return $result
 }
 
+#
+# Check if the server is up and visible in steam server list
+# If the server is listenning on his port return 0, else return 1
+#
 function isTheServerUp(){
-  #
-  # Check if the server is up and visible in steam server list
-  # If the server is listenning on his port return 0, else return 1
-  #
   PORT="7779"
   lsof -i |grep $PORT > /dev/null
   result=$?
   return $result
 }
 
-# To speedup stuff, if you have not specified a command or the command is invalid, we skip everything and just give you the usage message
-case "$1" in
-    start);;
-    stop);;
-    restart);;
-    install);;
-    update);;
-    checkupdate);;
-    broadcast);;
-    status);;
-    *)
-        echo "use arkmanager <start|stop|restart|install|update|broadcast|status|checkupdate>"
-        exit 0
-    ;;
-esac
 
+#
+# start function
+#
 doStart() {
-  #
-  # start function
-  #
   if isTheServerRunning; then
     echo "The server is already running"
   else
@@ -139,10 +131,10 @@ doStart() {
   fi
 }
 
+#
+# stop the ARK server
+#
 doStop() {
-  #
-  # stop the ARK server
-  #
   if isTheServerRunning; then
     screen -X -S "$servicename" -X stuff "^C"
     sleep 30
@@ -153,10 +145,10 @@ doStop() {
   fi
 }
 
+#
+# install of ARK server
+#
 doInstall() {
-  #
-  # install of ARK server
-  #
   if [ ! -d "$arkserverroot" ]; then
       mkdir $arkserverroot
   fi
@@ -168,10 +160,10 @@ doInstall() {
   setCurrentVersion
 }
 
+#
+# Stop the server, update it and then start it back.
+#
 doUpdate() {
-  #
-  # Stop the server, update it and then start it back.
-  #
   cd $arkserverroot
 
   if isUpdateNeeded; then
@@ -204,7 +196,9 @@ doUpdate() {
   fi;
 }
 
-#broadcast info
+#
+# Broadcast message to server
+#
 doInfo() {
 	if [ ! -z $1 ]; then
 		info=$1
@@ -212,6 +206,9 @@ doInfo() {
 	screen -S "$servicename" -p 0 -X stuff "broadcast $info $(printf \\r)"
 }
 
+#
+# Print the status of the server (running? online? version?)
+#
 printStatus(){
   if isTheServerRunning ;then
     echo -e "$NORMAL" "Server running:" "$GREEN" "Yes"
