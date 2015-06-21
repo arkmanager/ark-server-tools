@@ -8,10 +8,24 @@ https://developer.valvesoftware.com/wiki/SteamCMD#Linux
 
 We assume you have created the `steam` user to store steamcmd and your ARK server.
 
-## Install requirement
+## Requirements
 Use this command to install soft requirement on your system
 ```
 apt-get install screen unzip
+```
+
+Edit /etc/sysctl.conf and set:
+```
+fs.file-max=100000
+```
+Edit /etc/security/limits.conf and set these limits:
+```
+* soft nofile 100000
+* hard nofile 100000
+```
+Add the following line to /etc/pam.d/common-session:
+```
+session required pam_limits.so
 ```
 
 ## Install ARK Server Tools
