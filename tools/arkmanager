@@ -105,7 +105,7 @@ fi
 
 # start function
 doStart() {
-    arkserveropts="TheIsland?QueryPort=$arkserverport?ServerPassword=$arkserverpass?ServerAdminPassword=$arkserverapass?listen"
+    arkserveropts="TheIsland?QueryPort=$arkqueryport?Port=$arkserverport?ServerPassword=$arkserverpass?ServerAdminPassword=$arkserverapass?listen"
     thejob="$arkserverroot/$arkserverexec $arkserveropts"
     screen -dmS "$servicename" $thejob
     echo "$timestamp: start" >> "$logdir/arkserver.log"
