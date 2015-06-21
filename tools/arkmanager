@@ -124,47 +124,10 @@ case "$1" in
     ;;
 esac
 
-<<<<<<< HEAD
-# Global variables
-source ~/.arkmanager.cfg
-
-# init
-if [ ! -d "$arkserverroot" ]; then
-    mkdir $arkserverroot
-fi
-
-info=""
-thejob=""
-patch=1
-timestamp=$( date +%T )
-cd $arkserverroot
-touch arkversion # If the file doesn't exist
-instver=`cat "arkversion"`
-bnumber=`$steamcmdroot/$steamcmdexec +login anonymous +app_info_print "$appid" +quit | grep -EA 5 "^\s+\"public\"$" | grep -E "^\s+\"buildid\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -f3 | sed 's/^ //' | cut -c9-14`
-
-if [ "$bnumber" = "$instver" ]; then
-    patch=0
-fi
-
-# start function
-doStart() {
-    arkserveropts="TheIsland?QueryPort=$arkqueryport?Port=$arkserverport?ServerPassword=$arkserverpass?ServerAdminPassword=$arkserverapass?listen"
-    thejob="$arkserverroot/$arkserverexec $arkserveropts"
-    screen -dmS "$servicename" $thejob
-    echo "$timestamp: start" >> "$logdir/arkserver.log"
-    tail -n 1 "$logdir/arkserver.log"
-=======
 doStart() {
   #
   # start function
   #
-<<<<<<< HEAD
-  arkserveropts="TheIsland?QueryPort=$arkqueryport?Port=$arkserverport?ServerPassword=$arkserverpass?ServerAdminPassword=$arkserverapass?listen"
-  thejob="$arkserverroot/$arkserverexec $arkserveropts"
-  screen -dmS "$servicename" $thejob
-  echo "$timestamp: start" >> "$logdir/arkserver.log"
->>>>>>> fix indentation
-=======
   if isTheServerRunning; then
     echo "The server is already running"
   else
@@ -172,28 +135,22 @@ doStart() {
     thejob="$arkserverroot/$arkserverexec $arkserveropts"
     screen -dmS "$servicename" $thejob
     echo "$timestamp: start" >> "$logdir/arkserver.log"
+    tail -n 1 "$logdir/arkserver.log"
   fi
->>>>>>> check if the server is not already up before try to run it
 }
 
 doStop() {
   #
   # stop the ARK server
   #
-<<<<<<< HEAD
-  screen -S "$servicename" -p 0 -X stuff "quit$(printf \\r)"
-  # screen -S "$servicename" -X quit
-  sleep 30
-  echo "$timestamp: stop" >> "$logdir/arkserver.log"
-=======
   if isTheServerRunning; then
     screen -X -S "$servicename" -X stuff "^C"
     sleep 30
     echo "$timestamp: stop" >> "$logdir/arkserver.log"
+    tail -n 1 "$logdir/arkserver.log"
   else
     echo "The server is already stopped"
   fi
->>>>>>> check if the server is not already up before try to run it
 }
 
 doInstall() {
@@ -212,34 +169,6 @@ doInstall() {
 }
 
 doUpdate() {
-<<<<<<< HEAD
-    cd $arkserverroot
-    if isUpdateNeeded; then
-        if [ -f "$arkserverroot/arkupdate.timed" ]
-            then
-                doStop
-                cd $steamcmdroot
-                ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid validate +quit
-                cd $logdir
-                echo "$bnumber" > "$arkserverroot/arkversion"
-                cd $steamcmdroot
-                doStart
-                echo "$timestamp: update to $bnumber complete" >> "$logdir/update.log"
-                if [ $servermail != "" ]; then
-                  mail -a $logdir/update.log -s "Update-Log" $servermail < /dev/null
-                fi
-                rm "$arkserverroot/arkupdate.timed"
-                tail -n 1 "$logdir/update.log"
-            else
-                touch "$arkserverroot/arkupdate.timed"
-                info="There is a update for ark, server will restart in 60mins!!!!!"
-                doInfo $info
-        fi;
-    else
-        echo "$timestamp: No update needed." >> "$logdir/update.log"
-        tail -n 1 "$logdir/update.log"
-    fi;
-=======
   #
   # Stop the server, update it and then start it back.
   #
@@ -258,6 +187,7 @@ doUpdate() {
     echo "$bnumber" > "$arkserverroot/arkversion"
     cd $steamcmdroot
     echo "$timestamp: update to $bnumber complete" >> "$logdir/update.log"
+    tail -n 1 "$logdir/arkserver.log"
 
     # we restart the server only if it was started before the update
     if [ $serverWasAlive -eq 1 ]; then
@@ -270,8 +200,8 @@ doUpdate() {
   else
       echo "No update available"
       echo "$timestamp: No update needed." >> "$logdir/update.log"
+        tail -n 1 "$logdir/update.log"
   fi;
->>>>>>> add check for update function
 }
 
 #broadcast info
@@ -312,9 +242,11 @@ case "$1" in
     restart)
         doStop
         echo "$timestamp: stop" >> "$logdir/arkserver.log"
+        tail -n 1 "$logdir/arkserver.log"
         sleep 10
         doStart
         echo "$timestamp: start" >> "$logdir/arkserver.log"
+        tail -n 1 "$logdir/arkserver.log"
         echo "$timestamp: restart" >> "$logdir/arkserver.log"
         tail -n 1 "$logdir/arkserver.log"
     ;;
