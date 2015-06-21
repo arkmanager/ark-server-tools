@@ -109,8 +109,7 @@ function isTheServerRunning(){
 # If the server is listenning on his port return 0, else return 1
 #
 function isTheServerUp(){
-  PORT="7779"
-  lsof -i |grep $PORT > /dev/null
+  lsof -i |grep $arkserverport > /dev/null
   result=$?
   return $result
 }
@@ -123,7 +122,7 @@ doStart() {
   if isTheServerRunning; then
     echo "The server is already running"
   else
-    arkserveropts="TheIsland?SessionName=$sessioname?QueryPort=$arkqueryport?Port=$arkserverport?ServerPassword=$arkserverpass?ServerAdminPassword=$arkserverapass?listen"
+    arkserveropts="TheIsland?SessionName=$sessioname?QueryPort=$arkqueryport?ServerPassword=$arkserverpass?ServerAdminPassword=$arkserverapass?listen"
     thejob="$arkserverroot/$arkserverexec $arkserveropts"
     screen -dmS "$servicename" $thejob
     echo "$timestamp: start" >> "$logdir/arkserver.log"
