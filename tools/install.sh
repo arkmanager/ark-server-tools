@@ -14,9 +14,9 @@ if [ ! -z $1 ]; then
     chown $1 /var/log/arktools
 
     # Copy arkmanager.cfg inside linux configuation folder
-    mkdir /etc/arkmanager
+    mkdir -p /etc/arkmanager
     mv arkmanager.cfg /etc/arkmanager/arkmanager.cfg
-    chown $1 /etc/arkmanager/arkmanager.cfg    
+    chown $1 /etc/arkmanager/arkmanager.cfg
 
 else
     echo "You must specify your system steam user who own steamcmd directory to install ARK Tools."
