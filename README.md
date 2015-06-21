@@ -36,10 +36,10 @@ After these edits, you'll need to restart your bash session or reconnect to your
 
 ## Install ARK Server Tools
 
-To install ARK Server Tools run these commands:
+To install ARK Server Tools run this command:
 
 ```sh
-curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/master/netinstall.sh | bash -s steam
+curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/master/netinstall.sh | sudo bash -s steam
 ```
 
 NB: You may want to change the `bash -s` parameter to fit your steam user if different from `steam`.
