@@ -223,6 +223,7 @@ printStatus(){
   fi
   getCurrentVersion
   echo -e "$NORMAL" "Server version:" "$GREEN" $instver
+  echo "$NORMAL"
 
 }
 
