@@ -1,3 +1,4 @@
+#!/bin/bash
 ### BEGIN INIT INFO
 # Provides:          ARK manager deamon
 # Required-Start:    networking
