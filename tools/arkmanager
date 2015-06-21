@@ -97,7 +97,7 @@ function isTheServerRunning(){
   return $result
 }
 
-function IsTheServerUp(){
+function isTheServerUp(){
   #
   # Check if the server is up and visible in steam server list
   # If the server is listenning on his port return 0, else return 1
@@ -219,7 +219,7 @@ printStatus(){
     echo -e "$NORMAL" "Server running:" "$RED" "No"
   fi
 
-  if IsTheServerUp ;then
+  if isTheServerUp ;then
     echo -e "$NORMAL" "Server online:" "$GREEN" " Yes"
   else
     echo -e "$NORMAL" "Server online:" "$RED" " No"

@@ -9,6 +9,8 @@
 #
 ### END INIT INFO
 
+# NOTICE: this daemon can work only if your system supports start-stop-daemon
+
 # Using the lsb functions to perform the operations.
 . /lib/lsb/init-functions
 

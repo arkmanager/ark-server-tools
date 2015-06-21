@@ -11,7 +11,11 @@ We assume you have created the `steam` user to store steamcmd and your ARK serve
 ## Requirements
 Use this command to install soft requirement on your system
 ```
-apt-get install screen unzip
+# Debian based/ Ubuntu
+apt-get install screen
+
+# RHEL / CentOS / Fedora
+yum install screen
 ```
 
 Edit /etc/sysctl.conf and set:
