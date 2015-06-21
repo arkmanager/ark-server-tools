@@ -27,7 +27,17 @@ NORMAL="\\033[0;39m"
 #---------------------
 # functions
 #---------------------
-function getServerVersion(){
+function getCurrentVersion(){
+  #
+  # Return the current version number
+  #
+  cd $arkserverroot
+  touch arkversion # If the file doesn't exist
+  instver=`cat "arkversion"`
+  return $instver
+
+}
+function getAvailableVersion(){
   #
   # Get the current available server version on steamdb
   #
@@ -67,7 +77,7 @@ case "$1" in
     broadcast);;
     status);;
     *)
-        echo "use arkmanager <start|stop|restart|install|update|broadcast>"
+        echo "use arkmanager <start|stop|restart|install|update|broadcast|status>"
         exit 0
     ;;
 esac
@@ -168,6 +178,23 @@ doInfo() {
 	screen -S "$servicename" -p 0 -X stuff "broadcast $info $(printf \\r)"
 }
 
+printStatus(){
+  if isTheServerRunning ;then
+    echo -e "$NORMAL" "Server running:" "$GREEN" "Yes"
+  else
+    echo -e "$NORMAL" "Server running:" "$RED" "No"
+  fi
+
+  if IsTheServerUp ;then
+    echo -e "$NORMAL" "Server online:" "$GREEN" " Yes"
+  else
+    echo -e "$NORMAL" "Server online:" "$RED" " No"
+  fi
+  getCurrentVersion
+  echo -e "$NORMAL" "Server version:" "$GREEN" $instver
+
+}
+
 #---------------------
 # Main program
 #---------------------
@@ -197,18 +224,7 @@ case "$1" in
         doInfo $2
     ;;
     status)
-      if isTheServerRunning ;then
-        echo -e "$NORMAL" "Server running:" "$GREEN" "Yes"
-      else
-        echo -e "$NORMAL" "Server running:" "$RED" "No"
-      fi
-
-      if IsTheServerUp ;then
-        echo -e "$NORMAL" "Server online:" "$GREEN" " Yes"
-      else
-        echo -e "$NORMAL" "Server online:" "$RED" " No"
-      fi
-      #getServerVersion
+      printStatus
     ;;
     *)
         echo "use arkmanager <start|stop|restart|install|update|broadcast|status>"
