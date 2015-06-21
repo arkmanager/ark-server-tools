@@ -150,9 +150,19 @@ doStop() {
 # install of ARK server
 #
 doInstall() {
-  if [ ! -d "$arkserverroot" ]; then
-      mkdir $arkserverroot
+  mkdir -p $arkserverroot
+  
+  # Check if steamcmd is installed, and if not, install it
+  if [ ! -e $steamcmdroot/$steamcmdexec ]; then
+    mkdir -p $steamcmdroot 
+    cd /tmp
+    wget http://media.steampowered.com/installer/steamcmd_linux.tar.gz
+    tar -xvzf steamcmd_linux.tar.gz -C $steamcmdroot
+    cd $steamcmdroot
+    ./steamcmd.sh +quit
+    echo "SteamCMD was installed in $steamcmdroot"
   fi
+  
   cd $steamcmdroot
   # install the server
   ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid validate +quit
