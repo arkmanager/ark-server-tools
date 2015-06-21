@@ -29,6 +29,7 @@ case "$1" in
   start)
     log_daemon_msg "Starting" "$NAME"
     su -s /bin/sh -c "$DAEMON start" $steamcmd_user
+    sleep 5
     PID=`ps -ef | grep $NAME | grep -v grep | awk '{print $2}'`
     if  [ -n "$PID" ];  then
       log_end_msg 0
@@ -40,6 +41,7 @@ case "$1" in
   stop)
     log_daemon_msg "Stopping" "$NAME"
     su -s /bin/sh -c "$DAEMON stop" $steamcmd_user
+    sleep 5
     PID=`ps -ef | grep $NAME | grep -v grep | awk '{print $2}'`
     if  [ -n "$PID" ];  then
       log_end_msg 1

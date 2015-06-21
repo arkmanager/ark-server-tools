@@ -9,14 +9,6 @@ https://developer.valvesoftware.com/wiki/SteamCMD#Linux
 We assume you have created the `steam` user to store steamcmd and your ARK server.
 
 ## Requirements
-Use this command to install soft requirement on your system
-```
-# Debian based/ Ubuntu
-apt-get install screen
-
-# RHEL / CentOS / Fedora
-yum install screen
-```
 
 Edit /etc/sysctl.conf and set:
 ```
