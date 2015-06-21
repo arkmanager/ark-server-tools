@@ -20,13 +20,13 @@ if [ ! -z $1 ]; then
     chown $1 /var/log/arktools
 
     # Copy arkmanager.cfg inside linux configuation folder if it doesn't already exists
+    mkdir -p /etc/arkmanager
     if [ -f /etc/arkmanager/arkmanager.cfg ]; then
-        mkdir -p /etc/arkmanager
-        cp -n arkmanager.cfg /etc/arkmanager/arkmanager.cfg
-        chown $1 /etc/arkmanager/arkmanager.cfg
+      echo "A previous version of ARK Server Tools was detected in your system, your old configuration was not overwritten. You may need to manually update it.";
+      exit 2
     else
-        echo "A previous version of ARK Server Tools was detected in your system, your old configuration was not overwritten. You may need to manually update it.";
-        exit 2
+      cp -n arkmanager.cfg /etc/arkmanager/arkmanager.cfg
+      chown $1 /etc/arkmanager/arkmanager.cfg
     fi
 
 else
