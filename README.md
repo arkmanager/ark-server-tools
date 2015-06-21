@@ -27,10 +27,12 @@ Edit /etc/security/limits.conf and set these limits:
 * soft nofile 100000
 * hard nofile 100000
 ```
-Add the following line to /etc/pam.d/common-session:
+Add the following line to /etc/pam.d/common-session (Debian/Ubuntu) or /etc/pam.d/system-auth (RHEL/CentOS/Fedora):
 ```
 session required pam_limits.so
 ```
+
+After these edits, you'll need to restart your bash session or reconnect to your SSH shell.
 
 ## Install ARK Server Tools
 
