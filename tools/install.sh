@@ -5,22 +5,28 @@ if [ ! -z $1 ]; then
     cp arkmanager /usr/bin/arkmanager
     chmod +x /usr/bin/arkmanager
 
-    # Copy arkdaemon to /etc/init.d and set permissions
+    # Copy arkdaemon to /etc/init.d ,set permissions and add it to boot
     cp arkdaemon /etc/init.d/arkdaemon
     chmod +x /etc/init.d/arkdaemon
+    # add to startup if the system use sysinit
+    if [ test -x /usr/sbin/update-rc.d ]; then
+      update-rc.d arkdaemon defaults
+      echo "Ark server will now start on boot, if you want to remove this feature run the following line"
+      echo "update-rc.d -f arkdaemon remove"
+    fi
 
     # Create a folder in /var/log to let Ark tools write its own log files
     mkdir -p /var/log/arktools
     chown $1 /var/log/arktools
 
     # Copy arkmanager.cfg inside linux configuation folder if it doesn't already exists
+    mkdir -p /etc/arkmanager
     if [ -f /etc/arkmanager/arkmanager.cfg ]; then
-        mkdir -p /etc/arkmanager
-        cp -n arkmanager.cfg /etc/arkmanager/arkmanager.cfg
-        chown $1 /etc/arkmanager/arkmanager.cfg
+      echo "A previous version of ARK Server Tools was detected in your system, your old configuration was not overwritten. You may need to manually update it.";
+      exit 2
     else
-        echo "A previous version of ARK Server Tools was detected in your system, your old configuration was not overwritten. You may need to manually update it.";
-        exit 2
+      cp -n arkmanager.cfg /etc/arkmanager/arkmanager.cfg
+      chown $1 /etc/arkmanager/arkmanager.cfg
     fi
 
 else

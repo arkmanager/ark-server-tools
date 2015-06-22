@@ -109,8 +109,7 @@ function isTheServerRunning(){
 # If the server is listenning on his port return 0, else return 1
 #
 function isTheServerUp(){
-  PORT="7779"
-  lsof -i |grep $PORT > /dev/null
+  lsof -i |grep $arkserverport > /dev/null
   result=$?
   return $result
 }
@@ -123,11 +122,11 @@ doStart() {
   if isTheServerRunning; then
     echo "The server is already running"
   else
-    arkserveropts="TheIsland?SessionName=$sessioname?QueryPort=$arkqueryport?Port=$arkserverport?ServerPassword=$arkserverpass?ServerAdminPassword=$arkserverapass?listen"
+    arkserveropts="TheIsland?SessionName=$sessioname?QueryPort=$arkqueryport?ServerPassword=$arkserverpass?ServerAdminPassword=$arkserverapass?listen"
     thejob="$arkserverroot/$arkserverexec $arkserveropts"
-    screen -dmS "$servicename" $thejob
+    # run the server in background
+    $thejob >/dev/null 2>&1 &
     echo "$timestamp: start" >> "$logdir/arkserver.log"
-    tail -n 1 "$logdir/arkserver.log"
   fi
 }
 
@@ -137,10 +136,10 @@ doStart() {
 doStop() {
   if isTheServerRunning; then
     echo "Stopping server..."
-    screen -X -S "$servicename" -X stuff "^C"
-    sleep 30
-    echo "$timestamp: stop" >> "$logdir/arkserver.log"
-    tail -n 1 "$logdir/arkserver.log"
+    # kill the server with the PID
+    PID=`ps -ef | grep "$arkserverroot/$arkserverexec" | grep -v grep | awk '{print $2}'`
+    kill -9 $PID
+    echo "$timestamp: stop" >> "$logdir/arkserver.log"    
   else
     echo "The server is already stopped"
   fi
@@ -151,10 +150,10 @@ doStop() {
 #
 doInstall() {
   mkdir -p $arkserverroot
-  
+
   # Check if steamcmd is installed, and if not, install it
   if [ ! -e $steamcmdroot/$steamcmdexec ]; then
-    mkdir -p $steamcmdroot 
+    mkdir -p $steamcmdroot
     cd /tmp
     wget http://media.steampowered.com/installer/steamcmd_linux.tar.gz
     tar -xvzf steamcmd_linux.tar.gz -C $steamcmdroot
@@ -162,7 +161,7 @@ doInstall() {
     ./steamcmd.sh +quit
     echo "SteamCMD was installed in $steamcmdroot"
   fi
-  
+
   cd $steamcmdroot
   # install the server
   ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid validate +quit
