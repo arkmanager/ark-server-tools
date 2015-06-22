@@ -139,7 +139,7 @@ doStop() {
     # kill the server with the PID
     PID=`ps -ef | grep "$arkserverroot/$arkserverexec" | grep -v grep | awk '{print $2}'`
     kill -9 $PID
-    echo "$timestamp: stop" >> "$logdir/arkserver.log"    
+    echo "$timestamp: stop" >> "$logdir/arkserver.log"
   else
     echo "The server is already stopped"
   fi
@@ -189,31 +189,16 @@ doUpdate() {
     echo "$bnumber" > "$arkserverroot/arkversion"
     cd $steamcmdroot
     echo "$timestamp: update to $bnumber complete" >> "$logdir/update.log"
-    tail -n 1 "$logdir/arkserver.log"
-
+    
     # we restart the server only if it was started before the update
     if [ $serverWasAlive -eq 1 ]; then
       doStart
     fi
-    # send mail to admin
-    #if [ -z $servermail ]; then
-    #  mail -a $logdir/update.log -s "Update-Log" $servermail < /dev/null
-    #fi
   else
       echo "No update available"
       echo "$timestamp: No update needed." >> "$logdir/update.log"
         tail -n 1 "$logdir/update.log"
   fi;
-}
-
-#
-# Broadcast message to server
-#
-doInfo() {
-	if [ ! -z $1 ]; then
-		info=$1
-	fi
-	screen -S "$servicename" -p 0 -X stuff "broadcast $info $(printf \\r)"
 }
 
 #
@@ -250,13 +235,10 @@ case "$1" in
     restart)
         doStop
         echo "$timestamp: stop" >> "$logdir/arkserver.log"
-        tail -n 1 "$logdir/arkserver.log"
         sleep 10
         doStart
         echo "$timestamp: start" >> "$logdir/arkserver.log"
-        tail -n 1 "$logdir/arkserver.log"
         echo "$timestamp: restart" >> "$logdir/arkserver.log"
-        tail -n 1 "$logdir/arkserver.log"
     ;;
     install)
         doInstall
