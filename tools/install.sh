@@ -14,7 +14,7 @@ if [ ! -z $1 ]; then
     chown $1 /var/log/arktools
 
     # Copy arkmanager.cfg inside linux configuation folder if it doesn't already exists
-    if [ -f /etc/arkmanager/arkmanager.cfg ]; then
+    if [ ! -f /etc/arkmanager/arkmanager.cfg ]; then
         mkdir -p /etc/arkmanager
         cp -n arkmanager.cfg /etc/arkmanager/arkmanager.cfg
         chown $1 /etc/arkmanager/arkmanager.cfg
