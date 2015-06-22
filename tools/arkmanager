@@ -128,7 +128,23 @@ doStart() {
   if isTheServerRunning; then
     echo "The server is already running"
   else
-    arkserveropts="TheIsland?SessionName=$sessioname?QueryPort=$arkqueryport?ServerPassword=$arkserverpass?ServerAdminPassword=$arkserverapass?listen"
+    ark_SessionName="${ark_SessionName:-${sessionname}}"
+    ark_QueryPort="${ark_QueryPort:-${arkqueryport}}"
+    ark_ServerPassword="${ark_ServerPassword:-${arkserverpass}}"
+    ark_ServerAdminPassword="${ark_ServerAdminPassword:-${arkserverapass}}"
+    arkserveropts="TheIsland"
+
+    # bring in ark_... options
+    for varname in "${!ark_@}"; do
+      name="${varname#ark_}"
+      val="${!varname}"
+
+      if [ -n "$val" ]; then
+        arkserveropts="${arkserveropts}?${name}=${val}"
+      fi
+    done
+
+    arkserveropts="${arkserveropts}?listen"
     # run the server in background
     nohup "$arkserverroot/$arkserverexec" "$arkserveropts" </dev/null >/dev/null 2>&1 &
     echo "$timestamp: start" >> "$logdir/arkserver.log"
