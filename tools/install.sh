@@ -9,7 +9,7 @@ if [ ! -z $1 ]; then
     cp arkdaemon /etc/init.d/arkdaemon
     chmod +x /etc/init.d/arkdaemon
     # add to startup if the system use sysinit
-    if [ test -x /usr/sbin/update-rc.d ]; then
+    if [ -x /usr/sbin/update-rc.d ]; then
       update-rc.d arkdaemon defaults
       echo "Ark server will now start on boot, if you want to remove this feature run the following line"
       echo "update-rc.d -f arkdaemon remove"
@@ -21,9 +21,7 @@ if [ ! -z $1 ]; then
 
     # Copy arkmanager.cfg inside linux configuation folder if it doesn't already exists
     if [ -f /etc/arkmanager/arkmanager.cfg ]; then
-    mkdir -p /etc/arkmanager
-    if [ -f /etc/arkmanager/arkmanager.cfg ]; then
-      echo "A previous version of ARK Server Tools was detected in your system, your old configuration was not overwritten. You may need to manually update it.";
+      echo "A previous version of ARK Server Tools was detected in your system, your old configuration was not overwritten. You may need to manually update it."
       exit 2
     else
       cp -n arkmanager.cfg /etc/arkmanager/arkmanager.cfg

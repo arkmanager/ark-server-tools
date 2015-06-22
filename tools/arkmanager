@@ -189,8 +189,7 @@ doUpdate() {
     echo "$bnumber" > "$arkserverroot/arkversion"
     cd $steamcmdroot
     echo "$timestamp: update to $bnumber complete" >> "$logdir/update.log"
-    tail -n 1 "$logdir/arkserver.log"
-
+    
     # we restart the server only if it was started before the update
     if [ $serverWasAlive -eq 1 ]; then
       doStart
