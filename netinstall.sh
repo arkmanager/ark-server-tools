@@ -12,7 +12,7 @@ tar -zxvf master.tar.gz
 # Install ARK Server Tools
 cd ark-server-tools-master/tools
 chmod +x install.sh
-sh install.sh $1
+sh install.sh $1 > /dev/null
 
 status=$?
 
