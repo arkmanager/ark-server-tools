@@ -21,15 +21,15 @@ rm -f master.tar.gz
 rm -rf /tmp/ark-server-tools-master
 
 
-if [ "$status" -eq "0" ]; then
+if (( $status == 0 )); then
   echo "ARK Server Tools were correctly installed in your system inside the home directory of $1!"
 fi
 
-if [ "$status" -eq "1" ]; then
+if (( $status == 1 )); then
   echo "Something where wrong :("
 fi
 
-if [ "$status" -eq "2" ]; then
+if (( $status == 2 )); then
   echo "WARNING: A previous version of ARK Server Tools was detected in your system, your old configuration was not overwritten. You may need to manually update it."
   echo "ARK Server Tools were correctly installed in your system inside the home directory of $1!"
 fi
