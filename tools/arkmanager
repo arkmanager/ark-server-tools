@@ -203,16 +203,6 @@ doUpdate() {
 }
 
 #
-# Broadcast message to server
-#
-doInfo() {
-	if [ ! -z $1 ]; then
-		info=$1
-	fi
-	screen -S "$servicename" -p 0 -X stuff "broadcast $info $(printf \\r)"
-}
-
-#
 # Print the status of the server (running? online? version?)
 #
 printStatus(){
@@ -249,7 +239,7 @@ case "$1" in
         sleep 10
         doStart
         echo "$timestamp: start" >> "$logdir/arkserver.log"
-        echo "$timestamp: restart" >> "$logdir/arkserver.log"        
+        echo "$timestamp: restart" >> "$logdir/arkserver.log"
     ;;
     install)
         doInstall
