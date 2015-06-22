@@ -194,7 +194,7 @@ doUpdate() {
     # we restart the server only if it was started before the update
     if [ $serverWasAlive -eq 1 ]; then
       doStart
-    fi    
+    fi
   else
       echo "No update available"
       echo "$timestamp: No update needed." >> "$logdir/update.log"
@@ -246,13 +246,10 @@ case "$1" in
     restart)
         doStop
         echo "$timestamp: stop" >> "$logdir/arkserver.log"
-        tail -n 1 "$logdir/arkserver.log"
         sleep 10
         doStart
         echo "$timestamp: start" >> "$logdir/arkserver.log"
-        tail -n 1 "$logdir/arkserver.log"
-        echo "$timestamp: restart" >> "$logdir/arkserver.log"
-        tail -n 1 "$logdir/arkserver.log"
+        echo "$timestamp: restart" >> "$logdir/arkserver.log"        
     ;;
     install)
         doInstall
