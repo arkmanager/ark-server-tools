@@ -16,7 +16,13 @@ fi
 #---------------------
 
 # Global variables
-source /etc/arkmanager/arkmanager.cfg
+if [ -f "/etc/arkmanager/arkmanager.cfg" ]; then
+    source /etc/arkmanager/arkmanager.cfg
+fi
+
+if [ -f "${HOME}/.arkmanager.cfg" ]; then
+    source "${HOME}/.arkmanager.cfg"
+fi
 
 # Local variables
 info=""
