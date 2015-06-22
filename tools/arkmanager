@@ -139,7 +139,7 @@ doStop() {
     # kill the server with the PID
     PID=`ps -ef | grep "$arkserverroot/$arkserverexec" | grep -v grep | awk '{print $2}'`
     kill -9 $PID
-    echo "$timestamp: stop" >> "$logdir/arkserver.log"    
+    echo "$timestamp: stop" >> "$logdir/arkserver.log"
   else
     echo "The server is already stopped"
   fi
@@ -194,11 +194,7 @@ doUpdate() {
     # we restart the server only if it was started before the update
     if [ $serverWasAlive -eq 1 ]; then
       doStart
-    fi
-    # send mail to admin
-    #if [ -z $servermail ]; then
-    #  mail -a $logdir/update.log -s "Update-Log" $servermail < /dev/null
-    #fi
+    fi    
   else
       echo "No update available"
       echo "$timestamp: No update needed." >> "$logdir/update.log"
