@@ -56,7 +56,7 @@ function checkForUpdate(){
 # Set the new current version in a file
 #
 function setCurrentVersion(){
-  cd $arkserverroot
+  cd "$arkserverroot"
   echo $bnumber > arkversion
 }
 
@@ -79,7 +79,7 @@ function isUpdateNeeded(){
 # Return the current version number
 #
 function getCurrentVersion(){
-  cd $arkserverroot
+  cd "$arkserverroot"
   touch arkversion # If the file doesn't exist
   instver=`cat "arkversion"`
   return $instver
@@ -123,9 +123,8 @@ doStart() {
     echo "The server is already running"
   else
     arkserveropts="TheIsland?SessionName=$sessioname?QueryPort=$arkqueryport?ServerPassword=$arkserverpass?ServerAdminPassword=$arkserverapass?listen"
-    thejob="$arkserverroot/$arkserverexec $arkserveropts"
     # run the server in background
-    $thejob >/dev/null 2>&1 &
+    nohup "$arkserverroot/$arkserverexec" "$arkserveropts" </dev/null >/dev/null 2>&1 &
     echo "$timestamp: start" >> "$logdir/arkserver.log"
   fi
 }
@@ -149,20 +148,20 @@ doStop() {
 # install of ARK server
 #
 doInstall() {
-  mkdir -p $arkserverroot
+  mkdir -p "$arkserverroot"
 
   # Check if steamcmd is installed, and if not, install it
-  if [ ! -e $steamcmdroot/$steamcmdexec ]; then
-    mkdir -p $steamcmdroot
+  if [ ! -e "$steamcmdroot/$steamcmdexec" ]; then
+    mkdir -p "$steamcmdroot"
     cd /tmp
     wget http://media.steampowered.com/installer/steamcmd_linux.tar.gz
-    tar -xvzf steamcmd_linux.tar.gz -C $steamcmdroot
-    cd $steamcmdroot
+    tar -xvzf steamcmd_linux.tar.gz -C "$steamcmdroot"
+    cd "$steamcmdroot"
     ./steamcmd.sh +quit
     echo "SteamCMD was installed in $steamcmdroot"
   fi
 
-  cd $steamcmdroot
+  cd "$steamcmdroot"
   # install the server
   ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid validate +quit
   # the current version should be the last version. We set our version
@@ -174,7 +173,7 @@ doInstall() {
 # Stop the server, update it and then start it back.
 #
 doUpdate() {
-  cd $arkserverroot
+  cd "$arkserverroot"
 
   if isUpdateNeeded; then
     # check if the server was alive before the update so we can launch it back after the update
@@ -183,11 +182,9 @@ doUpdate() {
       serverWasAlive=1
     fi
     doStop
-    cd $steamcmdroot
+    cd "$steamcmdroot"
     ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid +quit
-    cd $logdir
     echo "$bnumber" > "$arkserverroot/arkversion"
-    cd $steamcmdroot
     echo "$timestamp: update to $bnumber complete" >> "$logdir/update.log"
     tail -n 1 "$logdir/arkserver.log"
 
