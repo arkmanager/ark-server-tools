@@ -129,6 +129,7 @@ doStart() {
     echo "The server is already running"
   else
     ark_SessionName="${ark_SessionName:-${sessionname}}"
+    ark_Port="${ark_Port:-${arkserverport}}"
     ark_QueryPort="${ark_QueryPort:-${arkqueryport}}"
     ark_ServerPassword="${ark_ServerPassword:-${arkserverpass}}"
     ark_ServerAdminPassword="${ark_ServerAdminPassword:-${arkserverapass}}"
@@ -138,6 +139,13 @@ doStart() {
     for varname in "${!ark_@}"; do
       name="${varname#ark_}"
       val="${!varname}"
+
+      # Port is actually one higher than specified
+      # i.e. specifying port 7777 will have the server
+      # use port 7778
+      if [ "$name" == "Port" ]; then
+        (( val = val - 1 ))
+      fi
 
       if [ -n "$val" ]; then
         arkserveropts="${arkserveropts}?${name}=${val}"
