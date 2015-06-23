@@ -11,6 +11,7 @@ if [ ! -z "$1" ]; then
     if [ -f /lib/lsb/init-functions ]; then
       cp lsb/arkdaemon "${INSTALL_ROOT}/etc/init.d/arkmanager"
       chmod +x "${INSTALL_ROOT}/etc/init.d/arkmanager"
+      sed -i "s|^DAEMON=\"/usr|DAEMON=\"${EXECPREFIX}|" "${INSTALL_ROOT}/etc/init.d/arkmanager"
       # add to startup if the system use sysinit
       if [ -x /usr/sbin/update-rc.d -a -z "${INSTALL_ROOT}" ]; then
         update-rc.d arkmanager defaults
