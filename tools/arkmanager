@@ -272,6 +272,6 @@ case "$1" in
       printStatus
     ;;
     *)
-        echo "use arkmanager <start|stop|restart|install|update|broadcast|status>"
+        echo "use arkmanager <start|stop|restart|install|update|checkupdate|broadcast|status>"
     ;;
 esac
