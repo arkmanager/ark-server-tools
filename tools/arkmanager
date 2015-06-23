@@ -49,11 +49,13 @@ function testfunction(){
 #
 function checkForUpdate(){
   if isUpdateNeeded; then
+    tput rc; tput ed;
     echo -e "Current version:" "$RED" $instver "$NORMAL"
     echo -e "Available version:" "$GREEN" $bnumber "$NORMAL"
     echo -e "Your server needs to be restarted in order to receive the latest update."
     echo -e "Run \"arkmanager update\" to do so"
   else
+    tput rc; tput ed;
     echo -e "Current version:" "$GREEN" $instver "$NORMAL"
     echo -e "Available version:" "$GREEN" $bnumber "$NORMAL"
     echo "Your server is up to date!"
@@ -165,10 +167,13 @@ doStart() {
 #
 doStop() {
   if isTheServerRunning; then
+    tput sc
     echo "Stopping server..."
     # kill the server with the PID
     PID=`ps -ef | grep "$arkserverroot/$arkserverexec" | grep -v grep | awk '{print $2}'`
     kill -9 $PID
+    
+    tput rc; tput ed;
     echo "$timestamp: stop" >> "$logdir/arkserver.log"
   else
     echo "The server is already stopped"
@@ -264,6 +269,8 @@ case "$1" in
         #testfunction
     ;;
     checkupdate)
+      tput sc
+      echo "Querying Steam database for latest version..."
       checkForUpdate
     ;;
     broadcast)
