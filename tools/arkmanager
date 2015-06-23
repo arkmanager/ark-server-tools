@@ -127,7 +127,7 @@ doStart() {
   if isTheServerRunning; then
     echo "The server is already running"
   else
-    ark_SessionName="${ark_SessionName:-${sessionname}}"
+    ark_SessionName=`printf "%q" "${ark_SessionName:-${sessionname}}"` # Escape SessionName to prevent conflicts in the startup sequence
     ark_Port="${ark_Port:-${arkserverport}}"
     ark_QueryPort="${ark_QueryPort:-${arkqueryport}}"
     ark_ServerPassword="${ark_ServerPassword:-${arkserverpass}}"
