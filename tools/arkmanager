@@ -272,7 +272,20 @@ case "$1" in
     status)
       printStatus
     ;;
+    -h|--help)
+      echo -e "Usage: arkmanager [OPTION]\n"
+      echo "Option        Description"
+      echo "start         Starts the server"
+      echo "stop          Stops the server"
+      echo "restart       Stops the server and then starts it"
+      echo "install       Install the ARK server files from steamcmd"
+      echo "update        Check for a new ARK server version, if needed, stops the server, updates it, and starts it again"
+      echo "checkupdate   Check for a new ARK server version"
+      echo "boradcast     PLACEHOLDER, not supported yet"
+      echo "status        Returns the status of the current ARK server instance"
+    ;;
     *)
-        echo "use arkmanager <start|stop|restart|install|update|checkupdate|broadcast|status>"
+      echo "arkmanager: no command specified"
+      echo "Try 'arkmanager -h' or 'arkmanager --help' for more information."
     ;;
 esac
