@@ -16,7 +16,13 @@ fi
 #---------------------
 
 # Global variables
-source /etc/arkmanager/arkmanager.cfg
+if [ -f "/etc/arkmanager/arkmanager.cfg" ]; then
+    source /etc/arkmanager/arkmanager.cfg
+fi
+
+if [ -f "${HOME}/.arkmanager.cfg" ]; then
+    source "${HOME}/.arkmanager.cfg"
+fi
 
 # Local variables
 info=""
@@ -122,10 +128,33 @@ doStart() {
   if isTheServerRunning; then
     echo "The server is already running"
   else
-    arkserveropts="TheIsland?SessionName=$sessioname?QueryPort=$arkqueryport?ServerPassword=$arkserverpass?ServerAdminPassword=$arkserverapass?listen"
-    thejob="$arkserverroot/$arkserverexec $arkserveropts"
+    ark_SessionName="${ark_SessionName:-${sessionname}}"
+    ark_Port="${ark_Port:-${arkserverport}}"
+    ark_QueryPort="${ark_QueryPort:-${arkqueryport}}"
+    ark_ServerPassword="${ark_ServerPassword:-${arkserverpass}}"
+    ark_ServerAdminPassword="${ark_ServerAdminPassword:-${arkserverapass}}"
+    arkserveropts="TheIsland"
+
+    # bring in ark_... options
+    for varname in "${!ark_@}"; do
+      name="${varname#ark_}"
+      val="${!varname}"
+
+      # Port is actually one higher than specified
+      # i.e. specifying port 7777 will have the server
+      # use port 7778
+      if [ "$name" == "Port" ]; then
+        (( val = val - 1 ))
+      fi
+
+      if [ -n "$val" ]; then
+        arkserveropts="${arkserveropts}?${name}=${val}"
+      fi
+    done
+
+    arkserveropts="${arkserveropts}?listen"
     # run the server in background
-    $thejob >/dev/null 2>&1 &
+    nohup "$arkserverroot/$arkserverexec" "$arkserveropts" </dev/null >/dev/null 2>&1 &
     echo "$timestamp: start" >> "$logdir/arkserver.log"
   fi
 }
@@ -149,7 +178,7 @@ doStop() {
 # install of ARK server
 #
 doInstall() {
-  mkdir -p $arkserverroot
+  mkdir -p "$arkserverroot"
 
   cd "$steamcmdroot"
   # install the server
@@ -174,9 +203,7 @@ doUpdate() {
     doStop
     cd "$steamcmdroot"
     ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid +quit
-    cd "$logdir"
     echo "$bnumber" > "$arkserverroot/arkversion"
-    cd "$steamcmdroot"
     echo "$timestamp: update to $bnumber complete" >> "$logdir/update.log"
     
     # we restart the server only if it was started before the update
