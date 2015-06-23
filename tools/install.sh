@@ -7,14 +7,35 @@ if [ ! -z "$1" ]; then
     cp arkmanager "${INSTALL_ROOT}${EXECPREFIX}/bin/arkmanager"
     chmod +x "${INSTALL_ROOT}${EXECPREFIX}/bin/arkmanager"
 
-    # Copy arkdaemon to /etc/init.d/arkmanager ,set permissions and add it to boot
-    cp arkdaemon "${INSTALL_ROOT}/etc/init.d/arkmanager"
-    chmod +x "${INSTALL_ROOT}/etc/init.d/arkmanager"
-    # add to startup if the system use sysinit
-    if [ -x /usr/sbin/update-rc.d -a -z "${INSTALL_ROOT}" ]; then
-      update-rc.d arkmanager defaults
-      echo "Ark server will now start on boot, if you want to remove this feature run the following line"
-      echo "update-rc.d -f arkmanager remove"
+    # Copy arkdaemon to /etc/init.d ,set permissions and add it to boot
+    if [ -f /lib/lsb/init-functions ]; then
+      cp lsb/arkdaemon "${INSTALL_ROOT}/etc/init.d/arkmanager"
+      chmod +x "${INSTALL_ROOT}/etc/init.d/arkmanager"
+      sed -i "s|^DAEMON=\"/usr|DAEMON=\"${EXECPREFIX}|" "${INSTALL_ROOT}/etc/init.d/arkmanager"
+      # add to startup if the system use sysinit
+      if [ -x /usr/sbin/update-rc.d -a -z "${INSTALL_ROOT}" ]; then
+        update-rc.d arkmanager defaults
+        echo "Ark server will now start on boot, if you want to remove this feature run the following line"
+        echo "update-rc.d -f arkmanager remove"
+      fi
+    elif [ -f /etc/rc.d/init.d/functions ]; then
+      cp redhat/arkdaemon "${INSTALL_ROOT}/etc/rc.d/init.d/arkmanager"
+      chmod +x "${INSTALL_ROOT}/etc/rc.d/init.d/arkmanager"
+      sed -i "s@^DAEMON=\"/usr/bin@DAEMON=\"${EXECPREFIX}@" "${INSTALL_ROOT}/etc/rc.d/init.d/arkmanager"
+      if [ -x /sbin/chkconfig -a -z "${INSTALL_ROOT}" ]; then
+        chkconfig --add arkmanager
+        echo "Ark server will now start on boot, if you want to remove this feature run the following line"
+        echo "chkconfig arkmanager off"
+      fi
+    elif [ -f /sbin/runscript ]; then
+      cp openrc/arkdaemon "${INSTALL_ROOT}/etc/init.d/arkmanager"
+      chmod +x "${INSTALL_ROOT}/etc/init.d/arkmanager"
+      sed -i "s@^DAEMON=\"/usr/bin@DAEMON=\"${EXECPREFIX}@" "${INSTALL_ROOT}/etc/init.d/arkmanager"
+      if [ -x /sbin/rc-update -a -z "${INSTALL_ROOT}" ]; then
+        rc-update add arkmanager default
+        echo "Ark server will now start on boot, if you want to remove this feature run the following line"
+        echo "rc-update del arkmanager default"
+      fi
     fi
 
     # Create a folder in /var/log to let Ark tools write its own log files
