@@ -56,7 +56,7 @@ function checkForUpdate(){
 # Set the new current version in a file
 #
 function setCurrentVersion(){
-  cd $arkserverroot
+  cd "$arkserverroot"
   echo $bnumber > arkversion
 }
 
@@ -79,7 +79,7 @@ function isUpdateNeeded(){
 # Return the current version number
 #
 function getCurrentVersion(){
-  cd $arkserverroot
+  cd "$arkserverroot"
   touch arkversion # If the file doesn't exist
   instver=`cat "arkversion"`
   return $instver
@@ -151,7 +151,7 @@ doStop() {
 doInstall() {
   mkdir -p $arkserverroot
 
-  cd $steamcmdroot
+  cd "$steamcmdroot"
   # install the server
   ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid validate +quit
   # the current version should be the last version. We set our version
@@ -163,7 +163,7 @@ doInstall() {
 # Stop the server, update it and then start it back.
 #
 doUpdate() {
-  cd $arkserverroot
+  cd "$arkserverroot"
 
   if isUpdateNeeded; then
     # check if the server was alive before the update so we can launch it back after the update
@@ -172,11 +172,11 @@ doUpdate() {
       serverWasAlive=1
     fi
     doStop
-    cd $steamcmdroot
+    cd "$steamcmdroot"
     ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid +quit
-    cd $logdir
+    cd "$logdir"
     echo "$bnumber" > "$arkserverroot/arkversion"
-    cd $steamcmdroot
+    cd "$steamcmdroot"
     echo "$timestamp: update to $bnumber complete" >> "$logdir/update.log"
     
     # we restart the server only if it was started before the update
