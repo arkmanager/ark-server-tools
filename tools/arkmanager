@@ -49,12 +49,14 @@ function testfunction(){
 #
 function checkForUpdate(){
   if isUpdateNeeded; then
-    echo "Current version:" $instver
-    echo "Available version:" $bnumber
-    echo "Your server needs to be restarted in order to receive the latest update."
-    echo "Run \"arkmanager update\" to do so"
+    echo -e "Current version:" "$RED" $instver "$NORMAL"
+    echo -e "Available version:" "$GREEN" $bnumber "$NORMAL"
+    echo -e "Your server needs to be restarted in order to receive the latest update."
+    echo -e "Run \"arkmanager update\" to do so"
   else
-    echo "No update available"
+    echo -e "Current version:" "$GREEN" $instver "$NORMAL"
+    echo -e "Available version:" "$GREEN" $bnumber "$NORMAL"
+    echo "Your server is up to date!"
   fi
 }
 
