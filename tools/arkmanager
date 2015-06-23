@@ -217,9 +217,8 @@ doUpdate() {
       doStart
     fi
   else
-      echo "No update available"
-      echo "$timestamp: No update needed." >> "$logdir/update.log"
-        tail -n 1 "$logdir/update.log"
+    echo "Your server is already up to date! The most recent version is ${bnumber}."
+    echo "$timestamp: No update needed." >> "$logdir/update.log"
   fi;
 }
 
