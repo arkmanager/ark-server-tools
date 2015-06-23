@@ -36,7 +36,7 @@ curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/master/neti
 
 NB: You may want to change the `bash -s` parameter to fit your steam user if different from `steam`.
 
-This will copy the `arkmanager` and the `arkdaemon` to the proper directories and will create an empty log directory in `/var/log` for ARK Server Tools.  
+This will copy the `arkmanager` script and its daemon to the proper directories and will create an empty log directory in `/var/log` for ARK Server Tools.  
 
 ## Configure ARK Server
 
