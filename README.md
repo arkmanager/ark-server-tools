@@ -10,6 +10,8 @@ We assume you have created the `steam` user to store steamcmd and your ARK serve
 
 ## Requirements
 
+### Increase max open files
+
 Edit /etc/sysctl.conf and set:
 ```
 fs.file-max=100000
@@ -26,6 +28,13 @@ session required pam_limits.so
 
 After these edits, you'll need to restart your bash session or reconnect to your SSH shell to make the changes effective.
 
+### Open firewall ports
+
+```sh
+iptables -I INPUT -p udp --dport 27016 -j ACCEPT
+iptables -I INPUT -p udp --dport 7778 -j ACCEPT
+```
+
 ## Install ARK Server Tools
 
 To install ARK Server Tools run this command:
@@ -36,7 +45,7 @@ curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/master/neti
 
 NB: You may want to change the `bash -s` parameter to fit your steam user if different from `steam`.
 
-This will copy the `arkmanager` script and its daemon to the proper directories and will create an empty log directory in `/var/log` for ARK Server Tools.  
+This will copy the `arkmanager` script and its daemon to the proper directories and will create an empty log directory in `/var/log` for ARK Server Tools.
 
 ## Configure ARK Server
 
