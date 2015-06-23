@@ -18,6 +18,15 @@ if [ ! -z "$1" ]; then
         echo "Ark server will now start on boot, if you want to remove this feature run the following line"
         echo "update-rc.d -f arkmanager remove"
       fi
+    elif [ -f /etc/rc.d/init.d/functions ]; then
+      cp redhat/arkdaemon "${INSTALL_ROOT}/etc/rc.d/init.d/arkmanager"
+      chmod +x "${INSTALL_ROOT}/etc/rc.d/init.d/arkmanager"
+      sed -i "s@^DAEMON=\"/usr/bin@DAEMON=\"${EXECPREFIX}@" "${INSTALL_ROOT}/etc/rc.d/init.d/arkmanager"
+      if [ -x /sbin/chkconfig -a -z "${INSTALL_ROOT}" ]; then
+        chkconfig --add arkmanager
+        echo "Ark server will now start on boot, if you want to remove this feature run the following line"
+        echo "chkconfig arkmanager off"
+      fi
     fi
 
     # Create a folder in /var/log to let Ark tools write its own log files
