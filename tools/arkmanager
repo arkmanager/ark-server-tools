@@ -177,7 +177,8 @@ doStart() {
 
     arkserveropts="${arkserveropts}?listen"
     # run the server in background
-    nohup "$arkserverroot/$arkserverexec" "$arkserveropts" </dev/null >/dev/null 2>&1 &
+    echo "--- $timestamp: starting server ---" >>"$logdir/server.log"
+    nohup "$arkserverroot/$arkserverexec" "$arkserveropts" </dev/null >>"$logdir/server.log" 2>&1 &
     echo "$timestamp: start" >> "$logdir/arkserver.log"
   fi
 }
@@ -192,7 +193,7 @@ doStop() {
     # kill the server with the PID
     PID=`ps -ef | grep "$arkserverroot/$arkserverexec" | grep -v grep | awk '{print $2}'`
     kill -9 $PID
-    
+    echo "--- $timestamp: server stopped ---" >>"$logdir/server.log"
     tput rc; tput ed;
     echo "$timestamp: stop" >> "$logdir/arkserver.log"
   else
