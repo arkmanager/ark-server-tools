@@ -131,6 +131,9 @@ doStart() {
   if isTheServerRunning; then
     echo "The server is already running"
   else
+    tput sc
+    echo "The server is starting..."
+
     arkserveropts=$serverMap
 
     # bring in ark_... options
@@ -154,6 +157,8 @@ doStart() {
     # run the server in background
     nohup "$arkserverroot/$arkserverexec" "$arkserveropts" </dev/null >/dev/null 2>&1 &
     echo "$timestamp: start" >> "$logdir/arkserver.log"
+    tput rc; tput ed;
+    echo "The server is now up"
   fi
 }
 
@@ -167,8 +172,9 @@ doStop() {
     # kill the server with the PID
     PID=`ps -ef | grep "$arkserverroot/$arkserverexec" | grep -v grep | awk '{print $2}'`
     kill -9 $PID
-    
+
     tput rc; tput ed;
+    echo "The server has been stopped"
     echo "$timestamp: stop" >> "$logdir/arkserver.log"
   else
     echo "The server is already stopped"
