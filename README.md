@@ -40,7 +40,7 @@ iptables -I INPUT -p udp --dport 7778 -j ACCEPT
 To install ARK Server Tools run this command:
 
 ```sh
-curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/master/netinstall.sh | sudo bash -s steam
+curl -s http://git.io/vtf5N | sudo bash -s steam
 ```
 
 NB: You may want to change the `bash -s` parameter to fit your steam user if different from `steam`.
