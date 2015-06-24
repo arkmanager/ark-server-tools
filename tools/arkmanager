@@ -34,6 +34,9 @@ GREEN="\\033[1;32m"
 RED="\\033[1;31m"
 NORMAL="\\033[0;39m"
 
+arkmanagerLog="arkmanager.log"  # here are logged the actions performed by arkmanager
+arkserverLog="arkserver.log"    # here is logged the output of ShooterGameServer
+
 #---------------------
 # functions
 #---------------------
@@ -155,8 +158,9 @@ doStart() {
 
     arkserveropts="${arkserveropts}?listen"
     # run the server in background
-    nohup "$arkserverroot/$arkserverexec" "$arkserveropts" </dev/null >/dev/null 2>&1 &
-    echo "$timestamp: start" >> "$logdir/arkserver.log"
+    echo "$timestamp: start" >> "$logdir/$arkserverLog"
+    nohup "$arkserverroot/$arkserverexec" "$arkserveropts" </dev/null >"$logdir/$arkserverLog" 2>&1 & # output of this command is logged
+    echo "$timestamp: start" >> "$logdir/$arkmanagerLog"
     tput rc; tput ed;
     echo "The server is now up"
   fi
@@ -175,7 +179,7 @@ doStop() {
 
     tput rc; tput ed;
     echo "The server has been stopped"
-    echo "$timestamp: stop" >> "$logdir/arkserver.log"
+    echo "$timestamp: stop" >> "$logdir/$arkmanagerLog"
   else
     echo "The server is already stopped"
   fi
@@ -255,11 +259,11 @@ case "$1" in
     ;;
     restart)
         doStop
-        echo "$timestamp: stop" >> "$logdir/arkserver.log"
+        echo "$timestamp: stop" >> "$logdir/$arkmanagerLog"
         sleep 10
         doStart
-        echo "$timestamp: start" >> "$logdir/arkserver.log"
-        echo "$timestamp: restart" >> "$logdir/arkserver.log"
+        echo "$timestamp: start" >> "$logdir/$arkmanagerLog"
+        echo "$timestamp: restart" >> "$logdir/$arkmanagerLog"
     ;;
     install)
         doInstall
