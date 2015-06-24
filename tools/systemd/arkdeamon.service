@@ -1,0 +1,11 @@
+[Unit]
+Description=Daemon to start ark server
+After=network.target
+
+[Service]
+ExecStart=/etc/init.d/arkdaemon start
+ExecStop=/etc/init.d/arkdaemon stop
+Type=forking
+
+[Install]
+WantedBy=multi-user.target
