@@ -132,8 +132,7 @@ function getAvailableVersion(){
 # Check id the server process is alive
 #
 function isTheServerRunning(){
-  SERVICE="ShooterGameServer"
-  ps aux | grep -v grep | grep $SERVICE > /dev/null
+  pidof "$arkserverroot/$arkserverexec" >/dev/null
   result=$?
   return $result
 }
