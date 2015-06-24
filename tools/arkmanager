@@ -118,7 +118,7 @@ function isTheServerRunning(){
 # Check if the server is down and not visible in steam server list
 #
 function isTheServerDown(){
-  lsof -i |grep $arkserverport > /dev/null
+  lsof -i |grep $ark_Port > /dev/null
   result=$?
   return $result
 }
@@ -131,12 +131,7 @@ doStart() {
   if isTheServerRunning; then
     echo "The server is already running"
   else
-    ark_SessionName="${ark_SessionName:-${sessionname}}"
-    ark_Port="${ark_Port:-${arkserverport}}"
-    ark_QueryPort="${ark_QueryPort:-${arkqueryport}}"
-    ark_ServerPassword="${ark_ServerPassword:-${arkserverpass}}"
-    ark_ServerAdminPassword="${ark_ServerAdminPassword:-${arkserverapass}}"
-    arkserveropts="TheIsland"
+    arkserveropts=$serverMap
 
     # bring in ark_... options
     for varname in "${!ark_@}"; do
