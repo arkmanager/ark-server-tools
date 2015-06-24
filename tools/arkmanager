@@ -222,18 +222,18 @@ doUpdate() {
 #
 printStatus(){
   if isTheServerRunning ;then
-    echo -e "$NORMAL" "Server running:" "$GREEN" "Yes" "$NORMAL"
+    echo -e "$NORMAL" "Server running: " "$GREEN" "Yes" "$NORMAL"
   else
-    echo -e "$NORMAL" "Server running:" "$RED" "No" "$NORMAL"
+    echo -e "$NORMAL" "Server running: " "$RED" "No" "$NORMAL"
   fi
 
   if isTheServerDown ;then
-    echo -e "$NORMAL" "Server online:" "$RED" " No" "$NORMAL"
+    echo -e "$NORMAL" "Server online: " "$RED" "No" "$NORMAL"
   else
-    echo -e "$NORMAL" "Server online:" "$GREEN" " Yes" "$NORMAL"
+    echo -e "$NORMAL" "Server online: " "$GREEN" "Yes" "$NORMAL"
   fi
   getCurrentVersion
-  echo -e "$NORMAL" "Server version:" "$GREEN" $instver "$NORMAL"
+  echo -e "$NORMAL" "Server version: " "$GREEN" $instver "$NORMAL"
 
 }
 
