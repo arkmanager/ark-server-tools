@@ -32,8 +32,12 @@ After these edits, you'll need to restart your bash session or reconnect to your
 
 ```sh
 iptables -I INPUT -p udp --dport 27016 -j ACCEPT
+iptables -I INPUT -p tcp --dport 27016 -j ACCEPT
 iptables -I INPUT -p udp --dport 7778 -j ACCEPT
+iptables -I INPUT -p tcp --dport 7778 -j ACCEPT
 ```
+
+NB: Change the ports according to the ones set in your `arkmanager.cfg` file.
 
 ## Install ARK Server Tools
 
