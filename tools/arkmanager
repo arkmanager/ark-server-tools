@@ -191,8 +191,7 @@ doStop() {
     tput sc
     echo "Stopping server..."
     # kill the server with the PID
-    PID=`ps -ef | grep "$arkserverroot/$arkserverexec" | grep -v grep | awk '{print $2}'`
-    kill -9 $PID
+    killall -9 "$arkserverroot/$arkserverexec"
     echo "--- $timestamp: server stopped ---" >>"$logdir/server.log"
     tput rc; tput ed;
     echo "$timestamp: stop" >> "$logdir/arkserver.log"
