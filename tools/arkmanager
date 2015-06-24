@@ -141,9 +141,11 @@ function isTheServerRunning(){
 # Check if the server is down and not visible in steam server list
 #
 function isTheServerDown(){
-  lsof -i |grep $ark_Port > /dev/null
-  result=$?
-  return $result
+  if netstat -an | grep -q ":${ark_Port}\s"; then
+    return 1
+  else
+    return 0
+  fi
 }
 
 
