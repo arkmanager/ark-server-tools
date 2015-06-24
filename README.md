@@ -94,7 +94,10 @@ stops ARK server
 restarts ARK server
 
 #### arkmanager update
-manually updates ARK server
+manually updates ARK server if a new version is available
+
+#### arkmanager forceupdate
+Apply update without check the current version
 
 #### arkmanager status
 Get the status of the server. Show if the process is running, if the server is up and the current version number

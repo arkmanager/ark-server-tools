@@ -41,12 +41,6 @@ arkserverLog="arkserver.log"    # here is logged the output of ShooterGameServer
 #---------------------
 # functions
 #---------------------
-function testfunction(){
-  if [ -z $servermail ]; then
-    echo "mail ok"
-  fi
-
-}
 
 #
 # Check if a new version is available but not apply it
@@ -94,7 +88,9 @@ function isUpdateNeeded(){
 #
 function getCurrentVersion(){
   cd "$arkserverroot"
-  touch arkversion # If the file doesn't exist
+  if ! [ -f arkversion ];then
+    touch arkversion
+  fi
   instver=`cat "arkversion"`
   return $instver
 
@@ -121,12 +117,19 @@ function isTheServerRunning(){
 #
 # Check if the server is down and not visible in steam server list
 #
-function isTheServerDown(){
-  lsof -i |grep $ark_Port > /dev/null
+#
+function isTheServerUp(){
+  lsof -i :"$ark_Port" > /dev/null
   result=$?
-  return $result
+  # In this case, the result is:
+  # 1 if the command fail. The port is not listenning
+  # 0 if the command succeed. The port is listenning
+  if [ $result -eq 0 ];then
+    return 1
+  else
+    return 0
+  fi
 }
-
 
 #
 # start function
@@ -207,25 +210,29 @@ doUpdate() {
   cd "$arkserverroot"
 
   if isUpdateNeeded; then
-    # check if the server was alive before the update so we can launch it back after the update
-    serverWasAlive=0
-    if isTheServerRunning ;then
-      serverWasAlive=1
-    fi
-    doStop
-    cd "$steamcmdroot"
-    ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid +quit
-    echo "$bnumber" > "$arkserverroot/arkversion"
-    echo "$timestamp: update to $bnumber complete" >> "$logdir/update.log"
-    
-    # we restart the server only if it was started before the update
-    if [ $serverWasAlive -eq 1 ]; then
-      doStart
-    fi
+    forceUpdate
   else
     echo "Your server is already up to date! The most recent version is ${bnumber}."
     echo "$timestamp: No update needed." >> "$logdir/update.log"
   fi;
+}
+
+forceUpdate(){
+  # check if the server was alive before the update so we can launch it back after the update
+  serverWasAlive=0
+  if isTheServerRunning ;then
+    serverWasAlive=1
+  fi
+  doStop
+  cd "$steamcmdroot"
+  ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid +quit
+  echo "$bnumber" > "$arkserverroot/arkversion"
+  echo "$timestamp: update to $bnumber complete" >> "$logdir/update.log"
+
+  # we restart the server only if it was started before the update
+  if [ $serverWasAlive -eq 1 ]; then
+    doStart
+  fi
 }
 
 #
@@ -238,7 +245,7 @@ printStatus(){
     echo -e "$NORMAL" "Server running: " "$RED" "No" "$NORMAL"
   fi
 
-  if isTheServerDown ;then
+  if isTheServerUp ;then
     echo -e "$NORMAL" "Server online: " "$RED" "No" "$NORMAL"
   else
     echo -e "$NORMAL" "Server online: " "$GREEN" "Yes" "$NORMAL"
@@ -273,6 +280,9 @@ case "$1" in
         doUpdate
         #testfunction
     ;;
+    forceupdate)
+      forceUpdate
+    ;;
     checkupdate)
       tput sc
       echo "Querying Steam database for latest version..."
@@ -292,6 +302,7 @@ case "$1" in
       echo "restart       Stops the server and then starts it"
       echo "install       Install the ARK server files from steamcmd"
       echo "update        Check for a new ARK server version, if needed, stops the server, updates it, and starts it again"
+      echo "forceupdate   Apply update without check the current version"
       echo "checkupdate   Check for a new ARK server version"
       echo "boradcast     PLACEHOLDER, not supported yet"
       echo "status        Returns the status of the current ARK server instance"
