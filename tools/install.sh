@@ -12,6 +12,7 @@ if [ ! -z "$1" ]; then
       # on debian 8, sysvinit and systemd are present. If systemd is available we use it instead of sysvinit
       if [[ -f /etc/systemd/system.conf ]]; then   # used by systemd
         cp systemd/arkdeamon.service /etc/systemd/system/arkdaemon.service
+        systemctl daemon-reload
         systemctl enable arkdeamon.service
         echo "Ark server will now start on boot, if you want to remove this feature run the following line"
         echo "systemctl disable unit"
