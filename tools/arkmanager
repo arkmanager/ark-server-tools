@@ -3,7 +3,8 @@
 # ARK: survival evolved manager
 #
 # Original author:      LeXaT
-# Maintainer:           FezVrasta, Sispheor
+# Maintainer:           FezVrasta
+# Contributors:         Sispheor, Atriusftw, lexat, puseidr
 
 # Check the user is not currently running this script as root
 if [ "$(id -u)" == "0" ]; then
