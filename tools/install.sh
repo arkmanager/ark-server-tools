@@ -62,6 +62,7 @@ if [ ! -z "$1" ]; then
     else
       cp -n arkmanager.cfg "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg"
       chown "$1" "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg"
+      sed -i "s|^steamcmd_user=\"steam\"|steamcmd_user=\"$1\"|;s|\"/home/steam|\"/home/$1|" "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg"
     fi
 
 else
