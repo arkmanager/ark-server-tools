@@ -47,9 +47,24 @@ NB: You may want to change the `bash -s` parameter to fit your steam user if dif
 
 This will copy the `arkmanager` script and its daemon to the proper directories and will create an empty log directory in `/var/log` for ARK Server Tools.
 
-## Configure ARK Server
+## Configuration
 
-All the needed variables are stored in the /etc/arkmanager/arkmanager.cfg configuration file change them following the comments.
+Stored in `/etc/arkmanager/arkmanager.cfg` you can find the variables needed to start the server, like the port numbers, the system environment variables and so on.
+
+Also, in this file, you can specify any parameter you want to add to the startup command of ARK server.  
+These parameters must be prefixed by the `ark_` string, some example could be:
+
+```sh
+ark_SessionName="My ARK server"
+ark_MaxPlayers=50
+ark_ServerPVE=False
+ark_DifficultyOffset=1
+```
+
+Your session name may contain special characters (eg. `!![EU]!! Aw&some ARK`) which could break the startup command.  
+In this case you may want to comment out the `ark_SessionName` variable and define it inside your **GameUserSettings.ini** file.
+
+You can override or add variables for a specific system user creating a file called `.arkmanager.cfg` in the home directory of the system user.
 
 ## Install ARK Server
 
