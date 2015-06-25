@@ -10,15 +10,18 @@ if [ ! -z "$1" ]; then
     # Copy arkdaemon to /etc/init.d ,set permissions and add it to boot
     if [ -f /lib/lsb/init-functions ]; then
       # on debian 8, sysvinit and systemd are present. If systemd is available we use it instead of sysvinit
-      if [[ -f /etc/systemd/system.conf ]]; then   # used by systemd
-        mkdir -p "/usr/libexec/arkmanager"
-        cp lsb/arkdaemon "/usr/libexec/arkmanager/arkmanager.init"
-        chmod +x "/usr/libexec/arkmanager/arkmanager.init"
-        cp systemd/arkdeamon.service /etc/systemd/system/arkmanager.service
-        systemctl daemon-reload
-        systemctl enable arkmanager.service
-        echo "Ark server will now start on boot, if you want to remove this feature run the following line"
-        echo "systemctl disable arkmanager.service"
+      if [ -f /etc/systemd/system.conf ]; then   # used by systemd
+        mkdir -p "${INSTALL_ROOT}${EXECPREFIX}/libexec/arkmanager"
+        cp lsb/arkdaemon "${INSTALL_ROOT}${EXECPREFIX}/libexec/arkmanager/arkmanager.init"
+        chmod +x "${INSTALL_ROOT}${EXECPREFIX}/libexec/arkmanager/arkmanager.init"
+        cp systemd/arkdeamon.service "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
+        sed -i "s|=\"/usr/|=\"${EXECPREFIX}/|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
+        if [ -z "${INSTALL_ROOT}" ]; then
+          systemctl daemon-reload
+          systemctl enable arkmanager.service
+          echo "Ark server will now start on boot, if you want to remove this feature run the following line"
+          echo "systemctl disable arkmanager.service"
+	fi
       else  # systemd not present, so use sysvinit
         cp lsb/arkdaemon "${INSTALL_ROOT}/etc/init.d/arkmanager"
         chmod +x "${INSTALL_ROOT}/etc/init.d/arkmanager"
@@ -32,15 +35,18 @@ if [ ! -z "$1" ]; then
       fi
     elif [ -f /etc/rc.d/init.d/functions ]; then
       # on RHEL 7, sysvinit and systemd are present. If systemd is available we use it instead of sysvinit
-      if [[ -f /etc/systemd/system.conf ]]; then   # used by systemd
-        mkdir -p "/usr/libexec/arkmanager"
-        cp redhat/arkdaemon "/usr/libexec/arkmanager/arkmanager.init"
-        chmod +x "/usr/libexec/arkmanager/arkmanager.init"
-        cp systemd/arkdeamon.service /etc/systemd/system/arkmanager.service
-        systemctl daemon-reload
-        systemctl enable arkmanager.service
-        echo "Ark server will now start on boot, if you want to remove this feature run the following line"
-        echo "systemctl disable arkmanager.service"
+      if [ -f /etc/systemd/system.conf ]; then   # used by systemd
+        mkdir -p "${INSTALL_ROOT}${EXECPREFIX}/libexec/arkmanager"
+        cp redhat/arkdaemon "${INSTALL_ROOT}${EXECPREFIX}/libexec/arkmanager/arkmanager.init"
+        chmod +x "${INSTALL_ROOT}${EXECPREFIX}/libexec/arkmanager/arkmanager.init"
+        cp systemd/arkdeamon.service "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
+        sed -i "s|=\"/usr/|=\"${EXECPREFIX}/|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
+        if [ -z "${INSTALL_ROOT}" ]; then
+          systemctl daemon-reload
+          systemctl enable arkmanager.service
+          echo "Ark server will now start on boot, if you want to remove this feature run the following line"
+          echo "systemctl disable arkmanager.service"
+        fi
       else # systemd not preset, so use sysvinit
         cp redhat/arkdaemon "${INSTALL_ROOT}/etc/rc.d/init.d/arkmanager"
         chmod +x "${INSTALL_ROOT}/etc/rc.d/init.d/arkmanager"
@@ -60,14 +66,17 @@ if [ ! -z "$1" ]; then
         echo "Ark server will now start on boot, if you want to remove this feature run the following line"
         echo "rc-update del arkmanager default"
       fi
-    elif [[ /etc/systemd/system.conf ]]; then   # used by systemd
-      mkdir -p /usr/libexec/arkmanager
-      cp systemd/arkdaemon.init "/usr/libexec/arkmanager/arkmanager.init"
-      chmod +x "/usr/libexec/arkmanager/arkmanager.init"
-      cp systemd/arkdeamon.service /etc/systemd/system/arkmanager.service
-      systemctl enable arkmanager.service
-      echo "Ark server will now start on boot, if you want to remove this feature run the following line"
-      echo "systemctl disable arkmanager.service"
+    elif [ -f /etc/systemd/system.conf ]; then   # used by systemd
+      mkdir -p "${INSTALL_ROOT}${EXECPREFIX}/libexec/arkmanager"
+      cp systemd/arkdaemon.init "${INSTALL_ROOT}${EXECPREFIX}/libexec/arkmanager/arkmanager.init"
+      chmod +x "${INSTALL_ROOT}${EXECPREFIX}/libexec/arkmanager/arkmanager.init"
+      cp systemd/arkdeamon.service "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
+      sed -i "s|=\"/usr/|=\"${EXECPREFIX}/|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
+      if [ -z "${INSTALL_ROOT}" ]; then
+        systemctl enable arkmanager.service
+        echo "Ark server will now start on boot, if you want to remove this feature run the following line"
+        echo "systemctl disable arkmanager.service"
+      fi
     fi
 
     # Create a folder in /var/log to let Ark tools write its own log files
