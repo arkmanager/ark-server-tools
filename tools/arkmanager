@@ -318,8 +318,23 @@ case "$1" in
     status)
       printStatus
     ;;
+    upgrade)
+      echo "arkmanager v${arkstVersion}: Checking for updates...
+      arkstLatestVersion=`curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/.version`
+      if [ $arkstLatestVersion -gt $arkstVersion ]; then
+        read -p "A new version was found! Do you want to upgrade ARK Server Tools to v${$arkstLatestVersion}?" -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/netinstall.sh | sudo bash -s ${steamcmd_user} ${arkstChannel}
+          else
+            exit 0
+        fi
+      else
+        echo "Your ARK server tools are already up to date"
+      fi
+    ;;
     -h|--help)
-      echo -e "Usage: arkmanager [OPTION]\n"
+      echo -e "Usage: arkmanager[OPTION]\n"
       echo "Option        Description"
       echo "start         Starts the server"
       echo "stop          Stops the server"
@@ -330,9 +345,10 @@ case "$1" in
       echo "checkupdate   Check for a new ARK server version"
       echo "boradcast     PLACEHOLDER, not supported yet"
       echo "status        Returns the status of the current ARK server instance"
+      echo "upgrade       Check for a new ARK Server Tools version and upgrades it if needed"
     ;;
     *)
-      echo "arkmanager: no command specified"
+      echo "arkmanager v${arkstVersion}: no command specified"
       echo "Try 'arkmanager -h' or 'arkmanager --help' for more information."
     ;;
 esac
