@@ -31,13 +31,25 @@ if [ ! -z "$1" ]; then
         fi
       fi
     elif [ -f /etc/rc.d/init.d/functions ]; then
-      cp redhat/arkdaemon "${INSTALL_ROOT}/etc/rc.d/init.d/arkmanager"
-      chmod +x "${INSTALL_ROOT}/etc/rc.d/init.d/arkmanager"
-      sed -i "s@^DAEMON=\"/usr@DAEMON=\"${EXECPREFIX}@" "${INSTALL_ROOT}/etc/rc.d/init.d/arkmanager"
-      if [ -x /sbin/chkconfig -a -z "${INSTALL_ROOT}" ]; then
-        chkconfig --add arkmanager
+      # on RHEL 7, sysvinit and systemd are present. If systemd is available we use it instead of sysvinit
+      if [[ -f /etc/systemd/system.conf ]]; then   # used by systemd
+        mkdir -p "/usr/libexec/arkmanager"
+        cp redhat/arkdaemon "/usr/libexec/arkmanager/arkmanager.init"
+        chmod +x "/usr/libexec/arkmanager/arkmanager.init"
+        cp systemd/arkdeamon.service /etc/systemd/system/arkmanager.service
+        systemctl daemon-reload
+        systemctl enable arkmanager.service
         echo "Ark server will now start on boot, if you want to remove this feature run the following line"
-        echo "chkconfig arkmanager off"
+        echo "systemctl disable arkmanager.service"
+      else # systemd not preset, so use sysvinit
+        cp redhat/arkdaemon "${INSTALL_ROOT}/etc/rc.d/init.d/arkmanager"
+        chmod +x "${INSTALL_ROOT}/etc/rc.d/init.d/arkmanager"
+        sed -i "s@^DAEMON=\"/usr@DAEMON=\"${EXECPREFIX}@" "${INSTALL_ROOT}/etc/rc.d/init.d/arkmanager"
+        if [ -x /sbin/chkconfig -a -z "${INSTALL_ROOT}" ]; then
+          chkconfig --add arkmanager
+          echo "Ark server will now start on boot, if you want to remove this feature run the following line"
+          echo "chkconfig arkmanager off"
+        fi
       fi
     elif [ -f /sbin/runscript ]; then
       cp openrc/arkdaemon "${INSTALL_ROOT}/etc/init.d/arkmanager"
