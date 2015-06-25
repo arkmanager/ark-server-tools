@@ -30,6 +30,10 @@ NAME="ShooterGameServer"
 LOGFILE="${logdir}/${NAME}.log"
 DAEMON="/usr/bin/arkmanager"
 
+GREEN="\\033[1;32m"
+RED="\\033[1;31m"
+NORMAL="\\033[0;39m"
+
 set -e
 
 # If the daemon is not there, then exit.
@@ -38,37 +42,38 @@ test -x $DAEMON || exit 5
 case "$1" in
   start)
     echo -n "Starting $NAME: "
-    su -s /bin/sh -c "$DAEMON start" $steamcmd_user
+    su -s /bin/sh -c "$DAEMON start" $steamcmd_user > /dev/null
     sleep 5
     PID=`ps -ef | grep $NAME | grep -v grep | awk '{print $2}'`
     if  [ -n "$PID" ];  then
       touch /var/lock/subsys/arkdaemon
-      echo "OK"
+      echo "[" "$GREEN" " OK " "$NORMAL" "]"
       exit 0
     else
-      echo "Failed"
+      echo "[" "$RED" " FAILED " "$NORMAL" "]"
       exit 1
     fi
   ;;
 
   stop)
     echo -n "Stopping $NAME: "
-    su -s /bin/sh -c "$DAEMON stop" $steamcmd_user
+    su -s /bin/sh -c "$DAEMON stop" $steamcmd_user > /dev/null
     sleep 5
     PID=`ps -ef | grep $NAME | grep -v grep | awk '{print $2}'`
     if  [ -n "$PID" ];  then
-      echo "Failed"
+      echo "[" "$RED" " FAILED " "$NORMAL" "]"
       exit 1
     else
-      echo "OK"
+      echo "[" "$GREEN" " OK " "$NORMAL" "]"
       rm -f /var/lock/subsys/arkdaemon
       exit 0
     fi
   ;;
 
   restart)
-    su -s /bin/sh -c "$DAEMON restart" $steamcmd_user
-    exit 0
+    echo -n "Restarting $NAME: "
+    su -s /bin/sh -c "$DAEMON restart" $steamcmd_user > /dev/null
+    echo "OK"
   ;;
 
   status)
