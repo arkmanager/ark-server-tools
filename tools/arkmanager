@@ -34,6 +34,7 @@ timestamp=$( date +%T )
 GREEN="\\033[1;32m"
 RED="\\033[1;31m"
 NORMAL="\\033[0;39m"
+maxOpenFiles=100000
 
 arkmanagerLog="arkmanager.log"  # here are logged the actions performed by arkmanager
 arkserverLog="arkserver.log"    # here is logged the output of ShooterGameServer
@@ -187,6 +188,8 @@ doStart() {
     arkserveropts="${arkserveropts}?listen"
     # run the server in background
     echo "$timestamp: start" >> "$logdir/$arkserverLog"
+    # set max open files limit before we start the server
+    ulimit -n $maxOpenFiles
     nohup "$arkserverroot/$arkserverexec" "$arkserveropts" </dev/null >"$logdir/$arkserverLog" 2>&1 & # output of this command is logged
     echo "$timestamp: start" >> "$logdir/$arkmanagerLog"
     tput rc; tput ed;

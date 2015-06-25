@@ -10,25 +10,7 @@ We assume you have created the `steam` user to store steamcmd and your ARK serve
 
 ## Requirements
 
-### Increase max open files
-
-Edit /etc/sysctl.conf and set:
-```
-fs.file-max=100000
-```
-Edit /etc/security/limits.conf and set these limits:
-```
-* soft nofile 100000
-* hard nofile 100000
-```
-Add the following line to `/etc/pam.d/common-session` (Debian/Ubuntu) or `/etc/pam.d/system-auth` (RHEL/CentOS/Fedora):
-```
-session required pam_limits.so
-```
-
-After these edits, you'll need to restart your bash session or reconnect to your SSH shell to make the changes effective.
-
-### Open firewall ports
+To allow your ARK server to communicate with the outside you have to open some ports in your firewall:
 
 ```sh
 iptables -I INPUT -p udp --dport 27016 -j ACCEPT
