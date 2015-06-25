@@ -30,7 +30,7 @@ if [ ! -z "$1" ]; then
     elif [ -f /etc/rc.d/init.d/functions ]; then
       cp redhat/arkdaemon "${INSTALL_ROOT}/etc/rc.d/init.d/arkmanager"
       chmod +x "${INSTALL_ROOT}/etc/rc.d/init.d/arkmanager"
-      sed -i "s@^DAEMON=\"/usr/bin@DAEMON=\"${EXECPREFIX}@" "${INSTALL_ROOT}/etc/rc.d/init.d/arkmanager"
+      sed -i "s@^DAEMON=\"/usr@DAEMON=\"${EXECPREFIX}@" "${INSTALL_ROOT}/etc/rc.d/init.d/arkmanager"
       if [ -x /sbin/chkconfig -a -z "${INSTALL_ROOT}" ]; then
         chkconfig --add arkmanager
         echo "Ark server will now start on boot, if you want to remove this feature run the following line"
@@ -39,7 +39,7 @@ if [ ! -z "$1" ]; then
     elif [ -f /sbin/runscript ]; then
       cp openrc/arkdaemon "${INSTALL_ROOT}/etc/init.d/arkmanager"
       chmod +x "${INSTALL_ROOT}/etc/init.d/arkmanager"
-      sed -i "s@^DAEMON=\"/usr/bin@DAEMON=\"${EXECPREFIX}@" "${INSTALL_ROOT}/etc/init.d/arkmanager"
+      sed -i "s@^DAEMON=\"/usr@DAEMON=\"${EXECPREFIX}@" "${INSTALL_ROOT}/etc/init.d/arkmanager"
       if [ -x /sbin/rc-update -a -z "${INSTALL_ROOT}" ]; then
         rc-update add arkmanager default
         echo "Ark server will now start on boot, if you want to remove this feature run the following line"
@@ -62,6 +62,7 @@ if [ ! -z "$1" ]; then
     else
       cp -n arkmanager.cfg "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg"
       chown "$1" "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg"
+      sed -i "s|^steamcmd_user=\"steam\"|steamcmd_user=\"$1\"|;s|\"/home/steam|\"/home/$1|" "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg"
     fi
 
 else
