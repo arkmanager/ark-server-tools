@@ -279,6 +279,22 @@ printStatus(){
 
 }
 
+doUpgrade() {
+  echo "arkmanager v${arkstVersion}: Checking for updates..."
+  arkstLatestVersion=`curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/.version`
+  if [[ $arkstLatestVersion > $arkstVersion ]]; then
+    read -p "A new version was found! Do you want to upgrade ARK Server Tools to v${$arkstLatestVersion}?" -n 1 -r
+    echo -en "/n"
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/netinstall.sh | sudo bash -s ${steamcmd_user} ${arkstChannel}
+      else
+        exit 0
+    fi
+  else
+    echo "Your ARK server tools are already up to date"
+  fi
+}
+
 #---------------------
 # Main program
 #---------------------
@@ -319,19 +335,7 @@ case "$1" in
       printStatus
     ;;
     upgrade)
-      echo "arkmanager v${arkstVersion}: Checking for updates...
-      arkstLatestVersion=`curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/.version`
-      if [ $arkstLatestVersion -gt $arkstVersion ]; then
-        read -p "A new version was found! Do you want to upgrade ARK Server Tools to v${$arkstLatestVersion}?" -n 1 -r
-        echo
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/netinstall.sh | sudo bash -s ${steamcmd_user} ${arkstChannel}
-          else
-            exit 0
-        fi
-      else
-        echo "Your ARK server tools are already up to date"
-      fi
+      doUpgrade
     ;;
     -h|--help)
       echo -e "Usage: arkmanager[OPTION]\n"
