@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# /etc/rc.d/init.d/arkdaemon
+# /etc/rc.d/init.d/arkmanager
 #
 # ARK manager daemon
 #
@@ -46,7 +46,8 @@ case "$1" in
     sleep 5
     PID=`ps -ef | grep $NAME | grep -v grep | awk '{print $2}'`
     if  [ -n "$PID" ];  then
-      touch /var/lock/subsys/arkdaemon
+      echo "${PID}" >/var/run/arkmanager.pid
+      touch /var/lock/subsys/arkmanager
       echo "[" "$GREEN" " OK " "$NORMAL" "]"
       exit 0
     else
@@ -65,7 +66,8 @@ case "$1" in
       exit 1
     else
       echo "[" "$GREEN" " OK " "$NORMAL" "]"
-      rm -f /var/lock/subsys/arkdaemon
+      rm -f /var/lock/subsys/arkmanager
+      rm -f /var/run/arkmanager.pid
       exit 0
     fi
   ;;
