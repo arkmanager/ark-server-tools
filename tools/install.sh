@@ -11,11 +11,14 @@ if [ ! -z "$1" ]; then
     if [ -f /lib/lsb/init-functions ]; then
       # on debian 8, sysvinit and systemd are present. If systemd is available we use it instead of sysvinit
       if [[ -f /etc/systemd/system.conf ]]; then   # used by systemd
+        mkdir -p "/usr/libexec/arkmanager"
+        cp lsb/arkdaemon "/usr/libexec/arkmanager/arkmanager.init"
+        chmod +x "/usr/libexec/arkmanager/arkmanager.init"
         cp systemd/arkdeamon.service /etc/systemd/system/arkdaemon.service
         systemctl daemon-reload
-        systemctl enable arkdeamon.service
+        systemctl enable arkdaemon.service
         echo "Ark server will now start on boot, if you want to remove this feature run the following line"
-        echo "systemctl disable unit"
+        echo "systemctl disable arkmanager.service"
       else  # systemd not present, so use sysvinit
         cp lsb/arkdaemon "${INSTALL_ROOT}/etc/init.d/arkmanager"
         chmod +x "${INSTALL_ROOT}/etc/init.d/arkmanager"
