@@ -15,7 +15,7 @@ if [ ! -z "$1" ]; then
         cp lsb/arkdaemon "${INSTALL_ROOT}${EXECPREFIX}/libexec/arkmanager/arkmanager.init"
         chmod +x "${INSTALL_ROOT}${EXECPREFIX}/libexec/arkmanager/arkmanager.init"
         cp systemd/arkdeamon.service "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
-        sed -i "s|=\"/usr/|=\"${EXECPREFIX}/|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
+        sed -i "s|=/usr/|=${EXECPREFIX}/|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
         if [ -z "${INSTALL_ROOT}" ]; then
           systemctl daemon-reload
           systemctl enable arkmanager.service
@@ -40,7 +40,7 @@ if [ ! -z "$1" ]; then
         cp redhat/arkdaemon "${INSTALL_ROOT}${EXECPREFIX}/libexec/arkmanager/arkmanager.init"
         chmod +x "${INSTALL_ROOT}${EXECPREFIX}/libexec/arkmanager/arkmanager.init"
         cp systemd/arkdeamon.service "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
-        sed -i "s|=\"/usr/|=\"${EXECPREFIX}/|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
+        sed -i "s|=/usr/|=${EXECPREFIX}/|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
         if [ -z "${INSTALL_ROOT}" ]; then
           systemctl daemon-reload
           systemctl enable arkmanager.service
@@ -71,7 +71,7 @@ if [ ! -z "$1" ]; then
       cp systemd/arkdaemon.init "${INSTALL_ROOT}${EXECPREFIX}/libexec/arkmanager/arkmanager.init"
       chmod +x "${INSTALL_ROOT}${EXECPREFIX}/libexec/arkmanager/arkmanager.init"
       cp systemd/arkdeamon.service "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
-      sed -i "s|=\"/usr/|=\"${EXECPREFIX}/|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
+      sed -i "s|=/usr/|=${EXECPREFIX}/|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
       if [ -z "${INSTALL_ROOT}" ]; then
         systemctl enable arkmanager.service
         echo "Ark server will now start on boot, if you want to remove this feature run the following line"
