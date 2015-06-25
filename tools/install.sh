@@ -61,8 +61,13 @@ if [ ! -z "$1" ]; then
         echo "rc-update del arkmanager default"
       fi
     elif [[ /etc/systemd/system.conf ]]; then   # used by systemd
+      mkdir -p /usr/libexec/arkmanager
+      cp systemd/arkdaemon.init "/usr/libexec/arkmanager/arkmanager.init"
+      chmod +x "/usr/libexec/arkmanager/arkmanager.init"
       cp systemd/arkdeamon.service /etc/systemd/system/arkmanager.service
       systemctl enable arkmanager.service
+      echo "Ark server will now start on boot, if you want to remove this feature run the following line"
+      echo "systemctl disable arkmanager.service"
     fi
 
     # Create a folder in /var/log to let Ark tools write its own log files
