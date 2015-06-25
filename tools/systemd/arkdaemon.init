@@ -1,4 +1,14 @@
 #!/bin/bash
+#
+# /usr/libexec/arkmanager/arkmanager.init
+#
+# ARK manager daemon
+#
+# chkconfig: 2345 80 20
+# description: ARK manager daemon used to start the server and keep it updated
+# processname: ShooterGameServer
+# config: /etc/arkmanager/arkmanager.cfg
+
 ### BEGIN INIT INFO
 # Provides:          ARK manager deamon
 # Required-Start:    networking
@@ -10,15 +20,16 @@
 #
 ### END INIT INFO
 
-# Using the lsb functions to perform the operations.
-. /lib/lsb/init-functions
-
 # Global variables
 source /etc/arkmanager/arkmanager.cfg
 
 NAME="ShooterGameServer"
 LOGFILE="${logdir}/${NAME}.log"
 DAEMON="/usr/bin/arkmanager"
+
+GREEN="\\033[1;32m"
+RED="\\033[1;31m"
+NORMAL="\\033[0;39m"
 
 set -e
 
@@ -27,44 +38,49 @@ test -x $DAEMON || exit 5
 
 case "$1" in
   start)
-    log_daemon_msg "Starting" "$NAME"
-    su -s /bin/sh -c "$DAEMON start" $steamcmd_user
+    echo -n "Starting $NAME: "
+    su -s /bin/sh -c "$DAEMON start" $steamcmd_user > /dev/null
     sleep 5
     PID=`ps -ef | grep $NAME | grep -v grep | awk '{print $2}'`
     if  [ -n "$PID" ];  then
       echo "$PID" >/var/run/arkmanager.pid
-      log_end_msg 0
+      echo "[" "$GREEN" " OK " "$NORMAL" "]"
+      exit 0
     else
-      log_end_msg 1
+      echo "[" "$RED" " FAILED " "$NORMAL" "]"
+      exit 1
     fi
   ;;
 
   stop)
-    log_daemon_msg "Stopping" "$NAME"
-    su -s /bin/sh -c "$DAEMON stop" $steamcmd_user
+    echo -n "Stopping $NAME: "
+    su -s /bin/sh -c "$DAEMON stop" $steamcmd_user > /dev/null
     sleep 5
     PID=`ps -ef | grep $NAME | grep -v grep | awk '{print $2}'`
     if  [ -n "$PID" ];  then
-      log_end_msg 1
+      echo "[" "$RED" " FAILED " "$NORMAL" "]"
+      exit 1
     else
+      echo "[" "$GREEN" " OK " "$NORMAL" "]"
       rm /var/run/arkmanager.pid
-      log_end_msg 0
+      exit 0
     fi
   ;;
 
   restart)
-    su -s /bin/sh -c "$DAEMON restart" $steamcmd_user
+    echo -n "Restarting $NAME: "
+    su -s /bin/sh -c "$DAEMON restart" $steamcmd_user > /dev/null
+    echo "OK"
   ;;
 
   status)
     su -s /bin/sh -c "$DAEMON status" $steamcmd_user
+    exit 0
   ;;
 
   *)
     # For invalid arguments, print the usage message.
     echo "Usage: $0 {start|stop|restart|status}"
-    exit 2
+    exit 1
   ;;
 esac
-
-exit 0
