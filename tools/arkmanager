@@ -250,8 +250,10 @@ forceUpdate(){
   doStop
   cd "$steamcmdroot"
   ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid +quit
-  echo "$bnumber" > "$arkserverroot/arkversion"
-  echo "$timestamp: update to $bnumber complete" >> "$logdir/update.log"
+  # the current version should be the last version. We set our version
+  getAvailableVersion
+  setCurrentVersion
+  echo "$timestamp: update to $instver complete" >> "$logdir/update.log"
 
   # we restart the server only if it was started before the update
   if [ $serverWasAlive -eq 1 ]; then
