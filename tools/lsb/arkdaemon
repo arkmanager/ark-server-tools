@@ -32,6 +32,7 @@ case "$1" in
     sleep 5
     PID=`ps -ef | grep $NAME | grep -v grep | awk '{print $2}'`
     if  [ -n "$PID" ];  then
+      echo "$PID" >/var/run/arkmanager.pid
       log_end_msg 0
     else
       log_end_msg 1
@@ -46,6 +47,7 @@ case "$1" in
     if  [ -n "$PID" ];  then
       log_end_msg 1
     else
+      rm /var/run/arkmanager.pid
       log_end_msg 0
     fi
   ;;
