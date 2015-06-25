@@ -105,6 +105,9 @@ Get the status of the server. Show if the process is running, if the server is u
 #### arkmanager checkupdate
 Check if a new version of the server is available but not apply it
 
+#### arkmanager upgrade
+Check for a new ARK Server Tools version and upgrades it if needed
+
 ## Credits
 
 Original author of arkmanager: LeXaT
