@@ -4,7 +4,7 @@
 #
 # Original author:      LeXaT
 # Maintainer:           FezVrasta
-# Contributors:         Sispheor, Atriusftw, lexat, puseidr
+# Contributors:         Sispheor, Atriusftw, klightspeed, lexat, puseidr
 
 # Check the user is not currently running this script as root
 if [ "$(id -u)" == "0" ]; then
