@@ -126,7 +126,7 @@ function getCurrentVersion(){
 # Get the current available server version on steamdb
 #
 function getAvailableVersion(){
-  bnumber=`$steamcmdroot/$steamcmdexec +login anonymous +app_info_print "$appid" +quit | while read name val; do if [ "${name}" == "{" ]; then parseSteamACF ".depots.branches.public" "buildid"; break; fi; done`
+  bnumber=`$steamcmdroot/$steamcmdexec +login anonymous +app_info_update 1 +app_info_print "$appid" +quit | while read name val; do if [ "${name}" == "{" ]; then parseSteamACF ".depots.branches.public" "buildid"; break; fi; done`
   return $bnumber
 }
 
