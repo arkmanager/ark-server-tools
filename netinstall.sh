@@ -8,7 +8,7 @@ channel=${2:-master} # if defined by 2nd argument install the defined version, o
 
 # Download and untar installation files
 cd /tmp
-wget https://github.com/FezVrasta/ark-server-tools/archive/${channel}.tar.gz
+wget --no-cache https://github.com/FezVrasta/ark-server-tools/archive/${channel}.tar.gz
 tar -zxvf ${channel}.tar.gz
 
 # Install ARK Server Tools
