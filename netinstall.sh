@@ -6,7 +6,7 @@
 
 # Download and untar installation files
 cd /tmp
-wget --no-cache https://github.com/FezVrasta/ark-server-tools/archive/master.tar.gz
+curl -s https://github.com/FezVrasta/ark-server-tools/archive/master.tar.gz > master.tar.gz
 tar -zxvf master.tar.gz
 
 # Install ARK Server Tools
