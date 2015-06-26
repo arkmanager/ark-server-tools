@@ -17,7 +17,6 @@ sh install.sh $1 > /dev/null
 
 status=$?
 
-# Remove the installation files
 rm -rf /tmp/ark-server-tools-${channel}
 
 # Print messages
