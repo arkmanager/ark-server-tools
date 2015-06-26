@@ -84,22 +84,12 @@ function isUpdateNeeded(){
 }
 
 #
-# Return the current version number
+# Parse an ACF structure
+# $1 is the desired path
+# $2 is the desired property
+# $3 is the current path
 #
-function getCurrentVersion(){
-  cd "$arkserverroot"
-  if ! [ -f arkversion ];then
-    touch arkversion
-  fi
-  instver=`cat "arkversion"`
-  return $instver
-
-}
-
-#
-# Parse the buildid from steamcmd
-#
-function parseSteamAppVer(){
+function parseSteamACF(){
   local sname
   while read name val; do
     name="${name#\"}"
@@ -109,9 +99,9 @@ function parseSteamAppVer(){
     if [ "$name" = "}" ]; then
       break
     elif [ "$name" == "{" ]; then
-      parseSteamAppVer "${1}.${sname}"
+      parseSteamACF "$1" "$2" "${3}.${sname}"
     else
-      if [ "$1" == ".depots.branches.public" -a "$name" == "buildid" ]; then
+      if [ "$3" == "$1" -a "$name" == "$2" ]; then
         echo "$val"
         break
       fi
@@ -121,10 +111,22 @@ function parseSteamAppVer(){
 }
 
 #
+# Return the current version number
+#
+function getCurrentVersion(){
+  if [ -f "${arkserverroot}/steamapps/appmanifest_${appid}.acf" ]; then
+    instver=`while read name val; do if [ "${name}" == "{" ]; then parseSteamACF "" "buildid"; break; fi; done <"${arkserverroot}/steamapps/appmanifest_${appid}.acf"`
+  else
+    instver=""
+  fi
+  return $instver
+}
+
+#
 # Get the current available server version on steamdb
 #
 function getAvailableVersion(){
-  bnumber=`$steamcmdroot/$steamcmdexec +login anonymous +app_info_print "$appid" +quit | while read name val; do if [ "${name}" == "{" ]; then parseSteamAppVer; break; fi; done`
+  bnumber=`$steamcmdroot/$steamcmdexec +login anonymous +app_info_update 1 +app_info_print "$appid" +quit | while read name val; do if [ "${name}" == "{" ]; then parseSteamACF ".depots.branches.public" "buildid"; break; fi; done`
   return $bnumber
 }
 
