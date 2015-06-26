@@ -33,6 +33,7 @@ bnumber=""
 timestamp=$( date +%T )
 GREEN="\\033[1;32m"
 RED="\\033[1;31m"
+YELLOW="\\e[0;33m"
 NORMAL="\\033[0;39m"
 maxOpenFiles=100000
 
@@ -42,6 +43,41 @@ arkserverLog="arkserver.log"    # here is logged the output of ShooterGameServer
 #---------------------
 # functions
 #---------------------
+
+#
+# check configuration and report errors
+#
+checkConfig() {
+  # SteamCMD configuration
+  # steamcmdroot
+  if [ ! -d "$steamcmdroot" ] ; then
+    echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tYour SteamCMD root seems not valid."
+  fi
+  # steamcmdexec
+  if [ ! -f "$steamcmdroot/$steamcmdexec" ] ; then
+    echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tYour SteamCMD exec could not be found."
+  fi
+  # steamcmd_user
+  if [ ! getent passwd $steamcmd_user > /dev/null 2>&1 ] ; then
+    echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tYour SteamCMD user is not valid."
+  fi
+
+  # Environment configuration
+  # arkserverroot
+  if [ ! -w `echo "$arkserverroot" | sed 's:/[^/]*$::'` ] ; then
+    echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tYou have not rights to write in the defined ARK server root directory"
+  fi
+  # arkserverexec
+  if [ ! -f "$arkserverroot/$arkserverexec" ] ; then
+    echo -e "[" "$YELLOW" "WARN" "$NORMAL" "]" "\tYour SteamCMD exec could not be found."
+  fi
+
+  # Service configuration
+  # logdir
+  if [ ! -w "$logdir" ] ; then
+    echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tYou have not rights to write in the log directory."
+  fi
+}
 
 #
 # Check if a new version is available but not apply it
@@ -309,6 +345,10 @@ doUpgrade() {
 #---------------------
 # Main program
 #---------------------
+
+# check the configuration and throw errors or warnings if needed
+checkConfig
+
 case "$1" in
     start)
         doStart
