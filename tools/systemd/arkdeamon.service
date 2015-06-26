@@ -1,0 +1,12 @@
+[Unit]
+Description=Daemon to start ark server
+After=network.target
+
+[Service]
+ExecStart=/usr/libexec/arkmanager/arkmanager.init start
+ExecStop=/usr/libexec/arkmanager/arkmanager.init stop
+Type=forking
+PIDFile=/var/run/arkmanager.pid
+
+[Install]
+WantedBy=multi-user.target

@@ -1,3 +1,4 @@
+#!/bin/bash
 ### BEGIN INIT INFO
 # Provides:          ARK manager deamon
 # Required-Start:    networking
@@ -27,9 +28,11 @@ test -x $DAEMON || exit 5
 case "$1" in
   start)
     log_daemon_msg "Starting" "$NAME"
-    sudo -u $steamcmd_user $DAEMON start
+    su -s /bin/sh -c "$DAEMON start" $steamcmd_user
+    sleep 5
     PID=`ps -ef | grep $NAME | grep -v grep | awk '{print $2}'`
     if  [ -n "$PID" ];  then
+      echo "$PID" >/var/run/arkmanager.pid
       log_end_msg 0
     else
       log_end_msg 1
@@ -38,21 +41,23 @@ case "$1" in
 
   stop)
     log_daemon_msg "Stopping" "$NAME"
-    sudo -u $steamcmd_user $DAEMON stop
+    su -s /bin/sh -c "$DAEMON stop" $steamcmd_user
+    sleep 5
     PID=`ps -ef | grep $NAME | grep -v grep | awk '{print $2}'`
     if  [ -n "$PID" ];  then
       log_end_msg 1
     else
+      rm /var/run/arkmanager.pid
       log_end_msg 0
     fi
   ;;
 
   restart)
-    sudo -u $steamcmd_user $DAEMON restart
+    su -s /bin/sh -c "$DAEMON restart" $steamcmd_user
   ;;
 
   status)
-    sudo -u $steamcmd_user $DAEMON status
+    su -s /bin/sh -c "$DAEMON status" $steamcmd_user
   ;;
 
   *)

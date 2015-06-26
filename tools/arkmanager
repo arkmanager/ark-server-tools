@@ -3,7 +3,8 @@
 # ARK: survival evolved manager
 #
 # Original author:      LeXaT
-# Maintainer:           FezVrasta, Sispheor
+# Maintainer:           FezVrasta
+# Contributors:         Sispheor, Atriusftw, klightspeed, lexat, puseidr
 
 # Check the user is not currently running this script as root
 if [ "$(id -u)" == "0" ]; then
@@ -16,7 +17,13 @@ fi
 #---------------------
 
 # Global variables
-source /etc/arkmanager/arkmanager.cfg
+if [ -f "/etc/arkmanager/arkmanager.cfg" ]; then
+    source /etc/arkmanager/arkmanager.cfg
+fi
+
+if [ -f "${HOME}/.arkmanager.cfg" ]; then
+    source "${HOME}/.arkmanager.cfg"
+fi
 
 # Local variables
 info=""
@@ -28,27 +35,31 @@ GREEN="\\033[1;32m"
 RED="\\033[1;31m"
 NORMAL="\\033[0;39m"
 
+arkmanagerLog="arkmanager.log"  # here are logged the actions performed by arkmanager
+arkserverLog="arkserver.log"    # here is logged the output of ShooterGameServer
+
 #---------------------
 # functions
 #---------------------
-function testfunction(){
-  if [ -z $servermail ]; then
-    echo "mail ok"
-  fi
-
-}
 
 #
 # Check if a new version is available but not apply it
 #
 function checkForUpdate(){
+  tput sc
+  echo "Querying Steam database for latest version..."
+
   if isUpdateNeeded; then
-    echo "Current version:" $instver
-    echo "Available version:" $bnumber
-    echo "Your server needs to be restarted in order to receive the latest update."
-    echo "Run \"arkmanager update\" to do so"
+    tput rc; tput ed;
+    echo -e "Current version:" "$RED" $instver "$NORMAL"
+    echo -e "Available version:" "$GREEN" $bnumber "$NORMAL"
+    echo -e "Your server needs to be restarted in order to receive the latest update."
+    echo -e "Run \"arkmanager update\" to do so"
   else
-    echo "No update available"
+    tput rc; tput ed;
+    echo -e "Current version:" "$GREEN" $instver "$NORMAL"
+    echo -e "Available version:" "$GREEN" $bnumber "$NORMAL"
+    echo "Your server is up to date!"
   fi
 }
 
@@ -56,7 +67,7 @@ function checkForUpdate(){
 # Set the new current version in a file
 #
 function setCurrentVersion(){
-  cd $arkserverroot
+  cd "$arkserverroot"
   echo $bnumber > arkversion
 }
 
@@ -76,21 +87,50 @@ function isUpdateNeeded(){
 }
 
 #
+# Parse an ACF structure
+# $1 is the desired path
+# $2 is the desired property
+# $3 is the current path
+#
+function parseSteamACF(){
+  local sname
+  while read name val; do
+    name="${name#\"}"
+    name="${name%\"}"
+    val="${val#\"}"
+    val="${val%\"}"
+    if [ "$name" = "}" ]; then
+      break
+    elif [ "$name" == "{" ]; then
+      parseSteamACF "$1" "$2" "${3}.${sname}"
+    else
+      if [ "$3" == "$1" -a "$name" == "$2" ]; then
+        echo "$val"
+        break
+      fi
+      sname="${name}"
+    fi
+  done
+}
+
+#
 # Return the current version number
 #
 function getCurrentVersion(){
-  cd $arkserverroot
-  touch arkversion # If the file doesn't exist
-  instver=`cat "arkversion"`
+  if [ -f "${arkserverroot}/steamapps/appmanifest_${appid}.acf" ]; then
+    instver=`while read name val; do if [ "${name}" == "{" ]; then parseSteamACF "" "buildid"; break; fi; done <"${arkserverroot}/steamapps/appmanifest_${appid}.acf"`
+  else
+    instver=""
+  fi
   return $instver
-
 }
 
 #
 # Get the current available server version on steamdb
 #
 function getAvailableVersion(){
-  bnumber=`$steamcmdroot/$steamcmdexec +login anonymous +app_info_print "$appid" +quit | grep -EA 5 "^\s+\"public\"$" | grep -E "^\s+\"buildid\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -f3 | sed 's/^ //' | cut -c9-14`
+  rm -f "$steamcmd_appinfocache"
+  bnumber=`$steamcmdroot/$steamcmdexec +login anonymous +app_info_update 1 +app_info_print "$appid" +quit | while read name val; do if [ "${name}" == "{" ]; then parseSteamAppVer; break; fi; done`
   return $bnumber
 }
 
@@ -106,14 +146,20 @@ function isTheServerRunning(){
 
 #
 # Check if the server is up and visible in steam server list
-# If the server is listenning on his port return 0, else return 1
+#
 #
 function isTheServerUp(){
-  lsof -i |grep $arkserverport > /dev/null
+  lsof -i :"$ark_Port" > /dev/null
   result=$?
-  return $result
+  # In this case, the result is:
+  # 1 if the command fail. The port is not listenning
+  # 0 if the command succeed. The port is listenning
+  if [ $result -eq 0 ];then
+    return 1
+  else
+    return 0
+  fi
 }
-
 
 #
 # start function
@@ -122,11 +168,35 @@ doStart() {
   if isTheServerRunning; then
     echo "The server is already running"
   else
-    arkserveropts="TheIsland?SessionName=$sessioname?QueryPort=$arkqueryport?ServerPassword=$arkserverpass?ServerAdminPassword=$arkserverapass?listen"
-    thejob="$arkserverroot/$arkserverexec $arkserveropts"
-    screen -dmS "$servicename" $thejob
-    echo "$timestamp: start" >> "$logdir/arkserver.log"
-    tail -n 1 "$logdir/arkserver.log"
+    tput sc
+    echo "The server is starting..."
+
+    arkserveropts=$serverMap
+
+    # bring in ark_... options
+    for varname in "${!ark_@}"; do
+      name="${varname#ark_}"
+      val="${!varname}"
+
+      # Port is actually one higher than specified
+      # i.e. specifying port 7777 will have the server
+      # use port 7778
+      if [ "$name" == "Port" ]; then
+        (( val = val - 1 ))
+      fi
+
+      if [ -n "$val" ]; then
+        arkserveropts="${arkserveropts}?${name}=${val}"
+      fi
+    done
+
+    arkserveropts="${arkserveropts}?listen"
+    # run the server in background
+    echo "$timestamp: start" >> "$logdir/$arkserverLog"
+    nohup "$arkserverroot/$arkserverexec" "$arkserveropts" </dev/null >"$logdir/$arkserverLog" 2>&1 & # output of this command is logged
+    echo "$timestamp: start" >> "$logdir/$arkmanagerLog"
+    tput rc; tput ed;
+    echo "The server is now up"
   fi
 }
 
@@ -135,11 +205,15 @@ doStart() {
 #
 doStop() {
   if isTheServerRunning; then
+    tput sc
     echo "Stopping server..."
-    screen -X -S "$servicename" -X stuff "^C"
-    sleep 10
-    echo "$timestamp: stop" >> "$logdir/arkserver.log"
-    tail -n 1 "$logdir/arkserver.log"
+    # kill the server with the PID
+    PID=`ps -ef | grep "$arkserverroot/$arkserverexec" | grep -v grep | awk '{print $2}'`
+    kill -9 $PID
+
+    tput rc; tput ed;
+    echo "The server has been stopped"
+    echo "$timestamp: stop" >> "$logdir/$arkmanagerLog"
   else
     echo "The server is already stopped"
   fi
@@ -149,10 +223,9 @@ doStop() {
 # install of ARK server
 #
 doInstall() {
-  if [ ! -d "$arkserverroot" ]; then
-      mkdir $arkserverroot
-  fi
-  cd $steamcmdroot
+  mkdir -p "$arkserverroot"
+
+  cd "$steamcmdroot"
   # install the server
   ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid validate +quit
   # the current version should be the last version. We set our version
@@ -164,46 +237,34 @@ doInstall() {
 # Stop the server, update it and then start it back.
 #
 doUpdate() {
-  cd $arkserverroot
+  cd "$arkserverroot"
 
   if isUpdateNeeded; then
-    # check if the server was alive before the update so we can launch it back after the update
-    serverWasAlive=0
-    if isTheServerRunning ;then
-      serverWasAlive=1
-    fi
-    doStop
-    cd $steamcmdroot
-    ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid +quit
-    cd $logdir
-    echo "$bnumber" > "$arkserverroot/arkversion"
-    cd $steamcmdroot
-    echo "$timestamp: update to $bnumber complete" >> "$logdir/update.log"
-    tail -n 1 "$logdir/arkserver.log"
-
-    # we restart the server only if it was started before the update
-    if [ $serverWasAlive -eq 1 ]; then
-      doStart
-    fi
-    # send mail to admin
-    #if [ -z $servermail ]; then
-    #  mail -a $logdir/update.log -s "Update-Log" $servermail < /dev/null
-    #fi
+    forceUpdate
   else
-      echo "No update available"
-      echo "$timestamp: No update needed." >> "$logdir/update.log"
-        tail -n 1 "$logdir/update.log"
+    echo "Your server is already up to date! The most recent version is ${bnumber}."
+    echo "$timestamp: No update needed." >> "$logdir/update.log"
   fi;
 }
 
-#
-# Broadcast message to server
-#
-doInfo() {
-	if [ ! -z $1 ]; then
-		info=$1
-	fi
-	screen -S "$servicename" -p 0 -X stuff "broadcast $info $(printf \\r)"
+forceUpdate(){
+  # check if the server was alive before the update so we can launch it back after the update
+  serverWasAlive=0
+  if isTheServerRunning ;then
+    serverWasAlive=1
+  fi
+  doStop
+  cd "$steamcmdroot"
+  ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid +quit
+  # the current version should be the last version. We set our version
+  getAvailableVersion
+  setCurrentVersion
+  echo "$timestamp: update to $instver complete" >> "$logdir/update.log"
+
+  # we restart the server only if it was started before the update
+  if [ $serverWasAlive -eq 1 ]; then
+    doStart
+  fi
 }
 
 #
@@ -211,19 +272,18 @@ doInfo() {
 #
 printStatus(){
   if isTheServerRunning ;then
-    echo -e "$NORMAL" "Server running:" "$GREEN" "Yes"
+    echo -e "$NORMAL" "Server running: " "$GREEN" "Yes" "$NORMAL"
   else
-    echo -e "$NORMAL" "Server running:" "$RED" "No"
+    echo -e "$NORMAL" "Server running: " "$RED" "No" "$NORMAL"
   fi
 
   if isTheServerUp ;then
-    echo -e "$NORMAL" "Server online:" "$GREEN" " Yes"
+    echo -e "$NORMAL" "Server online: " "$RED" "No" "$NORMAL"
   else
-    echo -e "$NORMAL" "Server online:" "$RED" " No"
+    echo -e "$NORMAL" "Server online: " "$GREEN" "Yes" "$NORMAL"
   fi
   getCurrentVersion
-  echo -e "$NORMAL" "Server version:" "$GREEN" $instver
-  echo -e "$NORMAL"
+  echo -e "$NORMAL" "Server version: " "$GREEN" $instver "$NORMAL"
 
 }
 
@@ -239,14 +299,11 @@ case "$1" in
     ;;
     restart)
         doStop
-        echo "$timestamp: stop" >> "$logdir/arkserver.log"
-        tail -n 1 "$logdir/arkserver.log"
+        echo "$timestamp: stop" >> "$logdir/$arkmanagerLog"
         sleep 10
         doStart
-        echo "$timestamp: start" >> "$logdir/arkserver.log"
-        tail -n 1 "$logdir/arkserver.log"
-        echo "$timestamp: restart" >> "$logdir/arkserver.log"
-        tail -n 1 "$logdir/arkserver.log"
+        echo "$timestamp: start" >> "$logdir/$arkmanagerLog"
+        echo "$timestamp: restart" >> "$logdir/$arkmanagerLog"
     ;;
     install)
         doInstall
@@ -254,6 +311,9 @@ case "$1" in
     update)
         doUpdate
         #testfunction
+    ;;
+    forceupdate)
+      forceUpdate
     ;;
     checkupdate)
       checkForUpdate
@@ -264,7 +324,21 @@ case "$1" in
     status)
       printStatus
     ;;
+    -h|--help)
+      echo -e "Usage: arkmanager [OPTION]\n"
+      echo "Option        Description"
+      echo "start         Starts the server"
+      echo "stop          Stops the server"
+      echo "restart       Stops the server and then starts it"
+      echo "install       Install the ARK server files from steamcmd"
+      echo "update        Check for a new ARK server version, if needed, stops the server, updates it, and starts it again"
+      echo "forceupdate   Apply update without check the current version"
+      echo "checkupdate   Check for a new ARK server version"
+      echo "boradcast     PLACEHOLDER, not supported yet"
+      echo "status        Returns the status of the current ARK server instance"
+    ;;
     *)
-        echo "use arkmanager <start|stop|restart|install|update|broadcast|status>"
+      echo "arkmanager: no command specified"
+      echo "Try 'arkmanager -h' or 'arkmanager --help' for more information."
     ;;
 esac
