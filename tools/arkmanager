@@ -47,6 +47,9 @@ arkserverLog="arkserver.log"    # here is logged the output of ShooterGameServer
 # Check if a new version is available but not apply it
 #
 function checkForUpdate(){
+  tput sc
+  echo "Querying Steam database for latest version..."
+
   if isUpdateNeeded; then
     tput rc; tput ed;
     echo -e "Current version:" "$RED" $instver "$NORMAL"
@@ -332,8 +335,6 @@ case "$1" in
       forceUpdate
     ;;
     checkupdate)
-      tput sc
-      echo "Querying Steam database for latest version..."
       checkForUpdate
     ;;
     broadcast)
