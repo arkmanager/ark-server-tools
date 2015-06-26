@@ -142,7 +142,7 @@ function isTheServerRunning(){
 }
 
 #
-# Check if the server is down and not visible in steam server list
+# Check if the server is up and visible in steam server list
 #
 #
 function isTheServerUp(){
