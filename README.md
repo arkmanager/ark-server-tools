@@ -65,8 +65,8 @@ ark_ServerPVE=False
 ark_DifficultyOffset=1
 ```
 
-Your session name may contain special characters (eg. `!![EU]!! Aw&some ARK`) which could break the startup command.  
-In this case you may want to comment out the `ark_SessionName` variable and define it inside your **GameUserSettings.ini** file.
+Your session name may not contain special characters (eg. `!![EU]!! Aw&some ARK`) as it could break the startup command.  
+In this case you may want to comment out the `ark_SessionName` variable and define it inside your **GameUserSettings.ini** file instead.
 
 You can override or add variables for a specific system user creating a file called `.arkmanager.cfg` in the home directory of the system user.
 
