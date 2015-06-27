@@ -354,6 +354,7 @@ case "$1" in
       echo "update        Check for a new ARK server version, if needed, stops the server, updates it, and starts it again"
       echo "forceupdate   Apply update without check the current version"
       echo "checkupdate   Check for a new ARK server version"
+      echo "safeupdate    Wait for server to perform world save and update.
       echo "boradcast     PLACEHOLDER, not supported yet"
       echo "status        Returns the status of the current ARK server instance"
     ;;
