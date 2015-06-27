@@ -58,7 +58,7 @@ checkConfig() {
     echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tYour SteamCMD exec could not be found."
   fi
   # steamcmd_user
-  if [ ! getent passwd $steamcmd_user > /dev/null 2>&1 ] ; then
+  if ! getent passwd $steamcmd_user > /dev/null 2>&1 ; then
     echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tYour SteamCMD user is not valid."
   fi
 
