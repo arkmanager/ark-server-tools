@@ -259,6 +259,26 @@ forceUpdate(){
 }
 
 #
+# Waits for server to perform save before update (until save file is newer than 1 minute)
+#
+safeUpdate(){
+  cd "$arkserverroot"
+  
+  if isUpdateNeeded; then
+    while [ ! `find $arkserverroot/ShooterGame/Saved/SavedArks -mmin -1 -name $serverMap.ark` ]; do
+	  echo "$timestamp: Save file older than 1 minute. Delaying update." >> "$logdir/update.log"
+	  sleep 30s
+    done
+    echo "$timestamp: Save file newer than 1 minute. Performing an update." >> "$logdir/update.log"
+    forceUpdate
+  else
+    echo "Your server is already up to date! The most recent version is ${bnumber}."
+    echo "$timestamp: No update needed." >> "$logdir/update.log"
+  fi
+}
+
+
+#
 # Print the status of the server (running? online? version?)
 #
 printStatus(){
@@ -325,6 +345,7 @@ case "$1" in
       echo "update        Check for a new ARK server version, if needed, stops the server, updates it, and starts it again"
       echo "forceupdate   Apply update without check the current version"
       echo "checkupdate   Check for a new ARK server version"
+      echo "safeupdate    Wait for server to perform world save and update.
       echo "boradcast     PLACEHOLDER, not supported yet"
       echo "status        Returns the status of the current ARK server instance"
     ;;

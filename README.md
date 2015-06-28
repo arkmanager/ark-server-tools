@@ -99,6 +99,9 @@ manually updates ARK server if a new version is available
 #### arkmanager forceupdate
 Apply update without check the current version
 
+#### arkmanager safeupdate
+Waits for server to perform world save and then updates.
+
 #### arkmanager status
 Get the status of the server. Show if the process is running, if the server is up and the current version number
 
