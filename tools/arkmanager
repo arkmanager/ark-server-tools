@@ -198,6 +198,38 @@ function isTheServerUp(){
 }
 
 #
+# run function
+#
+doRun() {
+  arkserveropts=$serverMap
+
+  # bring in ark_... options
+  for varname in "${!ark_@}"; do
+    name="${varname#ark_}"
+    val="${!varname}"
+
+    # Port is actually one higher than specified
+    # i.e. specifying port 7777 will have the server
+    # use port 7778
+    if [ "$name" == "Port" ]; then
+      (( val = val - 1 ))
+    fi
+
+    if [ -n "$val" ]; then
+      arkserveropts="${arkserveropts}?${name}=${val}"
+    fi
+  done
+
+  arkserveropts="${arkserveropts}?listen"
+  # run the server in background
+  echo "`timestamp`: start"
+  # set max open files limit before we start the server
+  ulimit -n $maxOpenFiles
+  "$arkserverroot/$arkserverexec" "$arkserveropts"
+  
+}
+
+#
 # start function
 #
 doStart() {
@@ -207,31 +239,7 @@ doStart() {
     tput sc
     echo "The server is starting..."
 
-    arkserveropts=$serverMap
-
-    # bring in ark_... options
-    for varname in "${!ark_@}"; do
-      name="${varname#ark_}"
-      val="${!varname}"
-
-      # Port is actually one higher than specified
-      # i.e. specifying port 7777 will have the server
-      # use port 7778
-      if [ "$name" == "Port" ]; then
-        (( val = val - 1 ))
-      fi
-
-      if [ -n "$val" ]; then
-        arkserveropts="${arkserveropts}?${name}=${val}"
-      fi
-    done
-
-    arkserveropts="${arkserveropts}?listen"
-    # run the server in background
-    echo "`timestamp`: start" >> "$logdir/$arkserverLog"
-    # set max open files limit before we start the server
-    ulimit -n $maxOpenFiles
-    nohup "$arkserverroot/$arkserverexec" "$arkserveropts" </dev/null >"$logdir/$arkserverLog" 2>&1 & # output of this command is logged
+    doRun </dev/null >>"$logdir/$arkserverLog" 2>&1 & # output of this command is logged
     echo "`timestamp`: start" >> "$logdir/$arkmanagerLog"
     tput rc; tput ed;
     echo "The server is now up"
