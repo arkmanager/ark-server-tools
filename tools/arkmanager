@@ -164,6 +164,8 @@ doStart() {
     tput sc
     echo "The server is starting..."
 
+    cd "$arkserverroot"
+
     arkserveropts=$serverMap
 
     # bring in ark_... options
