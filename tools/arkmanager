@@ -101,14 +101,6 @@ function checkForUpdate(){
 }
 
 #
-# Set the new current version in a file
-#
-function setCurrentVersion(){
-  cd "$arkserverroot"
-  echo $bnumber > arkversion
-}
-
-#
 # Check if the server need to be updated
 # Return 0 if update is needed, else return 1
 #
@@ -156,6 +148,7 @@ function parseSteamACF(){
 function getCurrentVersion(){
   if [ -f "${arkserverroot}/steamapps/appmanifest_${appid}.acf" ]; then
     instver=`while read name val; do if [ "${name}" == "{" ]; then parseSteamACF "" "buildid"; break; fi; done <"${arkserverroot}/steamapps/appmanifest_${appid}.acf"`
+    echo $instver > "$arkserverroot/arkversion"
   else
     instver=""
   fi
@@ -268,8 +261,7 @@ doInstall() {
   # install the server
   ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid validate +quit
   # the current version should be the last version. We set our version
-  getAvailableVersion
-  setCurrentVersion
+  getCurrentVersion
 }
 
 #
@@ -296,8 +288,7 @@ forceUpdate(){
   cd "$steamcmdroot"
   ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid +quit
   # the current version should be the last version. We set our version
-  getAvailableVersion
-  setCurrentVersion
+  getCurrentVersion
   echo "$timestamp: update to $instver complete" >> "$logdir/update.log"
 
   # we restart the server only if it was started before the update
