@@ -30,7 +30,6 @@ info=""
 thejob=""
 instver=""
 bnumber=""
-timestamp=$( date +%T )
 GREEN="\\033[1;32m"
 RED="\\033[1;31m"
 YELLOW="\\e[0;33m"
@@ -43,6 +42,13 @@ arkserverLog="arkserver.log"    # here is logged the output of ShooterGameServer
 #---------------------
 # functions
 #---------------------
+
+#
+# timestamp
+#
+timestamp() {
+  date +%T
+}
 
 #
 # check configuration and report errors
@@ -222,11 +228,11 @@ doStart() {
 
     arkserveropts="${arkserveropts}?listen"
     # run the server in background
-    echo "$timestamp: start" >> "$logdir/$arkserverLog"
+    echo "`timestamp`: start" >> "$logdir/$arkserverLog"
     # set max open files limit before we start the server
     ulimit -n $maxOpenFiles
     nohup "$arkserverroot/$arkserverexec" "$arkserveropts" </dev/null >"$logdir/$arkserverLog" 2>&1 & # output of this command is logged
-    echo "$timestamp: start" >> "$logdir/$arkmanagerLog"
+    echo "`timestamp`: start" >> "$logdir/$arkmanagerLog"
     tput rc; tput ed;
     echo "The server is now up"
   fi
@@ -245,7 +251,7 @@ doStop() {
 
     tput rc; tput ed;
     echo "The server has been stopped"
-    echo "$timestamp: stop" >> "$logdir/$arkmanagerLog"
+    echo "`timestamp`: stop" >> "$logdir/$arkmanagerLog"
   else
     echo "The server is already stopped"
   fi
@@ -274,7 +280,7 @@ doUpdate() {
     forceUpdate
   else
     echo "Your server is already up to date! The most recent version is ${bnumber}."
-    echo "$timestamp: No update needed." >> "$logdir/update.log"
+    echo "`timestamp`: No update needed." >> "$logdir/update.log"
   fi;
 }
 
@@ -289,7 +295,7 @@ forceUpdate(){
   ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid +quit
   # the current version should be the last version. We set our version
   getCurrentVersion
-  echo "$timestamp: update to $instver complete" >> "$logdir/update.log"
+  echo "`timestamp`: update to $instver complete" >> "$logdir/update.log"
 
   # we restart the server only if it was started before the update
   if [ $serverWasAlive -eq 1 ]; then
@@ -305,14 +311,14 @@ safeUpdate(){
   
   if isUpdateNeeded; then
     while [ ! `find $arkserverroot/ShooterGame/Saved/SavedArks -mmin -1 -name $serverMap.ark` ]; do
-	  echo "$timestamp: Save file older than 1 minute. Delaying update." >> "$logdir/update.log"
+	  echo "`timestamp`: Save file older than 1 minute. Delaying update." >> "$logdir/update.log"
 	  sleep 30s
     done
-    echo "$timestamp: Save file newer than 1 minute. Performing an update." >> "$logdir/update.log"
+    echo "`timestamp`: Save file newer than 1 minute. Performing an update." >> "$logdir/update.log"
     forceUpdate
   else
     echo "Your server is already up to date! The most recent version is ${bnumber}."
-    echo "$timestamp: No update needed." >> "$logdir/update.log"
+    echo "`timestamp`: No update needed." >> "$logdir/update.log"
   fi
 }
 
@@ -369,11 +375,11 @@ case "$1" in
     ;;
     restart)
         doStop
-        echo "$timestamp: stop" >> "$logdir/$arkmanagerLog"
+        echo "`timestamp`: stop" >> "$logdir/$arkmanagerLog"
         sleep 10
         doStart
-        echo "$timestamp: start" >> "$logdir/$arkmanagerLog"
-        echo "$timestamp: restart" >> "$logdir/$arkmanagerLog"
+        echo "`timestamp`: start" >> "$logdir/$arkmanagerLog"
+        echo "`timestamp`: restart" >> "$logdir/$arkmanagerLog"
     ;;
     install)
         doInstall
