@@ -226,7 +226,7 @@ doRun() {
   # set max open files limit before we start the server
   ulimit -n $maxOpenFiles
   "$arkserverroot/$arkserverexec" "$arkserveropts"
-  
+  echo "`timestamp`: exited with status $?"
 }
 
 #
