@@ -30,7 +30,6 @@ info=""
 thejob=""
 instver=""
 bnumber=""
-timestamp=$( date +%T )
 GREEN="\\033[1;32m"
 RED="\\033[1;31m"
 YELLOW="\\e[0;33m"
@@ -43,6 +42,13 @@ arkserverLog="arkserver.log"    # here is logged the output of ShooterGameServer
 #---------------------
 # functions
 #---------------------
+
+#
+# timestamp
+#
+timestamp() {
+  date +%T
+}
 
 #
 # check configuration and report errors
@@ -101,14 +107,6 @@ function checkForUpdate(){
 }
 
 #
-# Set the new current version in a file
-#
-function setCurrentVersion(){
-  cd "$arkserverroot"
-  echo $bnumber > arkversion
-}
-
-#
 # Check if the server need to be updated
 # Return 0 if update is needed, else return 1
 #
@@ -156,6 +154,7 @@ function parseSteamACF(){
 function getCurrentVersion(){
   if [ -f "${arkserverroot}/steamapps/appmanifest_${appid}.acf" ]; then
     instver=`while read name val; do if [ "${name}" == "{" ]; then parseSteamACF "" "buildid"; break; fi; done <"${arkserverroot}/steamapps/appmanifest_${appid}.acf"`
+    echo $instver > "$arkserverroot/arkversion"
   else
     instver=""
   fi
@@ -199,6 +198,38 @@ function isTheServerUp(){
 }
 
 #
+# run function
+#
+doRun() {
+  arkserveropts=$serverMap
+
+  # bring in ark_... options
+  for varname in "${!ark_@}"; do
+    name="${varname#ark_}"
+    val="${!varname}"
+
+    # Port is actually one higher than specified
+    # i.e. specifying port 7777 will have the server
+    # use port 7778
+    if [ "$name" == "Port" ]; then
+      (( val = val - 1 ))
+    fi
+
+    if [ -n "$val" ]; then
+      arkserveropts="${arkserveropts}?${name}=${val}"
+    fi
+  done
+
+  arkserveropts="${arkserveropts}?listen"
+  # run the server in background
+  echo "`timestamp`: start"
+  # set max open files limit before we start the server
+  ulimit -n $maxOpenFiles
+  "$arkserverroot/$arkserverexec" "$arkserveropts"
+  echo "`timestamp`: exited with status $?"
+}
+
+#
 # start function
 #
 doStart() {
@@ -208,32 +239,8 @@ doStart() {
     tput sc
     echo "The server is starting..."
 
-    arkserveropts=$serverMap
-
-    # bring in ark_... options
-    for varname in "${!ark_@}"; do
-      name="${varname#ark_}"
-      val="${!varname}"
-
-      # Port is actually one higher than specified
-      # i.e. specifying port 7777 will have the server
-      # use port 7778
-      if [ "$name" == "Port" ]; then
-        (( val = val - 1 ))
-      fi
-
-      if [ -n "$val" ]; then
-        arkserveropts="${arkserveropts}?${name}=${val}"
-      fi
-    done
-
-    arkserveropts="${arkserveropts}?listen"
-    # run the server in background
-    echo "$timestamp: start" >> "$logdir/$arkserverLog"
-    # set max open files limit before we start the server
-    ulimit -n $maxOpenFiles
-    nohup "$arkserverroot/$arkserverexec" "$arkserveropts" </dev/null >"$logdir/$arkserverLog" 2>&1 & # output of this command is logged
-    echo "$timestamp: start" >> "$logdir/$arkmanagerLog"
+    doRun </dev/null >>"$logdir/$arkserverLog" 2>&1 & # output of this command is logged
+    echo "`timestamp`: start" >> "$logdir/$arkmanagerLog"
     tput rc; tput ed;
     echo "The server is now up"
   fi
@@ -252,7 +259,7 @@ doStop() {
 
     tput rc; tput ed;
     echo "The server has been stopped"
-    echo "$timestamp: stop" >> "$logdir/$arkmanagerLog"
+    echo "`timestamp`: stop" >> "$logdir/$arkmanagerLog"
   else
     echo "The server is already stopped"
   fi
@@ -268,8 +275,7 @@ doInstall() {
   # install the server
   ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid validate +quit
   # the current version should be the last version. We set our version
-  getAvailableVersion
-  setCurrentVersion
+  getCurrentVersion
 }
 
 #
@@ -282,7 +288,7 @@ doUpdate() {
     forceUpdate
   else
     echo "Your server is already up to date! The most recent version is ${bnumber}."
-    echo "$timestamp: No update needed." >> "$logdir/update.log"
+    echo "`timestamp`: No update needed." >> "$logdir/update.log"
   fi;
 }
 
@@ -296,9 +302,8 @@ forceUpdate(){
   cd "$steamcmdroot"
   ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid +quit
   # the current version should be the last version. We set our version
-  getAvailableVersion
-  setCurrentVersion
-  echo "$timestamp: update to $instver complete" >> "$logdir/update.log"
+  getCurrentVersion
+  echo "`timestamp`: update to $instver complete" >> "$logdir/update.log"
 
   # we restart the server only if it was started before the update
   if [ $serverWasAlive -eq 1 ]; then
@@ -314,14 +319,14 @@ safeUpdate(){
   
   if isUpdateNeeded; then
     while [ ! `find $arkserverroot/ShooterGame/Saved/SavedArks -mmin -1 -name $serverMap.ark` ]; do
-	  echo "$timestamp: Save file older than 1 minute. Delaying update." >> "$logdir/update.log"
+	  echo "`timestamp`: Save file older than 1 minute. Delaying update." >> "$logdir/update.log"
 	  sleep 30s
     done
-    echo "$timestamp: Save file newer than 1 minute. Performing an update." >> "$logdir/update.log"
+    echo "`timestamp`: Save file newer than 1 minute. Performing an update." >> "$logdir/update.log"
     forceUpdate
   else
     echo "Your server is already up to date! The most recent version is ${bnumber}."
-    echo "$timestamp: No update needed." >> "$logdir/update.log"
+    echo "`timestamp`: No update needed." >> "$logdir/update.log"
   fi
 }
 
@@ -378,11 +383,11 @@ case "$1" in
     ;;
     restart)
         doStop
-        echo "$timestamp: stop" >> "$logdir/$arkmanagerLog"
+        echo "`timestamp`: stop" >> "$logdir/$arkmanagerLog"
         sleep 10
         doStart
-        echo "$timestamp: start" >> "$logdir/$arkmanagerLog"
-        echo "$timestamp: restart" >> "$logdir/$arkmanagerLog"
+        echo "`timestamp`: start" >> "$logdir/$arkmanagerLog"
+        echo "`timestamp`: restart" >> "$logdir/$arkmanagerLog"
     ;;
     install)
         doInstall

@@ -86,7 +86,10 @@ if [ ! -z "$1" ]; then
     # Copy arkmanager.cfg inside linux configuation folder if it doesn't already exists
     mkdir -p "${INSTALL_ROOT}/etc/arkmanager"
     if [ -f "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg" ]; then
+      cp -n arkmanager.cfg "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg.NEW"
+      chown "$1" "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg.NEW"
       echo "A previous version of ARK Server Tools was detected in your system, your old configuration was not overwritten. You may need to manually update it."
+      echo "A copy of the new configuration file was included in /etc/arkmanager. Make sure to review any changes and update your config accordingly!"
       exit 2
     else
       cp -n arkmanager.cfg "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg"
