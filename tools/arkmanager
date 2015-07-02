@@ -217,7 +217,7 @@ doStop() {
 #
 # install of ARK server
 #
-doValidate() {
+doInstall() {
   mkdir -p "$arkserverroot"
 
   cd "$steamcmdroot"
@@ -263,7 +263,7 @@ forceUpdate(){
 # 
 # Verify game cache
 #
-doverify(){
+doValidate(){
   # check if the server was alive before the update so we can launch it back after the update
   serverWasAlive=0
   if isTheServerRunning ;then
