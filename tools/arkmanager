@@ -217,7 +217,7 @@ doStop() {
 #
 # install of ARK server
 #
-doInstall() {
+doValidate() {
   mkdir -p "$arkserverroot"
 
   cd "$steamcmdroot"
@@ -250,6 +250,28 @@ forceUpdate(){
   doStop
   cd "$steamcmdroot"
   ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid +quit
+  # the current version should be the last version. We set our version
+  getCurrentVersion
+  echo "$timestamp: update to $instver complete" >> "$logdir/update.log"
+
+  # we restart the server only if it was started before the update
+  if [ $serverWasAlive -eq 1 ]; then
+    doStart
+  fi
+}
+
+# 
+# Verify game cache
+#
+doverify(){
+  # check if the server was alive before the update so we can launch it back after the update
+  serverWasAlive=0
+  if isTheServerRunning ;then
+    serverWasAlive=1
+  fi
+  doStop
+  cd "$steamcmdroot"
+  ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid validate +quit
   # the current version should be the last version. We set our version
   getCurrentVersion
   echo "$timestamp: update to $instver complete" >> "$logdir/update.log"
@@ -311,6 +333,9 @@ case "$1" in
     checkupdate)
       checkForUpdate
     ;;
+    validate)
+      doValidate
+    ;;
     broadcast)
         doInfo $2
     ;;
@@ -327,7 +352,8 @@ case "$1" in
       echo "update        Check for a new ARK server version, if needed, stops the server, updates it, and starts it again"
       echo "forceupdate   Apply update without check the current version"
       echo "checkupdate   Check for a new ARK server version"
-      echo "boradcast     PLACEHOLDER, not supported yet"
+      echo "validate      Validate server files"
+      echo "broadcast     PLACEHOLDER, not supported yet"
       echo "status        Returns the status of the current ARK server instance"
     ;;
     *)
