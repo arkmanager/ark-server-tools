@@ -103,6 +103,12 @@ if [ ! -z "$1" ]; then
 else
     echo "You must specify your system steam user who own steamcmd directory to install ARK Tools."
     echo "Usage: ./install.sh steam"
+    echo
+    echo "Environment variables affecting install:"
+    echo "EXECPREFIX:   prefix in which to install arkmanager executable"
+    echo "              [${EXECPREFIX}]"
+    echo "INSTALL_ROOT: staging directory in which to perform install"
+    echo "              [${INSTALL_ROOT}]"
     exit 1
 fi
 
