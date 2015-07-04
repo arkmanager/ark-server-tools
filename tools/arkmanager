@@ -290,7 +290,7 @@ setConfig () {
     echo "Invalid Configuration Setting"
   else
     sed -i '/'$1'/s/=.*/='$2'/' $settings_file 
-    echo "$1 set to $2, you must reset your server for changes to take effect." 
+    echo "$1 set to $2, you must restart your server (arkmanager restart) for changes to take effect." 
   fi
 }
 
@@ -346,7 +346,7 @@ case "$1" in
       echo "checkupdate   Check for a new ARK server version"
       echo "boradcast     PLACEHOLDER, not supported yet"
       echo "status        Returns the status of the current ARK server instance"
-      echo "config        Change configruation setting in GameUserSettings.ini"
+      echo "setconfig     Change configruation setting in GameUserSettings.ini"
     ;;
     *)
       echo "arkmanager: no command specified"
