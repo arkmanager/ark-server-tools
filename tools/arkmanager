@@ -25,6 +25,11 @@ if [ -f "${HOME}/.arkmanager.cfg" ]; then
     source "${HOME}/.arkmanager.cfg"
 fi
 
+lsof=lsof
+if [ -x /usr/sbin/lsof ]; then
+  lsof=/usr/sbin/lsof
+fi
+
 # Local variables
 info=""
 thejob=""
@@ -142,7 +147,7 @@ function isTheServerRunning(){
 #
 #
 function isTheServerUp(){
-  lsof -i :"$ark_Port" > /dev/null
+  $lsof -i :"$ark_Port" > /dev/null
   result=$?
   # In this case, the result is:
   # 1 if the command fail. The port is not listenning
