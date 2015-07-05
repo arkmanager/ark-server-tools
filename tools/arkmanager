@@ -285,6 +285,20 @@ printStatus(){
 
 }
 
+#
+# Set a configuration setting
+#
+setConfig () {
+  settings_file="$arkserverroot/ShooterGame/Saved/Config/LinuxServer/GameUserSettings.ini"
+  
+  if [ -z "$1" ] | (( $(grep -c "$1=" $settings_file) == 0 )); then
+    echo "Invalid Configuration Setting"
+  else
+    sed -i '/'$1'/s/=.*/='$2'/' $settings_file 
+    echo "$1 set to $2, you must restart your server (arkmanager restart) for changes to take effect." 
+  fi
+}
+
 #---------------------
 # Main program
 #---------------------
@@ -322,6 +336,9 @@ case "$1" in
     status)
       printStatus
     ;;
+    setconfig)
+      setConfig $2 $3
+    ;;
     -h|--help)
       echo -e "Usage: arkmanager [OPTION]\n"
       echo "Option        Description"
@@ -334,6 +351,7 @@ case "$1" in
       echo "checkupdate   Check for a new ARK server version"
       echo "boradcast     PLACEHOLDER, not supported yet"
       echo "status        Returns the status of the current ARK server instance"
+      echo "setconfig     Change configruation setting in GameUserSettings.ini"
     ;;
     *)
       echo "arkmanager: no command specified"
