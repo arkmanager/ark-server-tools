@@ -1,5 +1,8 @@
 # ARK: Survival Evolved Linux Server Tools
 
+This tool allows you to manage any ARK: Survival Evolved linux server without having to remember long commands.  
+It provides a lot of features, to get the full list check the **Commands** section on the bottom of this page.
+
 ## Pre-requisites
 
 To install ARK Server Tools you must have already installed **SteamCMD** following this guide:
