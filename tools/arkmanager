@@ -410,11 +410,11 @@ case "$1" in
         doInstall
     ;;
     update)
-        doUpdate
-        #testfunction
-    ;;
-    forceupdate)
-      forceUpdate
+        if [ "$2" == "--force" ]; then
+          forceUpdate
+        else
+          doUpdate
+        fi
     ;;
     checkupdate)
       checkForUpdate
@@ -433,18 +433,18 @@ case "$1" in
     ;;
     -h|--help)
       echo -e "Usage: arkmanager[OPTION]\n"
-      echo "Option        Description"
-      echo "start         Starts the server"
-      echo "stop          Stops the server"
-      echo "restart       Stops the server and then starts it"
-      echo "install       Install the ARK server files from steamcmd"
-      echo "update        Check for a new ARK server version, if needed, stops the server, updates it, and starts it again"
-      echo "forceupdate   Apply update without check the current version"
-      echo "checkupdate   Check for a new ARK server version"
-      echo "safeupdate    Wait for server to perform world save and update."
-      echo "boradcast     PLACEHOLDER, not supported yet"
-      echo "status        Returns the status of the current ARK server instance"
-      echo "upgrade       Check for a new ARK Server Tools version and upgrades it if needed"
+      echo "Option            Description"
+      echo "backup            Saves a backup of your server inside the backup directory"
+      echo "checkupdate       Check for a new ARK server version"
+      echo "install           Install the ARK server files from steamcmd"
+      echo "restart           Stops the server and then starts it"
+      echo "start             Starts the server"
+      echo "stop              Stops the server"
+      echo "safeupdate        Wait for server to perform world save and update."
+      echo "status            Returns the status of the current ARK server instance"
+      echo "update            Check for a new ARK server version, if needed, stops the server, updates it, and starts it again"
+      echo "update --force    Apply update without check the current version"
+      echo "upgrade           Check for a new ARK Server Tools version and upgrades it if needed"
     ;;
     *)
       echo "arkmanager v${arkstVersion}: no command specified"

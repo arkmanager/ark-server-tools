@@ -96,6 +96,9 @@ Check if a new version of the server is available but not apply it
 #### arkmanager upgrade
 Check for a new ARK Server Tools version and upgrades it if needed
 
+#### arkmanager backup
+Saves a backup of your server inside the backup directory
+
 ## Credits
 
 Original author of arkmanager: LeXaT
