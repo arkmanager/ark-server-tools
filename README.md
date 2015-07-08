@@ -67,7 +67,7 @@ arkmanager install
 To get a complete list of the script commands you can run `arkmanager --help` or `arkmanager -h`.
 
 #### arkmanager install
-installs arkmanager to the directory specified in `.arkmanager.cfg`
+installs arkmanager to the directory specified in `/etc/arkmanager/arkmanager.cfg` or `~/.arkmanager.cfg`.
 
 #### arkmanager start
 starts ARK server
