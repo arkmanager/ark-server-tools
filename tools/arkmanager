@@ -80,7 +80,7 @@ checkConfig() {
   fi
   # arkserverexec
   if [ ! -f "$arkserverroot/$arkserverexec" ] ; then
-    echo -e "[" "$YELLOW" "WARN" "$NORMAL" "]" "\tYour SteamCMD exec could not be found."
+    echo -e "[" "$YELLOW" "WARN" "$NORMAL" "]" "\tYour ARK server exec could not be found."
   fi
 
   # Service configuration
