@@ -9,7 +9,7 @@ LOGFILE="${logdir}/${NAME}.log"
 DAEMON="/usr/bin/arkmanager"
 
 depend(){
-    require net
+    need net
 }
 
 start(){
