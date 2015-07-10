@@ -414,7 +414,7 @@ case "$1" in
           forceUpdate
         elif [ "$2" == "--safe" ]; then
           doSafeUpdate
-        else; then
+        else
           doUpdate
         fi
     ;;
