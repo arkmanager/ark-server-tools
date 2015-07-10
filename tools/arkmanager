@@ -161,7 +161,7 @@ doExitServer() {
 # Broadcast message
 #
 doBroadcast(){
-  rconcmd "broadcast $1"
+  rconcmd "broadcast $1" >/dev/null
 }
 
 #
