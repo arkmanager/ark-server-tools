@@ -319,7 +319,7 @@ forceUpdate(){
 #
 # Waits for server to perform save before update (until save file is newer than 1 minute)
 #
-safeUpdate(){
+doSafeUpdate(){
   cd "$arkserverroot"
   
   if isUpdateNeeded; then
@@ -412,7 +412,9 @@ case "$1" in
     update)
         if [ "$2" == "--force" ]; then
           forceUpdate
-        else
+        elif [ "$2" == "--safe" ]; then
+          doSafeUpdate
+        else; then
           doUpdate
         fi
     ;;
@@ -440,10 +442,10 @@ case "$1" in
       echo "restart           Stops the server and then starts it"
       echo "start             Starts the server"
       echo "stop              Stops the server"
-      echo "safeupdate        Wait for server to perform world save and update."
       echo "status            Returns the status of the current ARK server instance"
       echo "update            Check for a new ARK server version, if needed, stops the server, updates it, and starts it again"
       echo "update --force    Apply update without check the current version"
+      echo "update --safe     Wait for server to perform world save and update."
       echo "upgrade           Check for a new ARK Server Tools version and upgrades it if needed"
     ;;
     *)
