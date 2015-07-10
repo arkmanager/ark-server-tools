@@ -436,10 +436,23 @@ printStatus(){
     echo -e "$NORMAL" "Server online: " "$RED" "No" "$NORMAL"
   else
     echo -e "$NORMAL" "Server online: " "$GREEN" "Yes" "$NORMAL"
+    perl -MSocket -e '
+      my $port = int($ARGV[0]);
+      socket(my $socket, PF_INET, SOCK_DGRAM, 0);
+      setsockopt($socket, SOL_SOCKET, SO_RCVTIMEO, pack("i4", 1, 0, 0, 0));
+      my $sockaddr = pack_sockaddr_in($port, inet_aton("127.0.0.1"));
+      send($socket, "\xff\xff\xff\xffTSource Engine Query\x00", 0, $sockaddr);
+      my $data = "";
+      recv($socket, $data, 1400, 0) or (print "Unable to query server\n" and exit(1));
+      my ($servername, $mapname, $game, $fullname, $rest) = split(/\x00/, substr($data, 6), 5);
+      my $players = ord(substr($rest, 2, 1));
+      my $maxplayers = ord(substr($rest, 3, 1));
+      print "Server Name: $servername\n";
+      print "Players: $players / $maxplayers\n";
+      ' "${ark_QueryPort}"
   fi
   getCurrentVersion
   echo -e "$NORMAL" "Server version: " "$GREEN" $instver "$NORMAL"
-
 }
 
 doUpgrade() {
