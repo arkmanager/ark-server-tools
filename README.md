@@ -1,5 +1,8 @@
 # ARK: Survival Evolved Linux Server Tools
 
+This tool allows you to manage any ARK: Survival Evolved linux server without having to remember long commands.  
+It provides a lot of features, to get the full list check the **Commands** section on the bottom of this page.
+
 ## Pre-requisites
 
 To install ARK Server Tools you must have already installed **SteamCMD** following this guide:
@@ -10,25 +13,7 @@ We assume you have created the `steam` user to store steamcmd and your ARK serve
 
 ## Requirements
 
-### Increase max open files
-
-Edit /etc/sysctl.conf and set:
-```
-fs.file-max=100000
-```
-Edit /etc/security/limits.conf and set these limits:
-```
-* soft nofile 100000
-* hard nofile 100000
-```
-Add the following line to `/etc/pam.d/common-session` (Debian/Ubuntu) or `/etc/pam.d/system-auth` (RHEL/CentOS/Fedora):
-```
-session required pam_limits.so
-```
-
-After these edits, you'll need to restart your bash session or reconnect to your SSH shell to make the changes effective.
-
-### Open firewall ports
+To allow your ARK server to communicate with the outside you have to open some ports in your firewall:
 
 ```sh
 iptables -I INPUT -p udp --dport 27016 -j ACCEPT
@@ -82,7 +67,7 @@ arkmanager install
 To get a complete list of the script commands you can run `arkmanager --help` or `arkmanager -h`.
 
 #### arkmanager install
-installs arkmanager to the directory specified in `.arkmanager.cfg`
+installs arkmanager to the directory specified in `/etc/arkmanager/arkmanager.cfg` or `~/.arkmanager.cfg`.
 
 #### arkmanager start
 starts ARK server
@@ -99,11 +84,20 @@ manually updates ARK server if a new version is available
 #### arkmanager forceupdate
 Apply update without check the current version
 
+#### arkmanager safeupdate
+Waits for server to perform world save and then updates.
+
 #### arkmanager status
 Get the status of the server. Show if the process is running, if the server is up and the current version number
 
 #### arkmanager checkupdate
 Check if a new version of the server is available but not apply it
+
+#### arkmanager upgrade
+Check for a new ARK Server Tools version and upgrades it if needed
+
+#### arkmanager backup
+Saves a backup of your server inside the backup directory
 
 ## Credits
 

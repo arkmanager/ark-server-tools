@@ -39,6 +39,7 @@ test -x $DAEMON || exit 5
 case "$1" in
   start)
     echo -n "Starting $NAME: "
+    ulimit -n 100000
     su -s /bin/sh -c "$DAEMON start" $steamcmd_user > /dev/null
     sleep 5
     PID=`ps -ef | grep $NAME | grep -v grep | awk '{print $2}'`
@@ -69,6 +70,7 @@ case "$1" in
 
   restart)
     echo -n "Restarting $NAME: "
+    ulimit -n 100000
     su -s /bin/sh -c "$DAEMON restart" $steamcmd_user > /dev/null
     echo "OK"
   ;;

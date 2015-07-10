@@ -4,19 +4,20 @@
 # Net Installer, used with curl
 #
 
+channel=${2:-master} # if defined by 2nd argument install the defined version, otherwise install master
+
 # Download and untar installation files
 cd /tmp
-curl -L -k -s https://github.com/FezVrasta/ark-server-tools/archive/master.tar.gz | tar xz
+curl -L -k -s https://github.com/FezVrasta/ark-server-tools/archive/${channel}.tar.gz | tar xz
 
 # Install ARK Server Tools
-cd ark-server-tools-master/tools
+cd ark-server-tools-${channel}/tools
 chmod +x install.sh
 sh install.sh $1 > /dev/null
 
 status=$?
 
-# Remove the installation files
-rm -rf /tmp/ark-server-tools-master
+rm -rf /tmp/ark-server-tools-${channel}
 
 # Print messages
 case "$status" in

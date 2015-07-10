@@ -35,10 +35,11 @@ info=""
 thejob=""
 instver=""
 bnumber=""
-timestamp=$( date +%T )
 GREEN="\\033[1;32m"
 RED="\\033[1;31m"
+YELLOW="\\e[0;33m"
 NORMAL="\\033[0;39m"
+maxOpenFiles=100000
 
 arkmanagerLog="arkmanager.log"  # here are logged the actions performed by arkmanager
 arkserverLog="arkserver.log"    # here is logged the output of ShooterGameServer
@@ -46,6 +47,48 @@ arkserverLog="arkserver.log"    # here is logged the output of ShooterGameServer
 #---------------------
 # functions
 #---------------------
+
+#
+# timestamp
+#
+timestamp() {
+  date +%T
+}
+
+#
+# check configuration and report errors
+#
+checkConfig() {
+  # SteamCMD configuration
+  # steamcmdroot
+  if [ ! -d "$steamcmdroot" ] ; then
+    echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tYour SteamCMD root seems not valid."
+  fi
+  # steamcmdexec
+  if [ ! -f "$steamcmdroot/$steamcmdexec" ] ; then
+    echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tYour SteamCMD exec could not be found."
+  fi
+  # steamcmd_user
+  if ! getent passwd $steamcmd_user > /dev/null 2>&1 ; then
+    echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tYour SteamCMD user is not valid."
+  fi
+
+  # Environment configuration
+  # arkserverroot
+  if [ ! -w `echo "$arkserverroot" | sed 's:/[^/]*$::'` ] ; then
+    echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tYou have not rights to write in the defined ARK server root directory"
+  fi
+  # arkserverexec
+  if [ ! -f "$arkserverroot/$arkserverexec" ] ; then
+    echo -e "[" "$YELLOW" "WARN" "$NORMAL" "]" "\tYour ARK server exec could not be found."
+  fi
+
+  # Service configuration
+  # logdir
+  if [ ! -w "$logdir" ] ; then
+    echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tYou have not rights to write in the log directory."
+  fi
+}
 
 #
 # Check if a new version is available but not apply it
@@ -160,6 +203,38 @@ function isTheServerUp(){
 }
 
 #
+# run function
+#
+doRun() {
+  arkserveropts=$serverMap
+
+  # bring in ark_... options
+  for varname in "${!ark_@}"; do
+    name="${varname#ark_}"
+    val="${!varname}"
+
+    # Port is actually one higher than specified
+    # i.e. specifying port 7777 will have the server
+    # use port 7778
+    if [ "$name" == "Port" ]; then
+      (( val = val - 1 ))
+    fi
+
+    if [ -n "$val" ]; then
+      arkserveropts="${arkserveropts}?${name}=${val}"
+    fi
+  done
+
+  arkserveropts="${arkserveropts}?listen"
+  # run the server in background
+  echo "`timestamp`: start"
+  # set max open files limit before we start the server
+  ulimit -n $maxOpenFiles
+  "$arkserverroot/$arkserverexec" "$arkserveropts"
+  echo "`timestamp`: exited with status $?"
+}
+
+#
 # start function
 #
 doStart() {
@@ -169,32 +244,8 @@ doStart() {
     tput sc
     echo "The server is starting..."
 
-    cd "$arkserverroot"
-
-    arkserveropts=$serverMap
-
-    # bring in ark_... options
-    for varname in "${!ark_@}"; do
-      name="${varname#ark_}"
-      val="${!varname}"
-
-      # Port is actually one higher than specified
-      # i.e. specifying port 7777 will have the server
-      # use port 7778
-      if [ "$name" == "Port" ]; then
-        (( val = val - 1 ))
-      fi
-
-      if [ -n "$val" ]; then
-        arkserveropts="${arkserveropts}?${name}=${val}"
-      fi
-    done
-
-    arkserveropts="${arkserveropts}?listen"
-    # run the server in background
-    echo "$timestamp: start" >> "$logdir/$arkserverLog"
-    nohup "$arkserverroot/$arkserverexec" "$arkserveropts" </dev/null >"$logdir/$arkserverLog" 2>&1 & # output of this command is logged
-    echo "$timestamp: start" >> "$logdir/$arkmanagerLog"
+    doRun </dev/null >>"$logdir/$arkserverLog" 2>&1 & # output of this command is logged
+    echo "`timestamp`: start" >> "$logdir/$arkmanagerLog"
     tput rc; tput ed;
     echo "The server is now up"
   fi
@@ -213,7 +264,7 @@ doStop() {
 
     tput rc; tput ed;
     echo "The server has been stopped"
-    echo "$timestamp: stop" >> "$logdir/$arkmanagerLog"
+    echo "`timestamp`: stop" >> "$logdir/$arkmanagerLog"
   else
     echo "The server is already stopped"
   fi
@@ -242,7 +293,7 @@ doUpdate() {
     forceUpdate
   else
     echo "Your server is already up to date! The most recent version is ${bnumber}."
-    echo "$timestamp: No update needed." >> "$logdir/update.log"
+    echo "`timestamp`: No update needed." >> "$logdir/update.log"
   fi;
 }
 
@@ -257,12 +308,44 @@ forceUpdate(){
   ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid +quit
   # the current version should be the last version. We set our version
   getCurrentVersion
-  echo "$timestamp: update to $instver complete" >> "$logdir/update.log"
+  echo "`timestamp`: update to $instver complete" >> "$logdir/update.log"
 
   # we restart the server only if it was started before the update
   if [ $serverWasAlive -eq 1 ]; then
     doStart
   fi
+}
+
+#
+# Waits for server to perform save before update (until save file is newer than 1 minute)
+#
+doSafeUpdate(){
+  cd "$arkserverroot"
+  
+  if isUpdateNeeded; then
+    while [ ! `find $arkserverroot/ShooterGame/Saved/SavedArks -mmin -1 -name $serverMap.ark` ]; do
+	  echo "`timestamp`: Save file older than 1 minute. Delaying update." >> "$logdir/update.log"
+	  sleep 30s
+    done
+    echo "`timestamp`: Save file newer than 1 minute. Performing an update." >> "$logdir/update.log"
+    forceUpdate
+  else
+    echo "Your server is already up to date! The most recent version is ${bnumber}."
+    echo "`timestamp`: No update needed." >> "$logdir/update.log"
+  fi
+}
+
+#
+# Copies server state to a backup directory
+#
+doBackup(){
+  local datestamp=`date +"%Y-%m-%d_%H.%M.%S"`
+  local backupdir="${arkbackupdir}/${datestamp}"
+  mkdir -p "$backupdir"
+  cp "${arkserverroot}/ShooterGame/Saved/SavedArks/${serverMap}.ark" "${backupdir}/${serverMap}.ark"
+  cp "${arkserverroot}/ShooterGame/Saved/SavedArks/"*.arkprofile "${backupdir}"
+  cp "${arkserverroot}/ShooterGame/Saved/SavedArks/"*.arktribe "${backupdir}"
+  cp "${arkserverroot}/ShooterGame/Saved/Config/LinuxServer/GameUserSettings.ini" "${backupdir}"
 }
 
 #
@@ -285,9 +368,29 @@ printStatus(){
 
 }
 
+doUpgrade() {
+  echo "arkmanager v${arkstVersion}: Checking for updates..."
+  arkstLatestVersion=`curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/.version`
+  if [[ $arkstLatestVersion > $arkstVersion ]]; then
+    read -p "A new version was found! Do you want to upgrade ARK Server Tools to v${$arkstLatestVersion}?" -n 1 -r
+    echo -en "\n"
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/netinstall.sh | sudo bash -s ${steamcmd_user} ${arkstChannel}
+      else
+        exit 0
+    fi
+  else
+    echo "Your ARK server tools are already up to date"
+  fi
+}
+
 #---------------------
 # Main program
 #---------------------
+
+# check the configuration and throw errors or warnings if needed
+checkConfig
+
 case "$1" in
     start)
         doStart
@@ -297,24 +400,29 @@ case "$1" in
     ;;
     restart)
         doStop
-        echo "$timestamp: stop" >> "$logdir/$arkmanagerLog"
+        echo "`timestamp`: stop" >> "$logdir/$arkmanagerLog"
         sleep 10
         doStart
-        echo "$timestamp: start" >> "$logdir/$arkmanagerLog"
-        echo "$timestamp: restart" >> "$logdir/$arkmanagerLog"
+        echo "`timestamp`: start" >> "$logdir/$arkmanagerLog"
+        echo "`timestamp`: restart" >> "$logdir/$arkmanagerLog"
     ;;
     install)
         doInstall
     ;;
     update)
-        doUpdate
-        #testfunction
-    ;;
-    forceupdate)
-      forceUpdate
+        if [ "$2" == "--force" ]; then
+          forceUpdate
+        elif [ "$2" == "--safe" ]; then
+          doSafeUpdate
+        else; then
+          doUpdate
+        fi
     ;;
     checkupdate)
       checkForUpdate
+    ;;
+    backup)
+      doBackup
     ;;
     broadcast)
         doInfo $2
@@ -322,21 +430,26 @@ case "$1" in
     status)
       printStatus
     ;;
+    upgrade)
+      doUpgrade
+    ;;
     -h|--help)
-      echo -e "Usage: arkmanager [OPTION]\n"
-      echo "Option        Description"
-      echo "start         Starts the server"
-      echo "stop          Stops the server"
-      echo "restart       Stops the server and then starts it"
-      echo "install       Install the ARK server files from steamcmd"
-      echo "update        Check for a new ARK server version, if needed, stops the server, updates it, and starts it again"
-      echo "forceupdate   Apply update without check the current version"
-      echo "checkupdate   Check for a new ARK server version"
-      echo "boradcast     PLACEHOLDER, not supported yet"
-      echo "status        Returns the status of the current ARK server instance"
+      echo -e "Usage: arkmanager[OPTION]\n"
+      echo "Option            Description"
+      echo "backup            Saves a backup of your server inside the backup directory"
+      echo "checkupdate       Check for a new ARK server version"
+      echo "install           Install the ARK server files from steamcmd"
+      echo "restart           Stops the server and then starts it"
+      echo "start             Starts the server"
+      echo "stop              Stops the server"
+      echo "status            Returns the status of the current ARK server instance"
+      echo "update            Check for a new ARK server version, if needed, stops the server, updates it, and starts it again"
+      echo "update --force    Apply update without check the current version"
+      echo "update --safe     Wait for server to perform world save and update."
+      echo "upgrade           Check for a new ARK Server Tools version and upgrades it if needed"
     ;;
     *)
-      echo "arkmanager: no command specified"
+      echo "arkmanager v${arkstVersion}: no command specified"
       echo "Try 'arkmanager -h' or 'arkmanager --help' for more information."
     ;;
 esac

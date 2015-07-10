@@ -9,11 +9,12 @@ LOGFILE="${logdir}/${NAME}.log"
 DAEMON="/usr/bin/arkmanager"
 
 depend(){
-    require net
+    need net
 }
 
 start(){
     ebegin "Starting ARK manager daemon"
+    ulimit -n 100000
     su -s /bin/sh -c "$DAEMON start" $steamcmd_user
     sleep 5
     PID=`ps -ef | grep $NAME | grep -v grep | awk '{print $2}'`
