@@ -20,6 +20,7 @@ iptables -I INPUT -p udp --dport 27016 -j ACCEPT
 iptables -I INPUT -p tcp --dport 27016 -j ACCEPT
 iptables -I INPUT -p udp --dport 7778 -j ACCEPT
 iptables -I INPUT -p tcp --dport 7778 -j ACCEPT
+iptables -I INPUT -p tcp --dport 32330 -j ACCEPT
 ```
 
 NB: Change the ports according to the ones set in your `arkmanager.cfg` file.
