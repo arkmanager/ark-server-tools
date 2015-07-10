@@ -81,10 +81,10 @@ restarts ARK server
 #### arkmanager update
 manually updates ARK server if a new version is available
 
-#### arkmanager forceupdate
+#### arkmanager update --force
 Apply update without check the current version
 
-#### arkmanager safeupdate
+#### arkmanager update --safe
 Waits for server to perform world save and then updates.
 
 #### arkmanager status
