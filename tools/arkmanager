@@ -91,6 +91,80 @@ checkConfig() {
 }
 
 #
+# Get server admin password
+#
+getAdminPassword() {
+  if [ -n "${ark_ServerAdminPassword}" ]; then
+    echo "${ark_ServerAdminPassword}"
+  else
+    sed -ne '/^\[ServerSettings\]/,/^\[.*\]/{s/^ServerAdminPassword[[:space:]]*=[[:space:]]*//p;}' "${arkserverroot}/ShooterGame/Saved/Config/LinuxServer/GameUserSettings.ini"
+  fi
+}
+
+#
+# Execute RCON command
+#
+rconcmd() {
+  perl -MSocket -e '
+    sub sendpkt {
+      my ($sock, $reqid, $reqtype, $body) = @_;
+      my $packet = pack("VVV", length($body) + 10, $reqid, $reqtype) . $body . "\0\0";
+      send($sock, $packet, 0) or die "Error sending command to server";
+    }
+
+    sub recvpkt {
+      my ($sock) = @_;
+      my $data = "";
+      recv($sock, $data, 12, 0);
+      my ($pktlen, $resid, $restype) = unpack("VVV", $data);
+      recv($sock, $data, $pktlen - 8, 0);
+      return ($resid, $restype, substr($data, 0, $pktlen - 10));
+    }
+
+    sub auth {
+      my ($sock, $password) = @_;
+      my $reqid = 1;
+      sendpkt($sock, $reqid, 3, $password);
+      my ($resid, $restype, $rcvbody) = recvpkt($sock);
+      die "Authentication failed" if $resid == -1;
+    }
+
+    my $port = $ARGV[0];
+    my $password = $ARGV[1];
+    my $command = $ARGV[2];
+    socket(my $socket, PF_INET, SOCK_STREAM, 0);
+    setsockopt($socket, SOL_SOCKET, SO_RCVTIMEO, pack("i4", 30, 0, 0, 0));
+    my $sockaddr = pack_sockaddr_in($port, inet_aton("127.0.0.1"));
+    connect($socket, $sockaddr) or die "Error connecting to server";
+    auth($socket, $password);
+    sendpkt($socket, 2, 2, $command);
+    my ($resid, $restype, $rcvbody) = recvpkt($socket);
+    print $rcvbody, "\n";
+    ' "${ark_RCONPort}" "`getAdminPassword`" "$1"
+}
+
+#
+# Save world
+#
+doSaveWorld() {
+  rconcmd saveworld
+}
+
+#
+# Exit cleanly
+#
+doExitServer() {
+  rconcmd doexit
+}
+
+#
+# Broadcast message
+#
+doBroadcast(){
+  rconcmd "broadcast $1"
+}
+
+#
 # Check if a new version is available but not apply it
 #
 function checkForUpdate(){
@@ -425,7 +499,10 @@ case "$1" in
       doBackup
     ;;
     broadcast)
-        doInfo $2
+      doBroadcast $2
+    ;;
+    saveworld)
+      doSaveWorld
     ;;
     status)
       printStatus
@@ -437,6 +514,8 @@ case "$1" in
       echo -e "Usage: arkmanager[OPTION]\n"
       echo "Option            Description"
       echo "backup            Saves a backup of your server inside the backup directory"
+      echo "broadcast <msg>   Sends a message to all users connected to server"
+      echo "saveworld         Saves the game world to disk"
       echo "checkupdate       Check for a new ARK server version"
       echo "install           Install the ARK server files from steamcmd"
       echo "restart           Stops the server and then starts it"
