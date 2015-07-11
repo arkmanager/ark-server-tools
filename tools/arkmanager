@@ -517,6 +517,9 @@ case "$1" in
     saveworld)
       doSaveWorld
     ;;
+    rconcmd)
+      rconcmd "$2"
+    ;;
     status)
       printStatus
     ;;
@@ -529,6 +532,7 @@ case "$1" in
       echo "backup            Saves a backup of your server inside the backup directory"
       echo "broadcast <msg>   Sends a message to all users connected to server"
       echo "saveworld         Saves the game world to disk"
+      echo "rconcmd <cmd>     Execute RCON command on server"
       echo "checkupdate       Check for a new ARK server version"
       echo "install           Install the ARK server files from steamcmd"
       echo "restart           Stops the server and then starts it"
