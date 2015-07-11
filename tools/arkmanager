@@ -512,7 +512,7 @@ case "$1" in
       doBackup
     ;;
     broadcast)
-      doBroadcast $2
+      doBroadcast "$2"
     ;;
     saveworld)
       doSaveWorld
