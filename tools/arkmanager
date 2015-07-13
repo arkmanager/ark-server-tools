@@ -347,10 +347,10 @@ doBackup(){
   local datestamp=`date +"%Y-%m-%d_%H.%M.%S"`
   local backupdir="${arkbackupdir}/${datestamp}"
   mkdir -p "$backupdir"
-  cp "${arkserverroot}/ShooterGame/Saved/SavedArks/${serverMap}.ark" "${backupdir}/${serverMap}.ark"
-  cp "${arkserverroot}/ShooterGame/Saved/SavedArks/"*.arkprofile "${backupdir}"
-  cp "${arkserverroot}/ShooterGame/Saved/SavedArks/"*.arktribe "${backupdir}"
-  cp "${arkserverroot}/ShooterGame/Saved/Config/LinuxServer/GameUserSettings.ini" "${backupdir}"
+  cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/${serverMap}.ark" "${backupdir}/${serverMap}.ark"
+  cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/"*.arkprofile "${backupdir}"
+  cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/"*.arktribe "${backupdir}"
+  cp -p "${arkserverroot}/ShooterGame/Saved/Config/LinuxServer/GameUserSettings.ini" "${backupdir}"
 }
 
 #
