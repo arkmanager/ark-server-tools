@@ -413,19 +413,6 @@ doSafeUpdate(){
 }
 
 #
-# Copies server state to a backup directory
-#
-doBackup(){
-  local datestamp=`date +"%Y-%m-%d_%H.%M.%S"`
-  local backupdir="${arkbackupdir}/${datestamp}"
-  mkdir -p "$backupdir"
-  cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/${serverMap}.ark" "${backupdir}/${serverMap}.ark"
-  cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/"*.arkprofile "${backupdir}"
-  cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/"*.arktribe "${backupdir}"
-  cp -p "${arkserverroot}/ShooterGame/Saved/Config/LinuxServer/GameUserSettings.ini" "${backupdir}"
-}
-
-#
 # Print the status of the server (running? online? version?)
 #
 printStatus(){
@@ -511,9 +498,6 @@ case "$1" in
     checkupdate)
       checkForUpdate
     ;;
-    backup)
-      doBackup
-    ;;
     broadcast)
       doBroadcast "$2"
     ;;
@@ -532,7 +516,6 @@ case "$1" in
     -h|--help)
       echo -e "Usage: arkmanager[OPTION]\n"
       echo "Option            Description"
-      echo "backup            Saves a backup of your server inside the backup directory"
       echo "broadcast <msg>   Sends a message to all users connected to server"
       echo "saveworld         Saves the game world to disk"
       echo "rconcmd <cmd>     Execute RCON command on server"
