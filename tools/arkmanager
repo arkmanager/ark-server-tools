@@ -367,6 +367,9 @@ doUpdate() {
   cd "$arkserverroot"
 
   if isUpdateNeeded; then
+    # save the world
+    doSaveWorld
+    # then update files
     forceUpdate
   else
     echo "Your server is already up to date! The most recent version is ${bnumber}."
@@ -390,25 +393,6 @@ forceUpdate(){
   # we restart the server only if it was started before the update
   if [ $serverWasAlive -eq 1 ]; then
     doStart
-  fi
-}
-
-#
-# Waits for server to perform save before update (until save file is newer than 1 minute)
-#
-doSafeUpdate(){
-  cd "$arkserverroot"
-
-  if isUpdateNeeded; then
-    while [ ! `find $arkserverroot/ShooterGame/Saved/SavedArks -mmin -1 -name $serverMap.ark` ]; do
-	  echo "`timestamp`: Save file older than 1 minute. Delaying update." >> "$logdir/update.log"
-	  sleep 30s
-    done
-    echo "`timestamp`: Save file newer than 1 minute. Performing an update." >> "$logdir/update.log"
-    forceUpdate
-  else
-    echo "Your server is already up to date! The most recent version is ${bnumber}."
-    echo "`timestamp`: No update needed." >> "$logdir/update.log"
   fi
 }
 
@@ -489,8 +473,6 @@ case "$1" in
     update)
         if [ "$2" == "--force" ]; then
           forceUpdate
-        elif [ "$2" == "--safe" ]; then
-          doSafeUpdate
         else
           doUpdate
         fi
@@ -527,7 +509,6 @@ case "$1" in
       echo "status            Returns the status of the current ARK server instance"
       echo "update            Check for a new ARK server version, if needed, stops the server, updates it, and starts it again"
       echo "update --force    Apply update without check the current version"
-      echo "update --safe     Wait for server to perform world save and update."
       echo "upgrade           Check for a new ARK Server Tools version and upgrades it if needed"
     ;;
     *)
