@@ -80,13 +80,10 @@ stops ARK server
 restarts ARK server
 
 #### arkmanager update
-manually updates ARK server if a new version is available
+manually updates ARK server if a new version is available. World is saved before the restart of the server
 
 #### arkmanager update --force
 Apply update without check the current version
-
-#### arkmanager update --safe
-Waits for server to perform world save and then updates.
 
 #### arkmanager status
 Get the status of the server. Show if the process is running, if the server is up and the current version number
@@ -97,8 +94,18 @@ Check if a new version of the server is available but not apply it
 #### arkmanager upgrade
 Check for a new ARK Server Tools version and upgrades it if needed
 
-#### arkmanager backup
-Saves a backup of your server inside the backup directory
+#### arkmanager broadcast "message"
+broadcast a message to all curently connected players. example
+```
+arkmanager broadcast "Hi, admin there"
+```
+
+#### arkmanager saveworld
+Save the world. You may made your own backup script of the folder ARK/ShooterGame/Saved/
+
+#### arkmanager rcon <cmd>
+Run a rcon command on the server
+
 
 ## Credits
 
