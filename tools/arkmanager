@@ -31,8 +31,6 @@ if [ -x /usr/sbin/lsof ]; then
 fi
 
 # Local variables
-info=""
-thejob=""
 instver=""
 bnumber=""
 GREEN="\\033[1;32m"
@@ -369,6 +367,9 @@ doUpdate() {
   cd "$arkserverroot"
 
   if isUpdateNeeded; then
+    # save the world
+    doSaveWorld
+    # then update files
     forceUpdate
   else
     echo "Your server is already up to date! The most recent version is ${bnumber}."
@@ -393,38 +394,6 @@ forceUpdate(){
   if [ $serverWasAlive -eq 1 ]; then
     doStart
   fi
-}
-
-#
-# Waits for server to perform save before update (until save file is newer than 1 minute)
-#
-doSafeUpdate(){
-  cd "$arkserverroot"
-  
-  if isUpdateNeeded; then
-    while [ ! `find $arkserverroot/ShooterGame/Saved/SavedArks -mmin -1 -name $serverMap.ark` ]; do
-	  echo "`timestamp`: Save file older than 1 minute. Delaying update." >> "$logdir/update.log"
-	  sleep 30s
-    done
-    echo "`timestamp`: Save file newer than 1 minute. Performing an update." >> "$logdir/update.log"
-    forceUpdate
-  else
-    echo "Your server is already up to date! The most recent version is ${bnumber}."
-    echo "`timestamp`: No update needed." >> "$logdir/update.log"
-  fi
-}
-
-#
-# Copies server state to a backup directory
-#
-doBackup(){
-  local datestamp=`date +"%Y-%m-%d_%H.%M.%S"`
-  local backupdir="${arkbackupdir}/${datestamp}"
-  mkdir -p "$backupdir"
-  cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/${serverMap}.ark" "${backupdir}/${serverMap}.ark"
-  cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/"*.arkprofile "${backupdir}"
-  cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/"*.arktribe "${backupdir}"
-  cp -p "${arkserverroot}/ShooterGame/Saved/Config/LinuxServer/GameUserSettings.ini" "${backupdir}"
 }
 
 #
@@ -504,17 +473,12 @@ case "$1" in
     update)
         if [ "$2" == "--force" ]; then
           forceUpdate
-        elif [ "$2" == "--safe" ]; then
-          doSafeUpdate
         else
           doUpdate
         fi
     ;;
     checkupdate)
       checkForUpdate
-    ;;
-    backup)
-      doBackup
     ;;
     broadcast)
       doBroadcast "$2"
@@ -534,7 +498,6 @@ case "$1" in
     -h|--help)
       echo -e "Usage: arkmanager[OPTION]\n"
       echo "Option            Description"
-      echo "backup            Saves a backup of your server inside the backup directory"
       echo "broadcast <msg>   Sends a message to all users connected to server"
       echo "saveworld         Saves the game world to disk"
       echo "rconcmd <cmd>     Execute RCON command on server"
@@ -546,7 +509,6 @@ case "$1" in
       echo "status            Returns the status of the current ARK server instance"
       echo "update            Check for a new ARK server version, if needed, stops the server, updates it, and starts it again"
       echo "update --force    Apply update without check the current version"
-      echo "update --safe     Wait for server to perform world save and update."
       echo "upgrade           Check for a new ARK Server Tools version and upgrades it if needed"
     ;;
     *)
