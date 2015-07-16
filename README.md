@@ -68,19 +68,19 @@ arkmanager install
 To get a complete list of the script commands you can run `arkmanager --help` or `arkmanager -h`.
 
 #### arkmanager install
-installs arkmanager to the directory specified in `/etc/arkmanager/arkmanager.cfg` or `~/.arkmanager.cfg`.
+Installs arkmanager to the directory specified in `/etc/arkmanager/arkmanager.cfg` or `~/.arkmanager.cfg`.
 
 #### arkmanager start
-starts ARK server
+Starts ARK server
 
 #### arkmanager stop
-stops ARK server
+Stops ARK server
 
 #### arkmanager restart
-restarts ARK server
+Restarts ARK server
 
 #### arkmanager update
-manually updates ARK server if a new version is available
+Manually updates ARK server if a new version is available
 
 #### arkmanager update --force
 Apply update without check the current version
@@ -99,6 +99,22 @@ Check for a new ARK Server Tools version and upgrades it if needed
 
 #### arkmanager backup
 Saves a backup of your server inside the backup directory
+
+#### arkmanager broadcast "message"
+Broadcast a message to all curently connected players. Example:
+```
+arkmanager broadcast "Hi, admin there"
+```
+
+#### arkmanager saveworld
+Saves the current world.
+
+#### arkmanager rcon <cmd>
+Run a rcon command on the server. Example:
+```
+arkmanager rcon "ListPlayers"
+```
+Full list of available command here: https://www.streamline-servers.com/billing/knowledgebase/75/ARK-Survival-Evolved-Admin-Commands.html
 
 ## Credits
 
