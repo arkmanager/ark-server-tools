@@ -109,10 +109,10 @@ arkmanager broadcast "Hi, admin there"
 #### arkmanager saveworld
 Saves the current world.
 
-#### arkmanager rcon <cmd>
+#### arkmanager rconcmd <cmd>
 Run a rcon command on the server. Example:
 ```
-arkmanager rcon "ListPlayers"
+arkmanager rconcmd "ListPlayers"
 ```
 Full list of available command here: https://www.streamline-servers.com/billing/knowledgebase/75/ARK-Survival-Evolved-Admin-Commands.html
 
