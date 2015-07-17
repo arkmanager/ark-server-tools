@@ -439,7 +439,7 @@ case "$1" in
       doUpgrade
     ;;
     -h|--help)
-      echo -e "Usage: arkmanager[OPTION]\n"
+      echo -e "Usage: arkmanager [OPTION]\n"
       echo "Option            Description"
       echo "backup            Saves a backup of your server inside the backup directory"
       echo "checkupdate       Check for a new ARK server version"
