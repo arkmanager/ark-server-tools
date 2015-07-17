@@ -429,6 +429,11 @@ doBackup(){
     sleep 2
     cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/${serverMap}.ark" "${backupdir}/${serverMap}.ark"
   fi
+  # If both attempts fail, server may have
+  # crashed between unlink and rename
+  if [ ! -f "${backupdir}/${serverMap}.ark" ]; then
+    cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/${serverMap}.tmp" "${backupdir}/${serverMap}.ark"
+  fi
   if [ -f "${backupdir}/${serverMap}.ark" ]; then
     echo -e "${NORMAL}[   ${GREEN}OK${NORMAL}   ]"
   else
@@ -447,6 +452,11 @@ doBackup(){
       sleep 2
       cp -p "${f}" "${backupdir}/${f##*/}"
     fi
+    # If both attempts fail, server may have
+    # crashed between truncate and write
+    if [ ! -s "${backupdir}/${f##*/}" ]; then
+      cp -p "${f%.arkprofile}.tmpprofile" "${backupdir}/${f##*/}"
+    fi
     if [ -s "${backupdir}/${f##*/}" ]; then
       echo -e "${NORMAL}[   ${GREEN}OK${NORMAL}   ]"
     else
@@ -462,6 +472,11 @@ doBackup(){
     if [ ! -s "${backupdir}/${f##*/}" ]; then
       sleep 2
       cp -p "${f}" "${backupdir}/${f##*/}"
+    fi
+    # If both attempts fail, server may have
+    # crashed between truncate and write
+    if [ ! -s "${backupdir}/${f##*/}" ]; then
+      cp -p "${f%.arktribe}.tmptribe" "${backupdir}/${f##*/}"
     fi
     if [ -s "${backupdir}/${f##*/}" ]; then
       echo -e "${NORMAL}[   ${GREEN}OK${NORMAL}   ]"
