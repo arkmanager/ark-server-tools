@@ -114,7 +114,7 @@ Run a rcon command on the server. Example:
 ```
 arkmanager rconcmd "ListPlayers"
 ```
-Full list of available command here: https://www.streamline-servers.com/billing/knowledgebase/75/ARK-Survival-Evolved-Admin-Commands.html
+Full list of available command here: http://steamcommunity.com/sharedfiles/filedetails/?id=454529617&searchtext=admin
 
 ## Credits
 
