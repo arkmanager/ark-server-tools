@@ -276,7 +276,7 @@ function isTheServerUp(){
 # run function
 #
 doRun() {
-  arkserveropts=$serverMap
+  arkserveropts="$serverMap"
 
   # bring in ark_... options
   for varname in "${!ark_@}"; do
@@ -402,7 +402,7 @@ doSafeUpdate(){
   cd "$arkserverroot"
   
   if isUpdateNeeded; then
-    while [ ! `find $arkserverroot/ShooterGame/Saved/SavedArks -mmin -1 -name $serverMap.ark` ]; do
+    while [ ! `find $arkserverroot/ShooterGame/Saved/SavedArks -mmin -1 -name ${serverMap##*/}.ark` ]; do
 	  echo "`timestamp`: Save file older than 1 minute. Delaying update." >> "$logdir/update.log"
 	  sleep 30s
     done
@@ -421,10 +421,82 @@ doBackup(){
   local datestamp=`date +"%Y-%m-%d_%H.%M.%S"`
   local backupdir="${arkbackupdir}/${datestamp}"
   mkdir -p "$backupdir"
-  cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/${serverMap}.ark" "${backupdir}/${serverMap}.ark"
-  cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/"*.arkprofile "${backupdir}"
-  cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/"*.arktribe "${backupdir}"
-  cp -p "${arkserverroot}/ShooterGame/Saved/Config/LinuxServer/GameUserSettings.ini" "${backupdir}"
+
+  # ARK server uses Write-Unlink-Rename
+  echo -ne "${NORMAL} Copying ARK world file "
+  cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/${serverMap##*/}.ark" "${backupdir}/${serverMap##*/}.ark"
+  if [ ! -f "${backupdir}/${serverMap##*/}.ark" ]; then
+    sleep 2
+    cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/${serverMap##*/}.ark" "${backupdir}/${serverMap##*/}.ark"
+  fi
+  # If both attempts fail, server may have
+  # crashed between unlink and rename
+  if [ ! -f "${backupdir}/${serverMap##*/}.ark" ]; then
+    cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/${serverMap}.tmp" "${backupdir##*/}/${serverMap##*/}.ark"
+  fi
+  if [ -f "${backupdir}/${serverMap##*/}.ark" ]; then
+    echo -e "${NORMAL}[   ${GREEN}OK${NORMAL}   ]"
+  else
+    echo -e "${NORMAL}[ ${RED}FAILED${NORMAL} ]"
+  fi
+
+  # ARK server uses Lock-Truncate-Write-Unlock
+  # Unfortunately we can't lock the file, as 
+  # ARK server uses a non-blocking lock and will
+  # fail to update the file if the lock fails.
+  echo -e "${NORMAL} Copying ARK profile files"
+  for f in "${arkserverroot}/ShooterGame/Saved/SavedArks/"*.arkprofile; do
+    echo -ne "${NORMAL}   ${f##*/} "
+    cp -p "${f}" "${backupdir}/${f##*/}"
+    if [ ! -s "${backupdir}/${f##*/}" ]; then
+      sleep 2
+      cp -p "${f}" "${backupdir}/${f##*/}"
+    fi
+    # If both attempts fail, server may have
+    # crashed between truncate and write
+    if [ ! -s "${backupdir}/${f##*/}" ]; then
+      cp -p "${f%.arkprofile}.tmpprofile" "${backupdir}/${f##*/}"
+    fi
+    if [ -s "${backupdir}/${f##*/}" ]; then
+      echo -e "${NORMAL}[   ${GREEN}OK${NORMAL}   ]"
+    else
+      echo -e "${NORMAL}[ ${RED}FAILED${NORMAL} ]"
+    fi
+  done
+
+  # ARK server uses Lock-Truncate-Write-Unlock
+  echo -e "${NORMAL} Copying ARK tribe files "
+  for f in "${arkserverroot}/ShooterGame/Saved/SavedArks/"*.arktribe; do
+    echo -ne "${NORMAL}   ${f##*/} "
+    cp -p "${f}" "${backupdir}/${f##*/}"
+    if [ ! -s "${backupdir}/${f##*/}" ]; then
+      sleep 2
+      cp -p "${f}" "${backupdir}/${f##*/}"
+    fi
+    # If both attempts fail, server may have
+    # crashed between truncate and write
+    if [ ! -s "${backupdir}/${f##*/}" ]; then
+      cp -p "${f%.arktribe}.tmptribe" "${backupdir}/${f##*/}"
+    fi
+    if [ -s "${backupdir}/${f##*/}" ]; then
+      echo -e "${NORMAL}[   ${GREEN}OK${NORMAL}   ]"
+    else
+      echo -e "${NORMAL}[ ${RED}FAILED${NORMAL} ]"
+    fi
+  done
+
+  # ARK server uses Lock-Truncate-Write-Unlock
+  echo -ne "${NORMAL} Copying GameUserSettings.ini "
+  cp -p "${arkserverroot}/ShooterGame/Saved/Config/LinuxServer/GameUserSettings.ini" "${backupdir}/GameUserSettings.ini"
+  if [ ! -s "${backupdir}/GameUserSettings.ini" ]; then
+    sleep 2
+    cp -p "${f}" "${backupdir}/${f##*/}"
+  fi
+  if [ -f "${backupdir}/GameUserSettings.ini" ]; then
+    echo -e "${NORMAL}[   ${GREEN}OK${NORMAL}   ]"
+  else
+    echo -e "${NORMAL}[ ${RED}FAILED${NORMAL} ]"
+  fi
 }
 
 #
