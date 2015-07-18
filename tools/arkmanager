@@ -276,7 +276,7 @@ function isTheServerUp(){
 # run function
 #
 doRun() {
-  arkserveropts=$serverMap
+  arkserveropts="$serverMap"
 
   # bring in ark_... options
   for varname in "${!ark_@}"; do
@@ -402,7 +402,7 @@ doSafeUpdate(){
   cd "$arkserverroot"
   
   if isUpdateNeeded; then
-    while [ ! `find $arkserverroot/ShooterGame/Saved/SavedArks -mmin -1 -name $serverMap.ark` ]; do
+    while [ ! `find $arkserverroot/ShooterGame/Saved/SavedArks -mmin -1 -name ${serverMap##*/}.ark` ]; do
 	  echo "`timestamp`: Save file older than 1 minute. Delaying update." >> "$logdir/update.log"
 	  sleep 30s
     done
@@ -424,17 +424,17 @@ doBackup(){
 
   # ARK server uses Write-Unlink-Rename
   echo -ne "${NORMAL} Copying ARK world file "
-  cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/${serverMap}.ark" "${backupdir}/${serverMap}.ark"
-  if [ ! -f "${backupdir}/${serverMap}.ark" ]; then
+  cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/${serverMap##*/}.ark" "${backupdir}/${serverMap##*/}.ark"
+  if [ ! -f "${backupdir}/${serverMap##*/}.ark" ]; then
     sleep 2
-    cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/${serverMap}.ark" "${backupdir}/${serverMap}.ark"
+    cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/${serverMap##*/}.ark" "${backupdir}/${serverMap##*/}.ark"
   fi
   # If both attempts fail, server may have
   # crashed between unlink and rename
-  if [ ! -f "${backupdir}/${serverMap}.ark" ]; then
-    cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/${serverMap}.tmp" "${backupdir}/${serverMap}.ark"
+  if [ ! -f "${backupdir}/${serverMap##*/}.ark" ]; then
+    cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/${serverMap}.tmp" "${backupdir##*/}/${serverMap##*/}.ark"
   fi
-  if [ -f "${backupdir}/${serverMap}.ark" ]; then
+  if [ -f "${backupdir}/${serverMap##*/}.ark" ]; then
     echo -e "${NORMAL}[   ${GREEN}OK${NORMAL}   ]"
   else
     echo -e "${NORMAL}[ ${RED}FAILED${NORMAL} ]"
