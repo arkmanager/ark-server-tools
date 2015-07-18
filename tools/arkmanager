@@ -31,8 +31,6 @@ if [ -x /usr/sbin/lsof ]; then
 fi
 
 # Local variables
-info=""
-thejob=""
 instver=""
 bnumber=""
 GREEN="\\033[1;32m"
@@ -400,7 +398,7 @@ forceUpdate(){
 #
 doSafeUpdate(){
   cd "$arkserverroot"
-  
+
   if isUpdateNeeded; then
     while [ ! `find $arkserverroot/ShooterGame/Saved/SavedArks -mmin -1 -name ${serverMap##*/}.ark` ]; do
 	  echo "`timestamp`: Save file older than 1 minute. Delaying update." >> "$logdir/update.log"
