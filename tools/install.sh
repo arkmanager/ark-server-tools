@@ -28,6 +28,9 @@ if [ ! -z "$1" ]; then
       cp -n arkmanager.cfg "${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg"
       sed -i "s|^steamcmd_user=\"steam\"|steamcmd_user=\"me\"|;s|\"/home/steam|\"${PREFIX}|;s|/var/log/arktools|${PREFIX}/logs/arktools|" "${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg"
     fi
+  elif [ "$1" == "me" ]; then
+    echo "You specified the special 'me' user while running as root. This is not permitted."
+    exit 1
   else
     # Copy arkmanager to /usr/bin and set permissions
     cp arkmanager "${INSTALL_ROOT}${EXECPREFIX}/bin/arkmanager"
