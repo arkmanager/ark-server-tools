@@ -557,7 +557,8 @@ doUpgrade() {
 # check the configuration and throw errors or warnings if needed
 checkConfig
 
-case "$1" in
+while true; do
+  case "$1" in
     start)
         doStart
     ;;
@@ -578,8 +579,10 @@ case "$1" in
     update)
         if [ "$2" == "--force" ]; then
           forceUpdate
+	  shift
         elif [ "$2" == "--safe" ]; then
           doSafeUpdate
+	  shift
         else
           doUpdate
         fi
@@ -592,12 +595,14 @@ case "$1" in
     ;;
     broadcast)
       doBroadcast "$2"
+      shift
     ;;
     saveworld)
       doSaveWorld
     ;;
     rconcmd)
       rconcmd "$2"
+      shift
     ;;
     status)
       printStatus
@@ -622,9 +627,16 @@ case "$1" in
       echo "update --force    Apply update without check the current version"
       echo "update --safe     Wait for server to perform world save and update."
       echo "upgrade           Check for a new ARK Server Tools version and upgrades it if needed"
+      exit 1
     ;;
     *)
       echo "arkmanager v${arkstVersion}: no command specified"
       echo "Try 'arkmanager -h' or 'arkmanager --help' for more information."
+      exit 1
     ;;
-esac
+  esac
+  shift
+  if [ $# -eq 0 ]; then
+    break
+  fi
+done
