@@ -328,7 +328,7 @@ doStop() {
     echo "Stopping server..."
     # kill the server with the PID
     PID=`ps -ef | grep "$arkserverroot/$arkserverexec" | grep -v grep | awk '{print $2}'`
-    kill -9 $PID
+    kill -INT $PID
 
     tput rc; tput ed;
     echo "The server has been stopped"
