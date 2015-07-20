@@ -652,7 +652,12 @@ while true; do
       exit 1
     ;;
     *)
-      echo "arkmanager v${arkstVersion}: no command specified"
+      echo -n "arkmanager v${arkstVersion}: "
+      if [ $# -eq 0 ]; then
+        echo "no command specified"
+      else
+        echo "unknown command '$1' specified"
+      fi
       echo "Try 'arkmanager -h' or 'arkmanager --help' for more information."
       exit 1
     ;;
