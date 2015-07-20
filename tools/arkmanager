@@ -328,7 +328,7 @@ doStop() {
     echo "Stopping server..."
     # kill the server with the PID
     PID=`ps -ef | grep "$arkserverroot/$arkserverexec" | grep -v grep | awk '{print $2}'`
-    kill -9 $PID
+    kill -INT $PID
 
     tput rc; tput ed;
     echo "The server has been stopped"
@@ -531,19 +531,33 @@ printStatus(){
 }
 
 doUpgrade() {
+  local sudo=sudo
+  if [ "$steamcmd_user" == "me" ]; then
+    sudo=
+  fi
   echo "arkmanager v${arkstVersion}: Checking for updates..."
   arkstLatestVersion=`curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/.version`
   if [[ $arkstLatestVersion > $arkstVersion ]]; then
     read -p "A new version was found! Do you want to upgrade ARK Server Tools to v${$arkstLatestVersion}?" -n 1 -r
     echo -en "\n"
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/netinstall.sh | sudo bash -s ${steamcmd_user} ${arkstChannel}
+        curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/netinstall.sh | $sudo bash -s ${steamcmd_user} ${arkstChannel}
       else
         exit 0
     fi
   else
     echo "Your ARK server tools are already up to date"
   fi
+}
+
+useConfig() {
+  for varname in "${!configfile_@}"; do
+    if [ "configfile_$1" == "$varname" ]; then
+      source "${!varname}"
+      return
+    fi
+  done
+  source "$1"
 }
 
 #---------------------
@@ -553,7 +567,8 @@ doUpgrade() {
 # check the configuration and throw errors or warnings if needed
 checkConfig
 
-case "$1" in
+while true; do
+  case "$1" in
     start)
         doStart
     ;;
@@ -574,8 +589,10 @@ case "$1" in
     update)
         if [ "$2" == "--force" ]; then
           forceUpdate
+	  shift
         elif [ "$2" == "--safe" ]; then
           doSafeUpdate
+	  shift
         else
           doUpdate
         fi
@@ -588,12 +605,14 @@ case "$1" in
     ;;
     broadcast)
       doBroadcast "$2"
+      shift
     ;;
     saveworld)
       doSaveWorld
     ;;
     rconcmd)
       rconcmd "$2"
+      shift
     ;;
     status)
       printStatus
@@ -601,8 +620,12 @@ case "$1" in
     upgrade)
       doUpgrade
     ;;
+    useconfig)
+      useConfig "$2"
+      shift
+    ;;
     -h|--help)
-      echo -e "Usage: arkmanager[OPTION]\n"
+      echo -e "Usage: arkmanager [OPTION]\n"
       echo "Option            Description"
       echo "backup            Saves a backup of your server inside the backup directory"
       echo "broadcast <msg>   Sends a message to all users connected to server"
@@ -618,9 +641,22 @@ case "$1" in
       echo "update --force    Apply update without check the current version"
       echo "update --safe     Wait for server to perform world save and update."
       echo "upgrade           Check for a new ARK Server Tools version and upgrades it if needed"
+      echo "useconfig <name>  Use the configuration overrides in the specified config name or file"
+      exit 1
     ;;
     *)
-      echo "arkmanager v${arkstVersion}: no command specified"
+      echo -n "arkmanager v${arkstVersion}: "
+      if [ $# -eq 0 ]; then
+        echo "no command specified"
+      else
+        echo "unknown command '$1' specified"
+      fi
       echo "Try 'arkmanager -h' or 'arkmanager --help' for more information."
+      exit 1
     ;;
-esac
+  esac
+  shift
+  if [ $# -eq 0 ]; then
+    break
+  fi
+done
