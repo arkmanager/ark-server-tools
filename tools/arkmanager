@@ -572,6 +572,16 @@ doUpgrade() {
   fi
 }
 
+useConfig() {
+  for varname in "${!configfile_@}"; do
+    if [ "configfile_$1" == "$varname" ]; then
+      source "${!varname}"
+      return
+    fi
+  done
+  source "$1"
+}
+
 #---------------------
 # Main program
 #---------------------
@@ -632,6 +642,10 @@ while true; do
     upgrade)
       doUpgrade
     ;;
+    useconfig)
+      useConfig "$2"
+      shift
+    ;;
     -h|--help)
       echo -e "Usage: arkmanager[OPTION]\n"
       echo "Option            Description"
@@ -649,6 +663,7 @@ while true; do
       echo "update --force    Apply update without check the current version"
       echo "update --safe     Wait for server to perform world save and update."
       echo "upgrade           Check for a new ARK Server Tools version and upgrades it if needed"
+      echo "useconfig <name>  Use the configuration overrides in the specified config name or file"
       exit 1
     ;;
     *)
