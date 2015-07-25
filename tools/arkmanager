@@ -334,13 +334,27 @@ doStop() {
   if isTheServerRunning; then
     tput sc
     echo "Stopping server..."
+    echo "`timestamp`: stopping" >> "$logdir/$arkmanagerLog"
     # kill the server with the PID
     PID=`getServerPID`
     kill -INT $PID
 
+    for (( i = 0; i < 10; i++ )); do
+      sleep 1
+      if ! isTheServerRunning; then
+        break
+      fi
+    done
+
+    if isTheServerRunning; then
+      tput rc
+      echo "Killing server..."
+      kill -KILL $PID
+    fi
+
     tput rc; tput ed;
     echo "The server has been stopped"
-    echo "`timestamp`: stop" >> "$logdir/$arkmanagerLog"
+    echo "`timestamp`: stopped" >> "$logdir/$arkmanagerLog"
   else
     echo "The server is already stopped"
   fi
