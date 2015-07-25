@@ -585,7 +585,7 @@ case "$1" in
     restart)
         doStop
         echo "`timestamp`: stop" >> "$logdir/$arkmanagerLog"
-        sleep 10
+        sleep 1
         doStart
         echo "`timestamp`: start" >> "$logdir/$arkmanagerLog"
         echo "`timestamp`: restart" >> "$logdir/$arkmanagerLog"
