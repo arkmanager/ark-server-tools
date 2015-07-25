@@ -244,13 +244,21 @@ function getAvailableVersion(){
 }
 
 #
+# Get the PID of the server process
+#
+function getServerPID(){
+  ps -ef | grep "$arkserverroot/$arkserverexec" | grep -v grep | awk '{print $2}'
+}
+
+#
 # Check id the server process is alive
 #
 function isTheServerRunning(){
-  SERVICE="ShooterGameServer"
-  ps aux | grep -v grep | grep $SERVICE > /dev/null
-  result=$?
-  return $result
+  if [ -n "`getServerPID`" ]; then
+    return 0
+  else
+    return 1
+  fi
 }
 
 #
@@ -327,7 +335,7 @@ doStop() {
     tput sc
     echo "Stopping server..."
     # kill the server with the PID
-    PID=`ps -ef | grep "$arkserverroot/$arkserverexec" | grep -v grep | awk '{print $2}'`
+    PID=`getServerPID`
     kill -INT $PID
 
     tput rc; tput ed;
