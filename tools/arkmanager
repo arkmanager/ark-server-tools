@@ -244,13 +244,21 @@ function getAvailableVersion(){
 }
 
 #
+# Get the PID of the server process
+#
+function getServerPID(){
+  ps -ef | grep "$arkserverroot/$arkserverexec" | grep -v grep | awk '{print $2}'
+}
+
+#
 # Check id the server process is alive
 #
 function isTheServerRunning(){
-  SERVICE="ShooterGameServer"
-  ps aux | grep -v grep | grep $SERVICE > /dev/null
-  result=$?
-  return $result
+  if [ -n "`getServerPID`" ]; then
+    return 0
+  else
+    return 1
+  fi
 }
 
 #
@@ -326,13 +334,27 @@ doStop() {
   if isTheServerRunning; then
     tput sc
     echo "Stopping server..."
+    echo "`timestamp`: stopping" >> "$logdir/$arkmanagerLog"
     # kill the server with the PID
-    PID=`ps -ef | grep "$arkserverroot/$arkserverexec" | grep -v grep | awk '{print $2}'`
-    kill -9 $PID
+    PID=`getServerPID`
+    kill -INT $PID
+
+    for (( i = 0; i < 10; i++ )); do
+      sleep 1
+      if ! isTheServerRunning; then
+        break
+      fi
+    done
+
+    if isTheServerRunning; then
+      tput rc
+      echo "Killing server..."
+      kill -KILL $PID
+    fi
 
     tput rc; tput ed;
     echo "The server has been stopped"
-    echo "`timestamp`: stop" >> "$logdir/$arkmanagerLog"
+    echo "`timestamp`: stopped" >> "$logdir/$arkmanagerLog"
   else
     echo "The server is already stopped"
   fi
@@ -563,7 +585,7 @@ case "$1" in
     restart)
         doStop
         echo "`timestamp`: stop" >> "$logdir/$arkmanagerLog"
-        sleep 10
+        sleep 1
         doStart
         echo "`timestamp`: start" >> "$logdir/$arkmanagerLog"
         echo "`timestamp`: restart" >> "$logdir/$arkmanagerLog"
