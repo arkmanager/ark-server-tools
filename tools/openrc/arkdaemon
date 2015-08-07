@@ -15,7 +15,7 @@ depend(){
 start(){
     ebegin "Starting ARK manager daemon"
     ulimit -n 100000
-    su -s /bin/sh -c "$DAEMON start" $steamcmd_user
+    su -s /bin/sh -c "$DAEMON start --all" $steamcmd_user
     sleep 5
     PID=`ps -ef | grep $NAME | grep -v grep | awk '{print $2}'`
     if  [ -n "$PID" ];  then
@@ -27,7 +27,7 @@ start(){
 
 stop(){
     ebegin "Stopping ARK manager daemon"
-    su -s /bin/sh -c "$DAEMON start" $steamcmd_user
+    su -s /bin/sh -c "$DAEMON stop --all" $steamcmd_user
     sleep 5
     PID=`ps -ef | grep $NAME | grep -v grep | awk '{print $2}'`
     if  [ -n "$PID" ];  then

@@ -3,8 +3,8 @@ Description=Daemon to start ark server
 After=network.target
 
 [Service]
-ExecStart=/usr/libexec/arkmanager/arkmanager.init start
-ExecStop=/usr/libexec/arkmanager/arkmanager.init stop
+ExecStart=/usr/libexec/arkmanager/arkmanager.init start --all
+ExecStop=/usr/libexec/arkmanager/arkmanager.init stop --all
 Type=forking
 PIDFile=/var/run/arkmanager.pid
 
