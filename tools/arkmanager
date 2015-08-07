@@ -339,6 +339,21 @@ doStart() {
 }
 
 #
+# starts all servers specified by configfile_xxxxx in config file
+#
+doStartAll(){
+  doStart
+  for cfg in "${!configfile_@}"; do
+    if [ -f "${!cfg}" ]; then
+      (
+        source "${!cfg}"
+        doStart
+      )
+    fi
+  done
+}
+
+#
 # stop the ARK server
 #
 doStop() {
@@ -369,6 +384,21 @@ doStop() {
   else
     echo "The server is already stopped"
   fi
+}
+
+#
+# stops all servers specified by configfile_xxxxx in config file
+#
+doStopAll(){
+  doStop
+  for cfg in "${!configfile_@}"; do
+    if [ -f "${!cfg}" ]; then
+      (
+        source "${!cfg}"
+        doStop
+      )
+    fi
+  done
 }
 
 #
@@ -718,16 +748,35 @@ checkConfig
 while true; do
   case "$1" in
     start)
-        doStart
+        if [ "$2" == "--all" ]; then
+          doStartAll
+          shift
+        else
+          doStart
+        fi
     ;;
     stop)
-        doStop
+        if [ "$2" == "--all" ]; then
+          doStopAll
+          shift
+        else
+          doStop
+        fi
     ;;
     restart)
-        doStop
+        if [ "$2" == "--all" ]; then
+	  doStopAll
+	else
+          doStop
+	fi
         echo "`timestamp`: stop" >> "$logdir/$arkmanagerLog"
         sleep 1
-        doStart
+	if [ "$2" == "--all" ]; then
+          doStartAll
+	  shift
+	else
+	  doStart
+	fi
         echo "`timestamp`: start" >> "$logdir/$arkmanagerLog"
         echo "`timestamp`: restart" >> "$logdir/$arkmanagerLog"
     ;;
@@ -786,8 +835,11 @@ while true; do
       echo "checkupdate       Check for a new ARK server version"
       echo "install           Install the ARK server files from steamcmd"
       echo "restart           Stops the server and then starts it"
+      echo "restart --all     Restarts all servers specified in configfile_xxxxx"
       echo "start             Starts the server"
+      echo "start --all       Starts all servers specified in configfile_xxxxx"
       echo "stop              Stops the server"
+      echo "stop --all        Stops all servers specified in configfile_xxxxx"
       echo "status            Returns the status of the current ARK server instance"
       echo "update            Check for a new ARK server version, if needed, stops the server, updates it, and starts it again"
       echo "update --force    Apply update without check the current version"
