@@ -284,6 +284,10 @@ function isTheServerUp(){
 doRun() {
   arkserveropts="$serverMap"
 
+  if [ -n "$serverMapModId" ]; then
+    arkserveropts="-MapModID=$serverMapModId"
+  fi
+
   # bring in ark_... options
   for varname in "${!ark_@}"; do
     name="${varname#ark_}"
@@ -442,6 +446,20 @@ doBackup(){
   local backupdir="${arkbackupdir}/${datestamp}"
   mkdir -p "$backupdir"
 
+  # extract the map name from the active map mod
+  if [ -n "$serverMapModId" ]; then
+    serverMap="$(perl -e '
+      my $data;
+      { local $/; $data = <>; }
+      my $mapnamelen = unpack("@0 L<", $data);
+      my $mapname = substr($data, 4, $mapnamelen - 1);
+      $mapnamelen += 4;
+      my $mapfilelen = unpack("@" . ($mapnamelen + 4) . " L<", $data);
+      my $mapfile = substr($data, $mapnamelen + 8, $mapfilelen - 1);
+      print $mapfile;
+    ' <"${arkserverroot}/ShooterGame/Content/Mods/${serverMapModId}/mod.info")"
+  fi
+
   # ARK server uses Write-Unlink-Rename
   echo -ne "${NORMAL} Copying ARK world file "
   cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/${serverMap##*/}.ark" "${backupdir}/${serverMap##*/}.ark"
@@ -452,7 +470,7 @@ doBackup(){
   # If both attempts fail, server may have
   # crashed between unlink and rename
   if [ ! -f "${backupdir}/${serverMap##*/}.ark" ]; then
-    cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/${serverMap}.tmp" "${backupdir##*/}/${serverMap##*/}.ark"
+    cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/${serverMap##*/}.tmp" "${backupdir##*/}/${serverMap##*/}.ark"
   fi
   if [ -f "${backupdir}/${serverMap##*/}.ark" ]; then
     echo -e "${NORMAL}[   ${GREEN}OK${NORMAL}   ]"
