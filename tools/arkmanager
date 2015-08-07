@@ -377,7 +377,7 @@ doUpgrade() {
   echo "arkmanager v${arkstVersion}: Checking for updates..."
   arkstLatestVersion=`curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/.version`
   if [[ $arkstLatestVersion > $arkstVersion ]]; then
-    read -p "A new version was found! Do you want to upgrade ARK Server Tools to v${$arkstLatestVersion}?" -n 1 -r
+    read -p "A new version was found! Do you want to upgrade ARK Server Tools to v${arkstLatestVersion}?" -n 1 -r
     echo -en "\n"
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/netinstall.sh | sudo bash -s ${steamcmd_user} ${arkstChannel}
