@@ -452,7 +452,7 @@ doBackup(){
   # If both attempts fail, server may have
   # crashed between unlink and rename
   if [ ! -f "${backupdir}/${serverMap##*/}.ark" ]; then
-    cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/${serverMap}.tmp" "${backupdir##*/}/${serverMap##*/}.ark"
+    cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/${serverMap##*/}.tmp" "${backupdir##*/}/${serverMap##*/}.ark"
   fi
   if [ -f "${backupdir}/${serverMap##*/}.ark" ]; then
     echo -e "${NORMAL}[   ${GREEN}OK${NORMAL}   ]"
