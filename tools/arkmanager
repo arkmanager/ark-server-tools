@@ -295,6 +295,8 @@ doRun() {
     arkserveropts="-MapModID=$serverMapModId"
   fi
 
+  arkextraopts=( )
+
   # bring in ark_... options
   for varname in "${!ark_@}"; do
     name="${varname#ark_}"
@@ -312,12 +314,23 @@ doRun() {
     fi
   done
 
+  # bring in arkflag_... flags
+  for varname in "${!arkflag_@}"; do
+    name="${varname#arkflag_}"
+    val="${!varname}"
+
+    if [ -n "$val" ]; then
+      arkextraopts=( "${arkextraopts[@]}" "-${name}" )
+    fi
+  done
+
+
   arkserveropts="${arkserveropts}?listen"
   # run the server in background
   echo "`timestamp`: start"
   # set max open files limit before we start the server
   ulimit -n $maxOpenFiles
-  "$arkserverroot/$arkserverexec" "$arkserveropts"
+  "$arkserverroot/$arkserverexec" "$arkserveropts" "${arkextraopts[@]}"
   echo "`timestamp`: exited with status $?"
 }
 
