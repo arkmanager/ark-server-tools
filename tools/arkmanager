@@ -586,6 +586,7 @@ doInstallMod(){
 doBackup(){
   local datestamp=`date +"%Y-%m-%d_%H.%M.%S"`
   local backupdir="${arkbackupdir}/${datestamp}"
+  local savedir="SavedArks"
   mkdir -p "$backupdir"
 
   # extract the map name from the active map mod
@@ -602,17 +603,22 @@ doBackup(){
     ' <"${arkserverroot}/ShooterGame/Content/Mods/${serverMapModId}/mod.info")"
   fi
 
+  # Get save directory name
+  if [ -n "${ark_AltSaveDirectoryName}" ]; then
+    savedir="${ark_AltSaveDirectoryName}"
+  fi
+
   # ARK server uses Write-Unlink-Rename
   echo -ne "${NORMAL} Copying ARK world file "
-  cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/${serverMap##*/}.ark" "${backupdir}/${serverMap##*/}.ark"
+  cp -p "${arkserverroot}/ShooterGame/Saved/${savedir}/${serverMap##*/}.ark" "${backupdir}/${serverMap##*/}.ark"
   if [ ! -f "${backupdir}/${serverMap##*/}.ark" ]; then
     sleep 2
-    cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/${serverMap##*/}.ark" "${backupdir}/${serverMap##*/}.ark"
+    cp -p "${arkserverroot}/ShooterGame/Saved/${savedir}/${serverMap##*/}.ark" "${backupdir}/${serverMap##*/}.ark"
   fi
   # If both attempts fail, server may have
   # crashed between unlink and rename
   if [ ! -f "${backupdir}/${serverMap##*/}.ark" ]; then
-    cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/${serverMap##*/}.tmp" "${backupdir##*/}/${serverMap##*/}.ark"
+    cp -p "${arkserverroot}/ShooterGame/Saved/${savedir}/${serverMap##*/}.tmp" "${backupdir##*/}/${serverMap##*/}.ark"
   fi
   if [ -f "${backupdir}/${serverMap##*/}.ark" ]; then
     echo -e "${NORMAL}[   ${GREEN}OK${NORMAL}   ]"
@@ -625,7 +631,7 @@ doBackup(){
   # ARK server uses a non-blocking lock and will
   # fail to update the file if the lock fails.
   echo -e "${NORMAL} Copying ARK profile files"
-  for f in "${arkserverroot}/ShooterGame/Saved/SavedArks/"*.arkprofile; do
+  for f in "${arkserverroot}/ShooterGame/Saved/${savedir}/"*.arkprofile; do
     echo -ne "${NORMAL}   ${f##*/} "
     cp -p "${f}" "${backupdir}/${f##*/}"
     if [ ! -s "${backupdir}/${f##*/}" ]; then
@@ -646,7 +652,7 @@ doBackup(){
 
   # ARK server uses Lock-Truncate-Write-Unlock
   echo -e "${NORMAL} Copying ARK tribe files "
-  for f in "${arkserverroot}/ShooterGame/Saved/SavedArks/"*.arktribe; do
+  for f in "${arkserverroot}/ShooterGame/Saved/${savedir}/"*.arktribe; do
     echo -ne "${NORMAL}   ${f##*/} "
     cp -p "${f}" "${backupdir}/${f##*/}"
     if [ ! -s "${backupdir}/${f##*/}" ]; then
