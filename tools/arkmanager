@@ -159,6 +159,14 @@ doBroadcast(){
 }
 
 #
+# Broadcast message with echo
+#
+doBroadcastWithEcho(){
+  echo "$1"
+  doBroadcast "$1"
+}
+
+#
 # Check if a new version is available but not apply it
 #
 function checkForUpdate(){
@@ -439,6 +447,51 @@ doSafeUpdate(){
 }
 
 #
+# Waits for a configurable number of minutes before updating the server
+#
+doWarnUpdate(){
+  cd "$arkserverroot"
+
+  if isUpdateNeeded; then
+    local pid=`getServerPID`
+    if [ -n "$pid" ]; then
+      local warnminutes=$(( arkwarnminutes ))
+      if (( warnminutes == 0 )); then
+        warnminutes=60
+      fi
+
+      local warnintervals=( 90 60 45 30 20 15 10 5 4 3 2 1 )
+
+      for warninterval in "${warnintervals[@]}"; do
+        if [ "`getServerPID`" != "$pid" ]; then
+          echo "Server has stopped.  Aborting update"
+        fi
+        if (( arkwarnminutes > warninterval )); then
+          doBroadcastWithEcho "This ARK server will shutdown for an update in $warnminutes minutes"
+          sleep $(( warnminutes - warninterval ))m
+          warnminutes=$warninterval
+        fi
+      done
+
+      local warnseconds=90
+      warnintervals=( 60 45 30 20 15 10 5 0 )
+      for warninterval in "${warnintervals[@]}"; do
+        if [ "`getServerPID`" != "$pid" ]; then
+          echo "Server has stopped.  Aborting update"
+        fi
+        doBroadcastWithEcho "This ARK server will shutdown for an update in $warnseconds seconds"
+        sleep $(( warnseconds - warninterval ))s
+      done
+    fi
+
+    if [ "`getServerPID`" != "$pid" ]; then
+      echo "Server has stopped.  Aborting update"
+    fi
+    doUpdate
+  fi
+}
+
+#
 # Copies server state to a backup directory
 #
 doBackup(){
@@ -633,6 +686,9 @@ while true; do
         elif [ "$2" == "--safe" ]; then
           doSafeUpdate
 	  shift
+        elif [ "$2" == "--warn" ]; then
+          doWarnUpdate
+          shift
         else
           doUpdate
         fi
@@ -680,6 +736,7 @@ while true; do
       echo "update            Check for a new ARK server version, if needed, stops the server, updates it, and starts it again"
       echo "update --force    Apply update without check the current version"
       echo "update --safe     Wait for server to perform world save and update."
+      echo "update --warn     Warn players before updating server"
       echo "upgrade           Check for a new ARK Server Tools version and upgrades it if needed"
       echo "useconfig <name>  Use the configuration overrides in the specified config name or file"
       exit 1
