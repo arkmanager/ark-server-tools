@@ -31,8 +31,6 @@ if [ -x /usr/sbin/lsof ]; then
 fi
 
 # Local variables
-info=""
-thejob=""
 instver=""
 bnumber=""
 GREEN="\\033[1;32m"
@@ -84,6 +82,80 @@ checkConfig() {
   if [ ! -w "$logdir" ] ; then
     echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tYou have not rights to write in the log directory."
   fi
+}
+
+#
+# Get server admin password
+#
+getAdminPassword() {
+  if [ -n "${ark_ServerAdminPassword}" ]; then
+    echo "${ark_ServerAdminPassword}"
+  else
+    sed -ne '/^\[ServerSettings\]/,/^\[.*\]/{s/^ServerAdminPassword[[:space:]]*=[[:space:]]*//p;}' "${arkserverroot}/ShooterGame/Saved/Config/LinuxServer/GameUserSettings.ini"
+  fi
+}
+
+#
+# Execute RCON command
+#
+rconcmd() {
+  perl -MSocket -e '
+    sub sendpkt {
+      my ($sock, $reqid, $reqtype, $body) = @_;
+      my $packet = pack("VVV", length($body) + 10, $reqid, $reqtype) . $body . "\0\0";
+      send($sock, $packet, 0) or die "Error sending command to server";
+    }
+
+    sub recvpkt {
+      my ($sock) = @_;
+      my $data = "";
+      recv($sock, $data, 12, 0);
+      my ($pktlen, $resid, $restype) = unpack("VVV", $data);
+      recv($sock, $data, $pktlen - 8, 0);
+      return ($resid, $restype, substr($data, 0, $pktlen - 10));
+    }
+
+    sub auth {
+      my ($sock, $password) = @_;
+      my $reqid = 1;
+      sendpkt($sock, $reqid, 3, $password);
+      my ($resid, $restype, $rcvbody) = recvpkt($sock);
+      die "Authentication failed" if $resid == -1;
+    }
+
+    my $port = $ARGV[0];
+    my $password = $ARGV[1];
+    my $command = $ARGV[2];
+    socket(my $socket, PF_INET, SOCK_STREAM, 0);
+    setsockopt($socket, SOL_SOCKET, SO_RCVTIMEO, pack("i4", 30, 0, 0, 0));
+    my $sockaddr = pack_sockaddr_in($port, inet_aton("127.0.0.1"));
+    connect($socket, $sockaddr) or die "Error connecting to server";
+    auth($socket, $password);
+    sendpkt($socket, 2, 2, $command);
+    my ($resid, $restype, $rcvbody) = recvpkt($socket);
+    print $rcvbody, "\n";
+    ' "${ark_RCONPort}" "`getAdminPassword`" "$1"
+}
+
+#
+# Save world
+#
+doSaveWorld() {
+  rconcmd saveworld
+}
+
+#
+# Exit cleanly
+#
+doExitServer() {
+  rconcmd doexit
+}
+
+#
+# Broadcast message
+#
+doBroadcast(){
+  rconcmd "broadcast $1" >/dev/null
 }
 
 #
@@ -172,13 +244,21 @@ function getAvailableVersion(){
 }
 
 #
+# Get the PID of the server process
+#
+function getServerPID(){
+  ps -ef | grep "$arkserverroot/$arkserverexec" | grep -v grep | awk '{print $2}'
+}
+
+#
 # Check id the server process is alive
 #
 function isTheServerRunning(){
-  SERVICE="ShooterGameServer"
-  ps aux | grep -v grep | grep $SERVICE > /dev/null
-  result=$?
-  return $result
+  if [ -n "`getServerPID`" ]; then
+    return 0
+  else
+    return 1
+  fi
 }
 
 #
@@ -202,7 +282,11 @@ function isTheServerUp(){
 # run function
 #
 doRun() {
-  arkserveropts=$serverMap
+  arkserveropts="$serverMap"
+
+  if [ -n "$serverMapModId" ]; then
+    arkserveropts="-MapModID=$serverMapModId"
+  fi
 
   # bring in ark_... options
   for varname in "${!ark_@}"; do
@@ -254,13 +338,27 @@ doStop() {
   if isTheServerRunning; then
     tput sc
     echo "Stopping server..."
+    echo "`timestamp`: stopping" >> "$logdir/$arkmanagerLog"
     # kill the server with the PID
-    PID=`ps -ef | grep "$arkserverroot/$arkserverexec" | grep -v grep | awk '{print $2}'`
-    kill -9 $PID
+    PID=`getServerPID`
+    kill -INT $PID
+
+    for (( i = 0; i < 10; i++ )); do
+      sleep 1
+      if ! isTheServerRunning; then
+        break
+      fi
+    done
+
+    if isTheServerRunning; then
+      tput rc
+      echo "Killing server..."
+      kill -KILL $PID
+    fi
 
     tput rc; tput ed;
     echo "The server has been stopped"
-    echo "`timestamp`: stop" >> "$logdir/$arkmanagerLog"
+    echo "`timestamp`: stopped" >> "$logdir/$arkmanagerLog"
   else
     echo "The server is already stopped"
   fi
@@ -326,9 +424,9 @@ forceUpdate(){
 #
 doSafeUpdate(){
   cd "$arkserverroot"
-  
+
   if isUpdateNeeded; then
-    while [ ! `find $arkserverroot/ShooterGame/Saved/SavedArks -mmin -1 -name $serverMap.ark` ]; do
+    while [ ! `find $arkserverroot/ShooterGame/Saved/SavedArks -mmin -1 -name ${serverMap##*/}.ark` ]; do
 	  echo "`timestamp`: Save file older than 1 minute. Delaying update." >> "$logdir/update.log"
 	  sleep 30s
     done
@@ -347,10 +445,96 @@ doBackup(){
   local datestamp=`date +"%Y-%m-%d_%H.%M.%S"`
   local backupdir="${arkbackupdir}/${datestamp}"
   mkdir -p "$backupdir"
-  cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/${serverMap}.ark" "${backupdir}/${serverMap}.ark"
-  cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/"*.arkprofile "${backupdir}"
-  cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/"*.arktribe "${backupdir}"
-  cp -p "${arkserverroot}/ShooterGame/Saved/Config/LinuxServer/GameUserSettings.ini" "${backupdir}"
+
+  # extract the map name from the active map mod
+  if [ -n "$serverMapModId" ]; then
+    serverMap="$(perl -e '
+      my $data;
+      { local $/; $data = <>; }
+      my $mapnamelen = unpack("@0 L<", $data);
+      my $mapname = substr($data, 4, $mapnamelen - 1);
+      $mapnamelen += 4;
+      my $mapfilelen = unpack("@" . ($mapnamelen + 4) . " L<", $data);
+      my $mapfile = substr($data, $mapnamelen + 8, $mapfilelen - 1);
+      print $mapfile;
+    ' <"${arkserverroot}/ShooterGame/Content/Mods/${serverMapModId}/mod.info")"
+  fi
+
+  # ARK server uses Write-Unlink-Rename
+  echo -ne "${NORMAL} Copying ARK world file "
+  cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/${serverMap##*/}.ark" "${backupdir}/${serverMap##*/}.ark"
+  if [ ! -f "${backupdir}/${serverMap##*/}.ark" ]; then
+    sleep 2
+    cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/${serverMap##*/}.ark" "${backupdir}/${serverMap##*/}.ark"
+  fi
+  # If both attempts fail, server may have
+  # crashed between unlink and rename
+  if [ ! -f "${backupdir}/${serverMap##*/}.ark" ]; then
+    cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/${serverMap##*/}.tmp" "${backupdir##*/}/${serverMap##*/}.ark"
+  fi
+  if [ -f "${backupdir}/${serverMap##*/}.ark" ]; then
+    echo -e "${NORMAL}[   ${GREEN}OK${NORMAL}   ]"
+  else
+    echo -e "${NORMAL}[ ${RED}FAILED${NORMAL} ]"
+  fi
+
+  # ARK server uses Lock-Truncate-Write-Unlock
+  # Unfortunately we can't lock the file, as 
+  # ARK server uses a non-blocking lock and will
+  # fail to update the file if the lock fails.
+  echo -e "${NORMAL} Copying ARK profile files"
+  for f in "${arkserverroot}/ShooterGame/Saved/SavedArks/"*.arkprofile; do
+    echo -ne "${NORMAL}   ${f##*/} "
+    cp -p "${f}" "${backupdir}/${f##*/}"
+    if [ ! -s "${backupdir}/${f##*/}" ]; then
+      sleep 2
+      cp -p "${f}" "${backupdir}/${f##*/}"
+    fi
+    # If both attempts fail, server may have
+    # crashed between truncate and write
+    if [ ! -s "${backupdir}/${f##*/}" ]; then
+      cp -p "${f%.arkprofile}.tmpprofile" "${backupdir}/${f##*/}"
+    fi
+    if [ -s "${backupdir}/${f##*/}" ]; then
+      echo -e "${NORMAL}[   ${GREEN}OK${NORMAL}   ]"
+    else
+      echo -e "${NORMAL}[ ${RED}FAILED${NORMAL} ]"
+    fi
+  done
+
+  # ARK server uses Lock-Truncate-Write-Unlock
+  echo -e "${NORMAL} Copying ARK tribe files "
+  for f in "${arkserverroot}/ShooterGame/Saved/SavedArks/"*.arktribe; do
+    echo -ne "${NORMAL}   ${f##*/} "
+    cp -p "${f}" "${backupdir}/${f##*/}"
+    if [ ! -s "${backupdir}/${f##*/}" ]; then
+      sleep 2
+      cp -p "${f}" "${backupdir}/${f##*/}"
+    fi
+    # If both attempts fail, server may have
+    # crashed between truncate and write
+    if [ ! -s "${backupdir}/${f##*/}" ]; then
+      cp -p "${f%.arktribe}.tmptribe" "${backupdir}/${f##*/}"
+    fi
+    if [ -s "${backupdir}/${f##*/}" ]; then
+      echo -e "${NORMAL}[   ${GREEN}OK${NORMAL}   ]"
+    else
+      echo -e "${NORMAL}[ ${RED}FAILED${NORMAL} ]"
+    fi
+  done
+
+  # ARK server uses Lock-Truncate-Write-Unlock
+  echo -ne "${NORMAL} Copying GameUserSettings.ini "
+  cp -p "${arkserverroot}/ShooterGame/Saved/Config/LinuxServer/GameUserSettings.ini" "${backupdir}/GameUserSettings.ini"
+  if [ ! -s "${backupdir}/GameUserSettings.ini" ]; then
+    sleep 2
+    cp -p "${f}" "${backupdir}/${f##*/}"
+  fi
+  if [ -f "${backupdir}/GameUserSettings.ini" ]; then
+    echo -e "${NORMAL}[   ${GREEN}OK${NORMAL}   ]"
+  else
+    echo -e "${NORMAL}[ ${RED}FAILED${NORMAL} ]"
+  fi
 }
 
 #
@@ -367,26 +551,53 @@ printStatus(){
     echo -e "$NORMAL" "Server online: " "$RED" "No" "$NORMAL"
   else
     echo -e "$NORMAL" "Server online: " "$GREEN" "Yes" "$NORMAL"
+    perl -MSocket -e '
+      my $port = int($ARGV[0]);
+      socket(my $socket, PF_INET, SOCK_DGRAM, 0);
+      setsockopt($socket, SOL_SOCKET, SO_RCVTIMEO, pack("i4", 1, 0, 0, 0));
+      my $sockaddr = pack_sockaddr_in($port, inet_aton("127.0.0.1"));
+      send($socket, "\xff\xff\xff\xffTSource Engine Query\x00", 0, $sockaddr);
+      my $data = "";
+      recv($socket, $data, 1400, 0) or (print "Unable to query server\n" and exit(1));
+      my ($servername, $mapname, $game, $fullname, $rest) = split(/\x00/, substr($data, 6), 5);
+      my $players = ord(substr($rest, 2, 1));
+      my $maxplayers = ord(substr($rest, 3, 1));
+      print "Server Name: $servername\n";
+      print "Players: $players / $maxplayers\n";
+      ' "${ark_QueryPort}"
   fi
   getCurrentVersion
   echo -e "$NORMAL" "Server version: " "$GREEN" $instver "$NORMAL"
-
 }
 
 doUpgrade() {
+  local sudo=sudo
+  if [ "$steamcmd_user" == "--me" ]; then
+    sudo=
+  fi
   echo "arkmanager v${arkstVersion}: Checking for updates..."
   arkstLatestVersion=`curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/.version`
   if [[ $arkstLatestVersion > $arkstVersion ]]; then
     read -p "A new version was found! Do you want to upgrade ARK Server Tools to v${arkstLatestVersion}?" -n 1 -r
     echo -en "\n"
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/netinstall.sh | sudo bash -s ${steamcmd_user} ${arkstChannel}
+        curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/netinstall.sh | $sudo bash -s ${steamcmd_user} ${arkstChannel}
       else
         exit 0
     fi
   else
     echo "Your ARK server tools are already up to date"
   fi
+}
+
+useConfig() {
+  for varname in "${!configfile_@}"; do
+    if [ "configfile_$1" == "$varname" ]; then
+      source "${!varname}"
+      return
+    fi
+  done
+  source "$1"
 }
 
 #---------------------
@@ -396,7 +607,8 @@ doUpgrade() {
 # check the configuration and throw errors or warnings if needed
 checkConfig
 
-case "$1" in
+while true; do
+  case "$1" in
     start)
         doStart
     ;;
@@ -406,7 +618,7 @@ case "$1" in
     restart)
         doStop
         echo "`timestamp`: stop" >> "$logdir/$arkmanagerLog"
-        sleep 10
+        sleep 1
         doStart
         echo "`timestamp`: start" >> "$logdir/$arkmanagerLog"
         echo "`timestamp`: restart" >> "$logdir/$arkmanagerLog"
@@ -417,8 +629,10 @@ case "$1" in
     update)
         if [ "$2" == "--force" ]; then
           forceUpdate
+	  shift
         elif [ "$2" == "--safe" ]; then
           doSafeUpdate
+	  shift
         else
           doUpdate
         fi
@@ -430,7 +644,15 @@ case "$1" in
       doBackup
     ;;
     broadcast)
-        doInfo $2
+      doBroadcast "$2"
+      shift
+    ;;
+    saveworld)
+      doSaveWorld
+    ;;
+    rconcmd)
+      rconcmd "$2"
+      shift
     ;;
     status)
       printStatus
@@ -438,10 +660,17 @@ case "$1" in
     upgrade)
       doUpgrade
     ;;
+    useconfig)
+      useConfig "$2"
+      shift
+    ;;
     -h|--help)
       echo -e "Usage: arkmanager [OPTION]\n"
       echo "Option            Description"
       echo "backup            Saves a backup of your server inside the backup directory"
+      echo "broadcast <msg>   Sends a message to all users connected to server"
+      echo "saveworld         Saves the game world to disk"
+      echo "rconcmd <cmd>     Execute RCON command on server"
       echo "checkupdate       Check for a new ARK server version"
       echo "install           Install the ARK server files from steamcmd"
       echo "restart           Stops the server and then starts it"
@@ -452,9 +681,22 @@ case "$1" in
       echo "update --force    Apply update without check the current version"
       echo "update --safe     Wait for server to perform world save and update."
       echo "upgrade           Check for a new ARK Server Tools version and upgrades it if needed"
+      echo "useconfig <name>  Use the configuration overrides in the specified config name or file"
+      exit 1
     ;;
     *)
-      echo "arkmanager v${arkstVersion}: no command specified"
+      echo -n "arkmanager v${arkstVersion}: "
+      if [ $# -eq 0 ]; then
+        echo "no command specified"
+      else
+        echo "unknown command '$1' specified"
+      fi
       echo "Try 'arkmanager -h' or 'arkmanager --help' for more information."
+      exit 1
     ;;
-esac
+  esac
+  shift
+  if [ $# -eq 0 ]; then
+    break
+  fi
+done
