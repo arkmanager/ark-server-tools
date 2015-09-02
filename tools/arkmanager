@@ -581,8 +581,17 @@ doUpgrade() {
   fi
   echo "arkmanager v${arkstVersion}: Checking for updates..."
   arkstLatestVersion=`curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/.version`
+  arkstLatestCommit=`curl -s https://api.github.com/repos/FezVrasta/ark-server-tools/git/refs/heads/${arkstChannel} | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p'`
   if [[ $arkstLatestVersion > $arkstVersion ]]; then
     read -p "A new version was found! Do you want to upgrade ARK Server Tools to v${arkstLatestVersion}?" -n 1 -r
+    echo -en "\n"
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/netinstall.sh | $sudo bash -s ${steamcmd_user} ${arkstChannel}
+      else
+        exit 0
+    fi
+  elif [[ "$arkstLatestCommit" != "$arkstCommit" ]]; then
+    read -p "A hotfix is available for v${arkstLatestVersion}.  Do you wish to install it?" -n 1 -r
     echo -en "\n"
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/netinstall.sh | $sudo bash -s ${steamcmd_user} ${arkstChannel}
