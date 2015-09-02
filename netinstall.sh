@@ -8,10 +8,14 @@ channel=${2:-master} # if defined by 2nd argument install the defined version, o
 
 # Download and untar installation files
 cd /tmp
-curl -L -k -s https://github.com/FezVrasta/ark-server-tools/archive/${channel}.tar.gz | tar xz
+COMMIT="`curl -L -k -s https://api.github.com/repos/FezVrasta/ark-server-tools/git/refs/heads/${channel} | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p'`"
+mkdir ark-server-tools-${channel}
+cd ark-server-tools-${channel}
+curl -L -k -s https://github.com/FezVrasta/ark-server-tools/archive/${COMMIT}.tar.gz | tar xz
 
 # Install ARK Server Tools
-cd ark-server-tools-${channel}/tools
+cd ark-server-tools-${COMMIT}/tools
+sed -i "s|^arkstCommit='.*'$|arkstCommit='${COMMIT}'|" arkmanager
 chmod +x install.sh
 sh install.sh $1 > /dev/null
 

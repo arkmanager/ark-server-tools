@@ -44,6 +44,7 @@ arkserverLog="arkserver.log"    # here is logged the output of ShooterGameServer
 
 # Script version
 arkstVersion="1.3"
+arkstCommit=''
 
 #---------------------
 # functions
