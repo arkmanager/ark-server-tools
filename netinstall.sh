@@ -9,6 +9,20 @@ channel=${2:-master} # if defined by 2nd argument install the defined version, o
 # Download and untar installation files
 cd /tmp
 COMMIT="`curl -L -k -s https://api.github.com/repos/FezVrasta/ark-server-tools/git/refs/heads/${channel} | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p'`"
+
+if [ -z "$COMMIT" ]; then
+  if [ "$channel" != "master" ]; then
+    echo "Channel ${channel} not found - trying master"
+    channel=master
+    COMMIT="`curl -L -k -s https://api.github.com/repos/FezVrasta/ark-server-tools/git/refs/heads/${channel} | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p'`"
+  fi
+fi
+
+if [ -z "$COMMIT" ]; then
+  echo "Unable to retrieve latest commit"
+  exit 1
+fi
+
 mkdir ark-server-tools-${channel}
 cd ark-server-tools-${channel}
 curl -L -k -s https://github.com/FezVrasta/ark-server-tools/archive/${COMMIT}.tar.gz | tar xz
