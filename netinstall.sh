@@ -30,6 +30,8 @@ curl -L -k -s https://github.com/FezVrasta/ark-server-tools/archive/${COMMIT}.ta
 # Install ARK Server Tools
 cd ark-server-tools-${COMMIT}/tools
 sed -i "s|^arkstCommit='.*'$|arkstCommit='${COMMIT}'|" arkmanager
+version=`<../.version`
+sed -i "s|^arkstVersion=\".*\"|arkstVersion='${version}'|" arkmanager
 chmod +x install.sh
 sh install.sh $1 > /dev/null
 
