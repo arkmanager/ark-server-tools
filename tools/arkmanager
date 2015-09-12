@@ -748,6 +748,10 @@ while true; do
     checkupdate)
       checkForUpdate
     ;;
+    installmod)
+      doInstallMod "$2"
+      shift
+    ;;
     backup)
       doBackup
     ;;
