@@ -450,11 +450,20 @@ doSafeUpdate(){
 #
 doInstallMod(){
   local modid=$1
-  cd "$steamcmdroot"
-  ./$steamcmdexec +login anonymous +workshop_download_item $mod_appid $modid +quit
-
   local modsrcdir="$steamcmdroot/steamapps/workshop/content/$mod_appid/$modid"
+  local moddldir="$steamcmdroot/steamapps/workshop/downloads/$mod_appid/$modid"
   local moddestdir="$arkserverroot/ShooterGame/Content/Mods/$modid"
+  local dlsize=0
+  cd "$steamcmdroot"
+
+  while true; do
+    ./$steamcmdexec +login anonymous +workshop_download_item $mod_appid $modid +quit
+    if [ ! -d "$moddldir" ]; then break; fi
+    local newsize="`du -s "$moddldir" | cut -f1`"
+    if [ $newsize -eq $dlsize ]; then break; fi
+    dlsize=$newsize
+  done
+
   if [ -f "$modsrcdir/mod.info" ]; then
     echo "Mod $modid downloaded"
     echo "Copying files to $moddestdir"
