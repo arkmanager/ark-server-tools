@@ -42,6 +42,9 @@ maxOpenFiles=100000
 arkmanagerLog="arkmanager.log"  # here are logged the actions performed by arkmanager
 arkserverLog="arkserver.log"    # here is logged the output of ShooterGameServer
 
+appid="${appid:-376030}"
+mod_appid="${mod_appid:-346110}"
+
 # Script version
 arkstVersion="1.3"
 arkstCommit=''
@@ -443,6 +446,98 @@ doSafeUpdate(){
 }
 
 #
+# Downloads mod and installs it into mods directory
+#
+doInstallMod(){
+  local modid=$1
+  local modsrcdir="$steamcmdroot/steamapps/workshop/content/$mod_appid/$modid"
+  local moddldir="$steamcmdroot/steamapps/workshop/downloads/$mod_appid/$modid"
+  local moddestdir="$arkserverroot/ShooterGame/Content/Mods/$modid"
+  local dlsize=0
+  cd "$steamcmdroot"
+
+  while true; do
+    ./$steamcmdexec +login anonymous +workshop_download_item $mod_appid $modid +quit
+    if [ ! -d "$moddldir" ]; then break; fi
+    local newsize="`du -s "$moddldir" | cut -f1`"
+    if [ $newsize -eq $dlsize ]; then break; fi
+    dlsize=$newsize
+  done
+
+  if [ -f "$modsrcdir/mod.info" ]; then
+    echo "Mod $modid downloaded"
+    echo "Copying files to $moddestdir"
+    if [ -f "$modsrcdir/LinuxNoEditor/mod.info" ]; then
+      modsrcdir="$modsrcdir/LinuxNoEditor"
+    fi
+
+    find "$modsrcdir" -type d -printf "$moddestdir/%P\0" | xargs -0 -r mkdir -p
+    find "$modsrcdir" -type f ! \( -name '*.z' -or -name '*.z.uncompressed_size' \) -printf "%P\0" | xargs -0 -r tar -c -C "$modsrcdir" | tar -x -C "$moddestdir"
+    find "$modsrcdir" -type f -name '*.z' -printf "%P\n" | while read f; do
+      printf "%10d  %s  " "`stat -c '%s' "$modsrcdir/$f"`" "${f%.z}"
+      perl -M'Compress::Raw::Zlib' -e '
+        my $sig;
+        read(STDIN, $sig, 8) or die "Unable to read compressed file";
+        if ($sig != "\xC1\x83\x2A\x9E\x00\x00\x00\x00"){
+          die "Bad file magic";
+        }
+        my $data;
+        read(STDIN, $data, 24) or die "Unable to read compressed file";
+        my ($chunksizelo, $chunksizehi,
+            $comprtotlo,  $comprtothi,
+            $uncomtotlo,  $uncomtothi)  = unpack("(LLLLLL)<", $data);
+        my @chunks = ();
+        my $comprused = 0;
+        while ($comprused < $comprtotlo) {
+          read(STDIN, $data, 16) or die "Unable to read compressed file";
+          my ($comprsizelo, $comprsizehi,
+              $uncomsizelo, $uncomsizehi) = unpack("(LLLL)<", $data);
+          push @chunks, $comprsizelo;
+          $comprused += $comprsizelo;
+        }
+        foreach my $comprsize (@chunks) {
+          read(STDIN, $data, $comprsize) or die "File read failed";
+          my ($inflate, $status) = new Compress::Raw::Zlib::Inflate();
+          my $output;
+          $status = $inflate->inflate($data, $output, 1);
+          if ($status != Z_STREAM_END) {
+            die "Bad compressed stream; status: " . ($status);
+          }
+          if (length($data) != 0) {
+            die "Unconsumed data in input"
+          }
+          print $output;
+        }
+      ' <"$modsrcdir/$f" >"$moddestdir/${f%.z}"
+      echo -ne "\r\\033[K"
+    done
+
+    perl -e '
+      my $data;
+      { local $/; $data = <STDIN>; }
+      my $mapnamelen = unpack("@0 L<", $data);
+      my $mapname = substr($data, 4, $mapnamelen - 1);
+      $mapnamelen += 4;
+      my $mapfilelen = unpack("@" . ($mapnamelen + 4) . " L<", $data);
+      my $mapfile = substr($data, $mapnamelen + 8, $mapfilelen);
+      print pack("L< L< L< Z8 L< C L< L<", $ARGV[0], 0, 8, "ModName", 1, 0, 1, $mapfilelen);
+      print $mapfile;
+      print "\x33\xFF\x22\xFF\x02\x00\x00\x00\x01";
+    ' $modid <"$moddestdir/mod.info" >"$moddestdir/.mod"
+
+    if [ -f "$moddestdir/modmeta.info" ]; then
+      cat "$moddestdir/modmeta.info" >>"$moddestdir/.mod"
+    else
+      echo -ne '\x01\x00\x00\x00\x08\x00\x00\x00ModType\x00\x02\x00\x00\x001\x00' >>"$moddestdir/.mod"
+    fi
+
+    echo "Mod $modid installed"
+  else
+    echo "Mod $modid was not successfully downloaded"
+  fi
+}
+
+#
 # Copies server state to a backup directory
 #
 doBackup(){
@@ -652,6 +747,10 @@ while true; do
     ;;
     checkupdate)
       checkForUpdate
+    ;;
+    installmod)
+      doInstallMod "$2"
+      shift
     ;;
     backup)
       doBackup
