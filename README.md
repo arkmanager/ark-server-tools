@@ -88,6 +88,9 @@ Apply update without check the current version
 #### arkmanager update --safe
 Waits for server to perform world save and then updates.
 
+#### arkmanager update --warn
+Warns the players for a configurable amount of time before updating.  Should be suitable for adding to a cron job.
+
 #### arkmanager status
 Get the status of the server. Show if the process is running, if the server is up and the current version number
 
