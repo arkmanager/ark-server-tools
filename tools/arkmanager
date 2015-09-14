@@ -71,8 +71,10 @@ checkConfig() {
     echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tYour SteamCMD exec could not be found."
   fi
   # steamcmd_user
-  if ! getent passwd $steamcmd_user > /dev/null 2>&1 ; then
-    echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tYour SteamCMD user is not valid."
+  if [ "$steamcmd_user" != "--me" ]; then
+    if ! getent passwd $steamcmd_user > /dev/null 2>&1 ; then
+      echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tYour SteamCMD user is not valid."
+    fi
   fi
 
   # Environment configuration
@@ -639,7 +641,7 @@ doUpgrade() {
     read -p "A new version was found! Do you want to upgrade ARK Server Tools to v${arkstLatestVersion}?" -n 1 -r
     echo -en "\n"
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/netinstall.sh | $sudo bash -s ${steamcmd_user} ${arkstChannel}
+        curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/netinstall.sh | $sudo bash -s -- ${steamcmd_user} ${arkstChannel}
       else
         exit 0
     fi
@@ -647,7 +649,7 @@ doUpgrade() {
     read -p "A hotfix is available for v${arkstLatestVersion}.  Do you wish to install it?" -n 1 -r
     echo -en "\n"
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/netinstall.sh | $sudo bash -s ${steamcmd_user} ${arkstChannel}
+        curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/netinstall.sh | $sudo bash -s -- ${steamcmd_user} ${arkstChannel}
       else
         exit 0
     fi
