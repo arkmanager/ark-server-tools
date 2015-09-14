@@ -43,7 +43,7 @@ case "$1" in
   start)
     echo -n "Starting $NAME: "
     ulimit -n 100000
-    su -s /bin/sh -c "$DAEMON start" $steamcmd_user > /dev/null
+    su -s /bin/sh -c "$DAEMON start --all" $steamcmd_user > /dev/null
     sleep 5
     PID=`ps -ef | grep $NAME | grep -v grep | awk '{print $2}'`
     if  [ -n "$PID" ];  then
@@ -59,7 +59,7 @@ case "$1" in
 
   stop)
     echo -n "Stopping $NAME: "
-    su -s /bin/sh -c "$DAEMON stop" $steamcmd_user > /dev/null
+    su -s /bin/sh -c "$DAEMON stop --all" $steamcmd_user > /dev/null
     sleep 5
     PID=`ps -ef | grep $NAME | grep -v grep | awk '{print $2}'`
     if  [ -n "$PID" ];  then
@@ -76,7 +76,7 @@ case "$1" in
   restart)
     echo -n "Restarting $NAME: "
     ulimit -n 100000
-    su -s /bin/sh -c "$DAEMON restart" $steamcmd_user > /dev/null
+    su -s /bin/sh -c "$DAEMON restart --all" $steamcmd_user > /dev/null
     echo "OK"
   ;;
 

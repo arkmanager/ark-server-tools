@@ -303,6 +303,8 @@ doRun() {
     arkserveropts="-MapModID=$serverMapModId"
   fi
 
+  arkextraopts=( )
+
   # bring in ark_... options
   for varname in "${!ark_@}"; do
     name="${varname#ark_}"
@@ -320,12 +322,23 @@ doRun() {
     fi
   done
 
+  # bring in arkflag_... flags
+  for varname in "${!arkflag_@}"; do
+    name="${varname#arkflag_}"
+    val="${!varname}"
+
+    if [ -n "$val" ]; then
+      arkextraopts=( "${arkextraopts[@]}" "-${name}" )
+    fi
+  done
+
+
   arkserveropts="${arkserveropts}?listen"
   # run the server in background
   echo "`timestamp`: start"
   # set max open files limit before we start the server
   ulimit -n $maxOpenFiles
-  "$arkserverroot/$arkserverexec" "$arkserveropts"
+  "$arkserverroot/$arkserverexec" "$arkserveropts" "${arkextraopts[@]}"
   echo "`timestamp`: exited with status $?"
 }
 
@@ -344,6 +357,21 @@ doStart() {
     tput rc; tput ed;
     echo "The server is now up"
   fi
+}
+
+#
+# starts all servers specified by configfile_xxxxx in config file
+#
+doStartAll(){
+  doStart
+  for cfg in "${!configfile_@}"; do
+    if [ -f "${!cfg}" ]; then
+      (
+        source "${!cfg}"
+        doStart
+      )
+    fi
+  done
 }
 
 #
@@ -377,6 +405,21 @@ doStop() {
   else
     echo "The server is already stopped"
   fi
+}
+
+#
+# stops all servers specified by configfile_xxxxx in config file
+#
+doStopAll(){
+  doStop
+  for cfg in "${!configfile_@}"; do
+    if [ -f "${!cfg}" ]; then
+      (
+        source "${!cfg}"
+        doStop
+      )
+    fi
+  done
 }
 
 #
@@ -609,6 +652,7 @@ doWarnUpdate(){
 doBackup(){
   local datestamp=`date +"%Y-%m-%d_%H.%M.%S"`
   local backupdir="${arkbackupdir}/${datestamp}"
+  local savedir="SavedArks"
   mkdir -p "$backupdir"
 
   # extract the map name from the active map mod
@@ -625,17 +669,22 @@ doBackup(){
     ' <"${arkserverroot}/ShooterGame/Content/Mods/${serverMapModId}/mod.info")"
   fi
 
+  # Get save directory name
+  if [ -n "${ark_AltSaveDirectoryName}" ]; then
+    savedir="${ark_AltSaveDirectoryName}"
+  fi
+
   # ARK server uses Write-Unlink-Rename
   echo -ne "${NORMAL} Copying ARK world file "
-  cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/${serverMap##*/}.ark" "${backupdir}/${serverMap##*/}.ark"
+  cp -p "${arkserverroot}/ShooterGame/Saved/${savedir}/${serverMap##*/}.ark" "${backupdir}/${serverMap##*/}.ark"
   if [ ! -f "${backupdir}/${serverMap##*/}.ark" ]; then
     sleep 2
-    cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/${serverMap##*/}.ark" "${backupdir}/${serverMap##*/}.ark"
+    cp -p "${arkserverroot}/ShooterGame/Saved/${savedir}/${serverMap##*/}.ark" "${backupdir}/${serverMap##*/}.ark"
   fi
   # If both attempts fail, server may have
   # crashed between unlink and rename
   if [ ! -f "${backupdir}/${serverMap##*/}.ark" ]; then
-    cp -p "${arkserverroot}/ShooterGame/Saved/SavedArks/${serverMap##*/}.tmp" "${backupdir##*/}/${serverMap##*/}.ark"
+    cp -p "${arkserverroot}/ShooterGame/Saved/${savedir}/${serverMap##*/}.tmp" "${backupdir##*/}/${serverMap##*/}.ark"
   fi
   if [ -f "${backupdir}/${serverMap##*/}.ark" ]; then
     echo -e "${NORMAL}[   ${GREEN}OK${NORMAL}   ]"
@@ -648,7 +697,7 @@ doBackup(){
   # ARK server uses a non-blocking lock and will
   # fail to update the file if the lock fails.
   echo -e "${NORMAL} Copying ARK profile files"
-  for f in "${arkserverroot}/ShooterGame/Saved/SavedArks/"*.arkprofile; do
+  for f in "${arkserverroot}/ShooterGame/Saved/${savedir}/"*.arkprofile; do
     echo -ne "${NORMAL}   ${f##*/} "
     cp -p "${f}" "${backupdir}/${f##*/}"
     if [ ! -s "${backupdir}/${f##*/}" ]; then
@@ -669,7 +718,7 @@ doBackup(){
 
   # ARK server uses Lock-Truncate-Write-Unlock
   echo -e "${NORMAL} Copying ARK tribe files "
-  for f in "${arkserverroot}/ShooterGame/Saved/SavedArks/"*.arktribe; do
+  for f in "${arkserverroot}/ShooterGame/Saved/${savedir}/"*.arktribe; do
     echo -ne "${NORMAL}   ${f##*/} "
     cp -p "${f}" "${backupdir}/${f##*/}"
     if [ ! -s "${backupdir}/${f##*/}" ]; then
@@ -784,16 +833,35 @@ checkConfig
 while true; do
   case "$1" in
     start)
-        doStart
+        if [ "$2" == "--all" ]; then
+          doStartAll
+          shift
+        else
+          doStart
+        fi
     ;;
     stop)
-        doStop
+        if [ "$2" == "--all" ]; then
+          doStopAll
+          shift
+        else
+          doStop
+        fi
     ;;
     restart)
-        doStop
+        if [ "$2" == "--all" ]; then
+	  doStopAll
+	else
+          doStop
+	fi
         echo "`timestamp`: stop" >> "$logdir/$arkmanagerLog"
         sleep 1
-        doStart
+	if [ "$2" == "--all" ]; then
+          doStartAll
+	  shift
+	else
+	  doStart
+	fi
         echo "`timestamp`: start" >> "$logdir/$arkmanagerLog"
         echo "`timestamp`: restart" >> "$logdir/$arkmanagerLog"
     ;;
@@ -855,8 +923,11 @@ while true; do
       echo "checkupdate       Check for a new ARK server version"
       echo "install           Install the ARK server files from steamcmd"
       echo "restart           Stops the server and then starts it"
+      echo "restart --all     Restarts all servers specified in configfile_xxxxx"
       echo "start             Starts the server"
+      echo "start --all       Starts all servers specified in configfile_xxxxx"
       echo "stop              Stops the server"
+      echo "stop --all        Stops all servers specified in configfile_xxxxx"
       echo "status            Returns the status of the current ARK server instance"
       echo "update            Check for a new ARK server version, if needed, stops the server, updates it, and starts it again"
       echo "update --force    Apply update without check the current version"
