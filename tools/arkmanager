@@ -554,6 +554,7 @@ doWarnUpdate(){
   if isUpdateNeeded; then
     local pid=`getServerPID`
     if [ -n "$pid" ]; then
+      local warnmsg
       local warnminutes=$(( arkwarnminutes ))
       if (( warnminutes == 0 )); then
         warnminutes=60
@@ -564,9 +565,15 @@ doWarnUpdate(){
       for warninterval in "${warnintervals[@]}"; do
         if [ "`getServerPID`" != "$pid" ]; then
           echo "Server has stopped.  Aborting update"
+          return 1
         fi
         if (( arkwarnminutes > warninterval )); then
-          doBroadcastWithEcho "This ARK server will shutdown for an update in $warnminutes minutes"
+          if [ -n "$msgWarnUpdateMinutes" ]; then
+            warnmsg="$(printf "$msgWarnUpdateMinutes" "$warnminutes")"
+          else
+            warnmsg="$(printf "This ARK server will shutdown for an update in %d minutes" "$warnminutes")"
+          fi
+          doBroadcastWithEcho "$warnmsg"
           sleep $(( warnminutes - warninterval ))m
           warnminutes=$warninterval
         fi
@@ -577,8 +584,14 @@ doWarnUpdate(){
       for warninterval in "${warnintervals[@]}"; do
         if [ "`getServerPID`" != "$pid" ]; then
           echo "Server has stopped.  Aborting update"
+          return 1
         fi
-        doBroadcastWithEcho "This ARK server will shutdown for an update in $warnseconds seconds"
+        if [ -n "$msgWarnUpdateMinutes" ]; then
+          warnmsg="$(printf "$msgWarnUpdateMinutes" "$warnminutes")"
+        else
+          warnmsg="$(printf "This ARK server will shutdown for an update in %d seconds" "$warnseconds")"
+        fi
+        doBroadcastWithEcho "$warnmsg"
         sleep $(( warnseconds - warninterval ))s
       done
     fi
