@@ -540,30 +540,27 @@ doUpdate() {
       fi
     fi
 
-    forceUpdate
+    # check if the server was alive before the update so we can launch it back after the update
+    serverWasAlive=0
+    if isTheServerRunning ;then
+      serverWasAlive=1
+    fi
+    doStop
+
+    cd "$steamcmdroot"
+    ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid +quit
+    # the current version should be the last version. We set our version
+    getCurrentVersion
+    echo "`timestamp`: update to $instver complete" >> "$logdir/update.log"
+
+    # we restart the server only if it was started before the update
+    if [ $serverWasAlive -eq 1 ]; then
+      doStart
+    fi
   else
     echo "Your server is already up to date! The most recent version is ${bnumber}."
     echo "`timestamp`: No update needed." >> "$logdir/update.log"
   fi;
-}
-
-forceUpdate(){
-  # check if the server was alive before the update so we can launch it back after the update
-  serverWasAlive=0
-  if isTheServerRunning ;then
-    serverWasAlive=1
-  fi
-  doStop
-  cd "$steamcmdroot"
-  ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid +quit
-  # the current version should be the last version. We set our version
-  getCurrentVersion
-  echo "`timestamp`: update to $instver complete" >> "$logdir/update.log"
-
-  # we restart the server only if it was started before the update
-  if [ $serverWasAlive -eq 1 ]; then
-    doStart
-  fi
 }
 
 #
