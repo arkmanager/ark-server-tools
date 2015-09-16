@@ -595,14 +595,14 @@ doDownloadMod(){
 }
 
 #
-# Downloads mod and installs it into mods directory
+# Extracts a mod into the ARK Mods directory
 #
-doInstallMod(){
+doExtractMod(){
   local modid=$1
   local modsrcdir="$steamcmdroot/steamapps/workshop/content/$mod_appid/$modid"
   local moddestdir="$arkserverroot/ShooterGame/Content/Mods/$modid"
 
-  if doDownloadMod $modid; then
+  if [ -f "$modsrcdir/mod.info" ]; then
     echo "Copying files to $moddestdir"
     if [ -f "$modsrcdir/LinuxNoEditor/mod.info" ]; then
       modsrcdir="$modsrcdir/LinuxNoEditor"
@@ -667,7 +667,17 @@ doInstallMod(){
     else
       echo -ne '\x01\x00\x00\x00\x08\x00\x00\x00ModType\x00\x02\x00\x00\x001\x00' >>"$moddestdir/.mod"
     fi
+  fi
+}
 
+#
+# Downloads mod and installs it into mods directory
+#
+doInstallMod(){
+  local modid=$1
+
+  if doDownloadMod $modid; then
+    doExtractMod $modid
     echo "Mod $modid installed"
   fi
 }
