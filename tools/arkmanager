@@ -609,44 +609,55 @@ doExtractMod(){
     fi
 
     find "$modsrcdir" -type d -printf "$moddestdir/%P\0" | xargs -0 -r mkdir -p
-    find "$modsrcdir" -type f ! \( -name '*.z' -or -name '*.z.uncompressed_size' \) -printf "%P\0" | xargs -0 -r tar -c -C "$modsrcdir" | tar -x -C "$moddestdir"
+    
+    find "$modsrcdir" -type f ! \( -name '*.z' -or -name '*.z.uncompressed_size' \) -printf "%P\n" | while read f; do
+      if [ ! -f "$moddestdir/$f" -o "$modsrcdir/$f" -nt "$moddestdir/$f" ]; then
+        printf "%10d  %s  " "`stat -c '%s' "$modsrcdir/$f"`" "$f"
+        cp "$modsrcdir/$f" "$moddestdir/$f"
+        echo -ne "\r\\033[K"
+      fi
+    done
+
     find "$modsrcdir" -type f -name '*.z' -printf "%P\n" | while read f; do
-      printf "%10d  %s  " "`stat -c '%s' "$modsrcdir/$f"`" "${f%.z}"
-      perl -M'Compress::Raw::Zlib' -e '
-        my $sig;
-        read(STDIN, $sig, 8) or die "Unable to read compressed file";
-        if ($sig != "\xC1\x83\x2A\x9E\x00\x00\x00\x00"){
-          die "Bad file magic";
-        }
-        my $data;
-        read(STDIN, $data, 24) or die "Unable to read compressed file";
-        my ($chunksizelo, $chunksizehi,
-            $comprtotlo,  $comprtothi,
-            $uncomtotlo,  $uncomtothi)  = unpack("(LLLLLL)<", $data);
-        my @chunks = ();
-        my $comprused = 0;
-        while ($comprused < $comprtotlo) {
-          read(STDIN, $data, 16) or die "Unable to read compressed file";
-          my ($comprsizelo, $comprsizehi,
-              $uncomsizelo, $uncomsizehi) = unpack("(LLLL)<", $data);
-          push @chunks, $comprsizelo;
-          $comprused += $comprsizelo;
-        }
-        foreach my $comprsize (@chunks) {
-          read(STDIN, $data, $comprsize) or die "File read failed";
-          my ($inflate, $status) = new Compress::Raw::Zlib::Inflate();
-          my $output;
-          $status = $inflate->inflate($data, $output, 1);
-          if ($status != Z_STREAM_END) {
-            die "Bad compressed stream; status: " . ($status);
+      if [ ! -f "$moddestdir/${f%.z}" -o "$modsrcdir/$f" -nt "$moddestdir/${f%.z}" ]; then
+        printf "%10d  %s  " "`stat -c '%s' "$modsrcdir/$f"`" "${f%.z}"
+        perl -M'Compress::Raw::Zlib' -e '
+          my $sig;
+          read(STDIN, $sig, 8) or die "Unable to read compressed file";
+          if ($sig != "\xC1\x83\x2A\x9E\x00\x00\x00\x00"){
+            die "Bad file magic";
           }
-          if (length($data) != 0) {
-            die "Unconsumed data in input"
+          my $data;
+          read(STDIN, $data, 24) or die "Unable to read compressed file";
+          my ($chunksizelo, $chunksizehi,
+              $comprtotlo,  $comprtothi,
+              $uncomtotlo,  $uncomtothi)  = unpack("(LLLLLL)<", $data);
+          my @chunks = ();
+          my $comprused = 0;
+          while ($comprused < $comprtotlo) {
+            read(STDIN, $data, 16) or die "Unable to read compressed file";
+            my ($comprsizelo, $comprsizehi,
+                $uncomsizelo, $uncomsizehi) = unpack("(LLLL)<", $data);
+            push @chunks, $comprsizelo;
+            $comprused += $comprsizelo;
           }
-          print $output;
-        }
-      ' <"$modsrcdir/$f" >"$moddestdir/${f%.z}"
-      echo -ne "\r\\033[K"
+          foreach my $comprsize (@chunks) {
+            read(STDIN, $data, $comprsize) or die "File read failed";
+            my ($inflate, $status) = new Compress::Raw::Zlib::Inflate();
+            my $output;
+            $status = $inflate->inflate($data, $output, 1);
+            if ($status != Z_STREAM_END) {
+              die "Bad compressed stream; status: " . ($status);
+            }
+            if (length($data) != 0) {
+              die "Unconsumed data in input"
+            }
+            print $output;
+          }
+        ' <"$modsrcdir/$f" >"$moddestdir/${f%.z}"
+        touch -c -r "$modsrcdir/$f" "$moddestdir/${f%.z}"
+        echo -ne "\r\\033[K"
+      fi
     done
 
     perl -e '
