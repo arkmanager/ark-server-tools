@@ -445,65 +445,170 @@ doInstall() {
 }
 
 #
+# Waits for a configurable number of minutes before updating the server
+#
+doUpdateWarn(){
+  cd "$arkserverroot"
+
+  local pid=`getServerPID`
+  if [ -n "$pid" ]; then
+    local warnmsg
+    local warnminutes=$(( arkwarnminutes ))
+    if (( warnminutes == 0 )); then
+      warnminutes=60
+    fi
+
+    local warnintervals=( 90 60 45 30 20 15 10 5 4 3 2 1 )
+
+    for warninterval in "${warnintervals[@]}"; do
+      if [ "`getServerPID`" != "$pid" ]; then
+        echo "Server has stopped.  Aborting update"
+        return 1
+      fi
+      if (( arkwarnminutes > warninterval )); then
+        if [ -n "$msgWarnUpdateMinutes" ]; then
+          warnmsg="$(printf "$msgWarnUpdateMinutes" "$warnminutes")"
+        else
+          warnmsg="$(printf "This ARK server will shutdown for an update in %d minutes" "$warnminutes")"
+        fi
+        doBroadcastWithEcho "$warnmsg"
+        sleep $(( warnminutes - warninterval ))m
+        warnminutes=$warninterval
+      fi
+    done
+
+    local warnseconds=90
+    warnintervals=( 60 45 30 20 15 10 5 0 )
+    for warninterval in "${warnintervals[@]}"; do
+      if [ "`getServerPID`" != "$pid" ]; then
+        echo "Server has stopped.  Aborting update"
+        return 1
+      fi
+      if [ -n "$msgWarnUpdateMinutes" ]; then
+        warnmsg="$(printf "$msgWarnUpdateMinutes" "$warnminutes")"
+      else
+        warnmsg="$(printf "This ARK server will shutdown for an update in %d seconds" "$warnseconds")"
+      fi
+      doBroadcastWithEcho "$warnmsg"
+      sleep $(( warnseconds - warninterval ))s
+    done
+  fi
+
+  if [ "`getServerPID`" != "$pid" ]; then
+    echo "Server has stopped.  Aborting update"
+    return 1
+  fi
+
+  return 0
+}
+
+#
 # Stop the server, update it and then start it back.
 #
 doUpdate() {
+  local appupdate=
+  local updatetype=normal
+  local validate=
+  local modupdate=
+
+  for arg in "$@"; do
+    if [ "$arg" == "--force" ]; then
+      appupdate=1
+    elif [ "$arg" == "--safe" ]; then
+      updatetype=safe
+    elif [ "$arg" == "--warn" ]; then
+      updatetype=warn
+    elif [ "$arg" == "--validate" ]; then
+      validate=validate
+      appupdate=1
+    elif [ "$arg" == "--update-mods" ]; then
+      modupdate=1
+    fi
+  done
+
+  if [ -n "$modupdate" ]; then
+    if ! doDownloadAllMods; then
+      modupdate=
+    fi
+    if ! isAnyModUpdateNeeded; then
+      modupdate=
+    fi
+  fi
+
   cd "$arkserverroot"
 
   if isUpdateNeeded; then
-    forceUpdate
+    appupdate=1
+  fi
+
+  if [ -n "$appupdate" -o -n "$modupdate" ]; then
+    if isTheServerRunning; then
+      if [ "$updatetype" == "safe" ]; then
+        while [ ! `find $arkserverroot/ShooterGame/Saved/SavedArks -mmin -1 -name ${serverMap##*/}.ark` ]; do
+          echo "`timestamp`: Save file older than 1 minute. Delaying update." >> "$logdir/update.log"
+          sleep 30s
+        done
+        echo "`timestamp`: Save file newer than 1 minute. Performing an update." >> "$logdir/update.log"
+      elif [ "$updatetype" == "warn" ]; then
+        if ! doUpdateWarn; then
+          return 1
+        fi
+      fi
+    fi
+
+    # check if the server was alive before the update so we can launch it back after the update
+    serverWasAlive=0
+    if isTheServerRunning ;then
+      serverWasAlive=1
+    fi
+    doStop
+
+    if [ -n "$appupdate" ]; then
+      cd "$steamcmdroot"
+      ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid $validate +quit
+      # the current version should be the last version. We set our version
+      getCurrentVersion
+      echo "`timestamp`: update to $instver complete" >> "$logdir/update.log"
+    fi
+
+    if [ -n "$modupdate" ]; then
+      for modid in $(getModIds); do
+        if isModUpdateNeeded $modid; then
+          doExtractMod $modid
+          echo "`timestamp`: Mod $modid updated" >> "$logdir/update.log"
+        fi
+      done
+    fi
+
+    # we restart the server only if it was started before the update
+    if [ $serverWasAlive -eq 1 ]; then
+      doStart
+    fi
   else
     echo "Your server is already up to date! The most recent version is ${bnumber}."
     echo "`timestamp`: No update needed." >> "$logdir/update.log"
   fi;
 }
 
-forceUpdate(){
-  # check if the server was alive before the update so we can launch it back after the update
-  serverWasAlive=0
-  if isTheServerRunning ;then
-    serverWasAlive=1
-  fi
-  doStop
-  cd "$steamcmdroot"
-  ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid +quit
-  # the current version should be the last version. We set our version
-  getCurrentVersion
-  echo "`timestamp`: update to $instver complete" >> "$logdir/update.log"
-
-  # we restart the server only if it was started before the update
-  if [ $serverWasAlive -eq 1 ]; then
-    doStart
-  fi
+#
+# Get the Mod IDs of the installed mods and the requested mods
+#
+getModIds(){
+  (
+    echo "${serverMapModId}"
+    echo "${ark_TotalConversionMod}"
+    echo "${ark_GameModIds}" | tr ',' '\n'
+    find "${arkserverroot}/ShooterGame/Content/Mods" -maxdepth 1 -type d -printf "%P\n"
+  ) | sort | uniq | grep '^[1-9][0-9]*$'
 }
 
 #
-# Waits for server to perform save before update (until save file is newer than 1 minute)
+# Downloads a mod from the Steam workshop
 #
-doSafeUpdate(){
-  cd "$arkserverroot"
-
-  if isUpdateNeeded; then
-    while [ ! `find $arkserverroot/ShooterGame/Saved/SavedArks -mmin -1 -name ${serverMap##*/}.ark` ]; do
-	  echo "`timestamp`: Save file older than 1 minute. Delaying update." >> "$logdir/update.log"
-	  sleep 30s
-    done
-    echo "`timestamp`: Save file newer than 1 minute. Performing an update." >> "$logdir/update.log"
-    forceUpdate
-  else
-    echo "Your server is already up to date! The most recent version is ${bnumber}."
-    echo "`timestamp`: No update needed." >> "$logdir/update.log"
-  fi
-}
-
-#
-# Downloads mod and installs it into mods directory
-#
-doInstallMod(){
+doDownloadMod(){
   local modid=$1
   local modsrcdir="$steamcmdroot/steamapps/workshop/content/$mod_appid/$modid"
   local moddldir="$steamcmdroot/steamapps/workshop/downloads/$mod_appid/$modid"
-  local moddestdir="$arkserverroot/ShooterGame/Content/Mods/$modid"
   local dlsize=0
   cd "$steamcmdroot"
 
@@ -517,50 +622,122 @@ doInstallMod(){
 
   if [ -f "$modsrcdir/mod.info" ]; then
     echo "Mod $modid downloaded"
+    return 0
+  else
+    echo "Mod $modid was not successfully downloaded"
+    return 1
+  fi
+}
+
+#
+# Downloads all installed and requested mods from the Steam workshop
+#
+doDownloadAllMods(){
+  for modid in $(getModIds); do
+    doDownloadMod $modid || return 1
+  done
+}
+
+#
+# Checks if the files a mod owns need to be updated
+#
+isModUpdateNeeded(){
+  local modid=$1
+  local modsrcdir="$steamcmdroot/steamapps/workshop/content/$mod_appid/$modid"
+  local moddestdir="$arkserverroot/ShooterGame/Content/Mods/$modid"
+
+  if [ -f "$modsrcdir/mod.info" ]; then
+    if [ -f "$modsrcdir/LinuxNoEditor/mod.info" ]; then
+      modsrcdir="$modsrcdir/LinuxNoEditor"
+    fi
+
+    find "$modsrcdir" -type f ! -name "*.z.uncompressed_size" -printf "%P\n" | while read f; do
+      if [ ! -f "$moddestdir/${f%.z}" -o "$modsrcdir/$f" -nt "$moddestdir/${f%.z}" ]; then
+        return 0
+      fi
+    done
+  fi
+
+  return 1
+}
+
+#
+# Checks if any installed or requested mods need to be updated
+#
+isAnyModUpdateNeeded(){
+  for modid in $(getModIds); do
+    if isModUpdateNeeded $modid; then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+#
+# Extracts a mod into the ARK Mods directory
+#
+doExtractMod(){
+  local modid=$1
+  local modsrcdir="$steamcmdroot/steamapps/workshop/content/$mod_appid/$modid"
+  local moddestdir="$arkserverroot/ShooterGame/Content/Mods/$modid"
+
+  if [ -f "$modsrcdir/mod.info" ]; then
     echo "Copying files to $moddestdir"
     if [ -f "$modsrcdir/LinuxNoEditor/mod.info" ]; then
       modsrcdir="$modsrcdir/LinuxNoEditor"
     fi
 
     find "$modsrcdir" -type d -printf "$moddestdir/%P\0" | xargs -0 -r mkdir -p
-    find "$modsrcdir" -type f ! \( -name '*.z' -or -name '*.z.uncompressed_size' \) -printf "%P\0" | xargs -0 -r tar -c -C "$modsrcdir" | tar -x -C "$moddestdir"
+
+    find "$modsrcdir" -type f ! \( -name '*.z' -or -name '*.z.uncompressed_size' \) -printf "%P\n" | while read f; do
+      if [ ! -f "$moddestdir/$f" -o "$modsrcdir/$f" -nt "$moddestdir/$f" ]; then
+        printf "%10d  %s  " "`stat -c '%s' "$modsrcdir/$f"`" "$f"
+        cp "$modsrcdir/$f" "$moddestdir/$f"
+        echo -ne "\r\\033[K"
+      fi
+    done
+
     find "$modsrcdir" -type f -name '*.z' -printf "%P\n" | while read f; do
-      printf "%10d  %s  " "`stat -c '%s' "$modsrcdir/$f"`" "${f%.z}"
-      perl -M'Compress::Raw::Zlib' -e '
-        my $sig;
-        read(STDIN, $sig, 8) or die "Unable to read compressed file";
-        if ($sig != "\xC1\x83\x2A\x9E\x00\x00\x00\x00"){
-          die "Bad file magic";
-        }
-        my $data;
-        read(STDIN, $data, 24) or die "Unable to read compressed file";
-        my ($chunksizelo, $chunksizehi,
-            $comprtotlo,  $comprtothi,
-            $uncomtotlo,  $uncomtothi)  = unpack("(LLLLLL)<", $data);
-        my @chunks = ();
-        my $comprused = 0;
-        while ($comprused < $comprtotlo) {
-          read(STDIN, $data, 16) or die "Unable to read compressed file";
-          my ($comprsizelo, $comprsizehi,
-              $uncomsizelo, $uncomsizehi) = unpack("(LLLL)<", $data);
-          push @chunks, $comprsizelo;
-          $comprused += $comprsizelo;
-        }
-        foreach my $comprsize (@chunks) {
-          read(STDIN, $data, $comprsize) or die "File read failed";
-          my ($inflate, $status) = new Compress::Raw::Zlib::Inflate();
-          my $output;
-          $status = $inflate->inflate($data, $output, 1);
-          if ($status != Z_STREAM_END) {
-            die "Bad compressed stream; status: " . ($status);
+      if [ ! -f "$moddestdir/${f%.z}" -o "$modsrcdir/$f" -nt "$moddestdir/${f%.z}" ]; then
+        printf "%10d  %s  " "`stat -c '%s' "$modsrcdir/$f"`" "${f%.z}"
+        perl -M'Compress::Raw::Zlib' -e '
+          my $sig;
+          read(STDIN, $sig, 8) or die "Unable to read compressed file";
+          if ($sig != "\xC1\x83\x2A\x9E\x00\x00\x00\x00"){
+            die "Bad file magic";
           }
-          if (length($data) != 0) {
-            die "Unconsumed data in input"
+          my $data;
+          read(STDIN, $data, 24) or die "Unable to read compressed file";
+          my ($chunksizelo, $chunksizehi,
+              $comprtotlo,  $comprtothi,
+              $uncomtotlo,  $uncomtothi)  = unpack("(LLLLLL)<", $data);
+          my @chunks = ();
+          my $comprused = 0;
+          while ($comprused < $comprtotlo) {
+            read(STDIN, $data, 16) or die "Unable to read compressed file";
+            my ($comprsizelo, $comprsizehi,
+                $uncomsizelo, $uncomsizehi) = unpack("(LLLL)<", $data);
+            push @chunks, $comprsizelo;
+            $comprused += $comprsizelo;
           }
-          print $output;
-        }
-      ' <"$modsrcdir/$f" >"$moddestdir/${f%.z}"
-      echo -ne "\r\\033[K"
+          foreach my $comprsize (@chunks) {
+            read(STDIN, $data, $comprsize) or die "File read failed";
+            my ($inflate, $status) = new Compress::Raw::Zlib::Inflate();
+            my $output;
+            $status = $inflate->inflate($data, $output, 1);
+            if ($status != Z_STREAM_END) {
+              die "Bad compressed stream; status: " . ($status);
+            }
+            if (length($data) != 0) {
+              die "Unconsumed data in input"
+            }
+            print $output;
+          }
+        ' <"$modsrcdir/$f" >"$moddestdir/${f%.z}"
+        touch -c -r "$modsrcdir/$f" "$moddestdir/${f%.z}"
+        echo -ne "\r\\033[K"
+      fi
     done
 
     perl -e '
@@ -581,68 +758,18 @@ doInstallMod(){
     else
       echo -ne '\x01\x00\x00\x00\x08\x00\x00\x00ModType\x00\x02\x00\x00\x001\x00' >>"$moddestdir/.mod"
     fi
-
-    echo "Mod $modid installed"
-  else
-    echo "Mod $modid was not successfully downloaded"
   fi
 }
 
 #
-# Waits for a configurable number of minutes before updating the server
+# Downloads mod and installs it into mods directory
 #
-doWarnUpdate(){
-  cd "$arkserverroot"
+doInstallMod(){
+  local modid=$1
 
-  if isUpdateNeeded; then
-    local pid=`getServerPID`
-    if [ -n "$pid" ]; then
-      local warnmsg
-      local warnminutes=$(( arkwarnminutes ))
-      if (( warnminutes == 0 )); then
-        warnminutes=60
-      fi
-
-      local warnintervals=( 90 60 45 30 20 15 10 5 4 3 2 1 )
-
-      for warninterval in "${warnintervals[@]}"; do
-        if [ "`getServerPID`" != "$pid" ]; then
-          echo "Server has stopped.  Aborting update"
-          return 1
-        fi
-        if (( arkwarnminutes > warninterval )); then
-          if [ -n "$msgWarnUpdateMinutes" ]; then
-            warnmsg="$(printf "$msgWarnUpdateMinutes" "$warnminutes")"
-          else
-            warnmsg="$(printf "This ARK server will shutdown for an update in %d minutes" "$warnminutes")"
-          fi
-          doBroadcastWithEcho "$warnmsg"
-          sleep $(( warnminutes - warninterval ))m
-          warnminutes=$warninterval
-        fi
-      done
-
-      local warnseconds=90
-      warnintervals=( 60 45 30 20 15 10 5 0 )
-      for warninterval in "${warnintervals[@]}"; do
-        if [ "`getServerPID`" != "$pid" ]; then
-          echo "Server has stopped.  Aborting update"
-          return 1
-        fi
-        if [ -n "$msgWarnUpdateMinutes" ]; then
-          warnmsg="$(printf "$msgWarnUpdateMinutes" "$warnminutes")"
-        else
-          warnmsg="$(printf "This ARK server will shutdown for an update in %d seconds" "$warnseconds")"
-        fi
-        doBroadcastWithEcho "$warnmsg"
-        sleep $(( warnseconds - warninterval ))s
-      done
-    fi
-
-    if [ "`getServerPID`" != "$pid" ]; then
-      echo "Server has stopped.  Aborting update"
-    fi
-    doUpdate
+  if doDownloadMod $modid; then
+    doExtractMod $modid
+    echo "Mod $modid installed"
   fi
 }
 
@@ -693,7 +820,7 @@ doBackup(){
   fi
 
   # ARK server uses Lock-Truncate-Write-Unlock
-  # Unfortunately we can't lock the file, as 
+  # Unfortunately we can't lock the file, as
   # ARK server uses a non-blocking lock and will
   # fail to update the file if the lock fails.
   echo -e "${NORMAL} Copying ARK profile files"
@@ -869,18 +996,14 @@ while true; do
         doInstall
     ;;
     update)
-        if [ "$2" == "--force" ]; then
-          forceUpdate
+        args=()
+
+	while [[ "$2" =~ ^-- ]]; do
+	  args=( "${args[@]}" "$2" )
 	  shift
-        elif [ "$2" == "--safe" ]; then
-          doSafeUpdate
-	  shift
-        elif [ "$2" == "--warn" ]; then
-          doWarnUpdate
-          shift
-        else
-          doUpdate
-        fi
+	done
+
+	doUpdate "${args[@]}"
     ;;
     checkupdate)
       checkForUpdate
@@ -915,26 +1038,29 @@ while true; do
     ;;
     -h|--help)
       echo -e "Usage: arkmanager [OPTION]\n"
-      echo "Option            Description"
-      echo "backup            Saves a backup of your server inside the backup directory"
-      echo "broadcast <msg>   Sends a message to all users connected to server"
-      echo "saveworld         Saves the game world to disk"
-      echo "rconcmd <cmd>     Execute RCON command on server"
-      echo "checkupdate       Check for a new ARK server version"
-      echo "install           Install the ARK server files from steamcmd"
-      echo "restart           Stops the server and then starts it"
-      echo "restart --all     Restarts all servers specified in configfile_xxxxx"
-      echo "start             Starts the server"
-      echo "start --all       Starts all servers specified in configfile_xxxxx"
-      echo "stop              Stops the server"
-      echo "stop --all        Stops all servers specified in configfile_xxxxx"
-      echo "status            Returns the status of the current ARK server instance"
-      echo "update            Check for a new ARK server version, if needed, stops the server, updates it, and starts it again"
-      echo "update --force    Apply update without check the current version"
-      echo "update --safe     Wait for server to perform world save and update."
-      echo "update --warn     Warn players before updating server"
-      echo "upgrade           Check for a new ARK Server Tools version and upgrades it if needed"
-      echo "useconfig <name>  Use the configuration overrides in the specified config name or file"
+      echo "Option                Description"
+      echo "backup                Saves a backup of your server inside the backup directory"
+      echo "broadcast <msg>       Sends a message to all users connected to server"
+      echo "saveworld             Saves the game world to disk"
+      echo "rconcmd <cmd>         Execute RCON command on server"
+      echo "checkupdate           Check for a new ARK server version"
+      echo "install               Install the ARK server files from steamcmd"
+      echo "installmod <modid>    Installs a mod from the Steam workshop"
+      echo "restart               Stops the server and then starts it"
+      echo "restart --all         Restarts all servers specified in configfile_xxxxx"
+      echo "start                 Starts the server"
+      echo "start --all           Starts all servers specified in configfile_xxxxx"
+      echo "stop                  Stops the server"
+      echo "stop --all            Stops all servers specified in configfile_xxxxx"
+      echo "status                Returns the status of the current ARK server instance"
+      echo "update                Check for a new ARK server version, if needed, stops the server, updates it, and starts it again"
+      echo "update --force        Apply update without checking the current version"
+      echo "update --safe         Wait for server to perform world save and update."
+      echo "update --warn         Warn players before updating server"
+      echo "update --validate     Validates all ARK server files"
+      echo "update --update-mods  Updates installed and requested mods"
+      echo "upgrade               Check for a new ARK Server Tools version and upgrades it if needed"
+      echo "useconfig <name>      Use the configuration overrides in the specified config name or file"
       exit 1
     ;;
     *)
