@@ -568,13 +568,12 @@ doUpdate() {
 }
 
 #
-# Downloads mod and installs it into mods directory
+# Downloads a mod from the Steam workshop
 #
-doInstallMod(){
+doDownloadMod(){
   local modid=$1
   local modsrcdir="$steamcmdroot/steamapps/workshop/content/$mod_appid/$modid"
   local moddldir="$steamcmdroot/steamapps/workshop/downloads/$mod_appid/$modid"
-  local moddestdir="$arkserverroot/ShooterGame/Content/Mods/$modid"
   local dlsize=0
   cd "$steamcmdroot"
 
@@ -588,6 +587,22 @@ doInstallMod(){
 
   if [ -f "$modsrcdir/mod.info" ]; then
     echo "Mod $modid downloaded"
+    return 0
+  else
+    echo "Mod $modid was not successfully downloaded"
+    return 1
+  fi
+}
+
+#
+# Downloads mod and installs it into mods directory
+#
+doInstallMod(){
+  local modid=$1
+  local modsrcdir="$steamcmdroot/steamapps/workshop/content/$mod_appid/$modid"
+  local moddestdir="$arkserverroot/ShooterGame/Content/Mods/$modid"
+
+  if doDownloadMod $modid; then
     echo "Copying files to $moddestdir"
     if [ -f "$modsrcdir/LinuxNoEditor/mod.info" ]; then
       modsrcdir="$modsrcdir/LinuxNoEditor"
@@ -654,8 +669,6 @@ doInstallMod(){
     fi
 
     echo "Mod $modid installed"
-  else
-    echo "Mod $modid was not successfully downloaded"
   fi
 }
 
