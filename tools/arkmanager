@@ -508,6 +508,7 @@ doUpdateWarn(){
 doUpdate() {
   local appupdate=
   local updatetype=normal
+  local validate=
 
   for arg in "$@"; do
     if [ "$arg" == "--force" ]; then
@@ -516,6 +517,9 @@ doUpdate() {
       updatetype=safe
     elif [ "$arg" == "--warn" ]; then
       updatetype=warn
+    elif [ "$arg" == "--validate" ]; then
+      validate=validate
+      appupdate=1
     fi
   done
 
@@ -548,7 +552,7 @@ doUpdate() {
     doStop
 
     cd "$steamcmdroot"
-    ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid +quit
+    ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid $validate +quit
     # the current version should be the last version. We set our version
     getCurrentVersion
     echo "`timestamp`: update to $instver complete" >> "$logdir/update.log"
