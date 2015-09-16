@@ -509,6 +509,7 @@ doUpdate() {
   local appupdate=
   local updatetype=normal
   local validate=
+  local modupdate=
 
   for arg in "$@"; do
     if [ "$arg" == "--force" ]; then
@@ -520,8 +521,19 @@ doUpdate() {
     elif [ "$arg" == "--validate" ]; then
       validate=validate
       appupdate=1
+    elif [ "$arg" == "--update-mods" ]; then
+      modupdate=1
     fi
   done
+
+  if [ -n "$modupdate" ]; then
+    if ! doDownloadAllMods; then
+      modupdate=
+    fi
+    if ! isAnyModUpdateNeeded; then
+      modupdate=
+    fi
+  fi
 
   cd "$arkserverroot"
 
@@ -529,7 +541,7 @@ doUpdate() {
     appupdate=1
   fi
 
-  if [ -n "$appupdate" ]; then
+  if [ -n "$appupdate" -o -n "$modupdate" ]; then
     if isTheServerRunning; then
       if [ "$updatetype" == "safe" ]; then
         while [ ! `find $arkserverroot/ShooterGame/Saved/SavedArks -mmin -1 -name ${serverMap##*/}.ark` ]; do
@@ -551,11 +563,22 @@ doUpdate() {
     fi
     doStop
 
-    cd "$steamcmdroot"
-    ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid $validate +quit
-    # the current version should be the last version. We set our version
-    getCurrentVersion
-    echo "`timestamp`: update to $instver complete" >> "$logdir/update.log"
+    if [ -n "$appupdate" ]; then
+      cd "$steamcmdroot"
+      ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid $validate +quit
+      # the current version should be the last version. We set our version
+      getCurrentVersion
+      echo "`timestamp`: update to $instver complete" >> "$logdir/update.log"
+    fi
+
+    if [ -n "$modupdate" ]; then
+      for modid in $(getModIds); do
+        if isModUpdateNeeded $modid; then
+          doExtractMod $modid
+          echo "`timestamp`: Mod $modid updated" >> "$logdir/update.log"
+        fi
+      done
+    fi
 
     # we restart the server only if it was started before the update
     if [ $serverWasAlive -eq 1 ]; then
@@ -565,6 +588,18 @@ doUpdate() {
     echo "Your server is already up to date! The most recent version is ${bnumber}."
     echo "`timestamp`: No update needed." >> "$logdir/update.log"
   fi;
+}
+
+#
+# Get the Mod IDs of the installed mods and the requested mods
+#
+getModIds(){
+  (
+    echo "${serverMapModId}"
+    echo "${ark_TotalConversionMod}"
+    echo "${ark_GameModIds}" | tr ',' '\n'
+    find "${arkserverroot}/ShooterGame/Content/Mods" -maxdepth 1 -type d -printf "%P\n"
+  ) | sort | uniq | grep '^[1-9][0-9]*$'
 }
 
 #
@@ -595,6 +630,51 @@ doDownloadMod(){
 }
 
 #
+# Downloads all installed and requested mods from the Steam workshop
+#
+doDownloadAllMods(){
+  for modid in $(getModIds); do
+    doDownloadMod $modid || return 1
+  done
+}
+
+#
+# Checks if the files a mod owns need to be updated
+#
+isModUpdateNeeded(){
+  local modid=$1
+  local modsrcdir="$steamcmdroot/steamapps/workshop/content/$mod_appid/$modid"
+  local moddestdir="$arkserverroot/ShooterGame/Content/Mods/$modid"
+
+  if [ -f "$modsrcdir/mod.info" ]; then
+    if [ -f "$modsrcdir/LinuxNoEditor/mod.info" ]; then
+      modsrcdir="$modsrcdir/LinuxNoEditor"
+    fi
+
+    find "$modsrcdir" -type f ! -name "*.z.uncompressed_size" -printf "%P\n" | while read f; do
+      if [ ! -f "$moddestdir/${f%.z}" -o "$modsrcdir/$f" -nt "$moddestdir/${f%.z}" ]; then
+        return 0
+      fi
+    done
+  fi
+
+  return 1
+}
+
+#
+# Checks if any installed or requested mods need to be updated
+#
+isAnyModUpdateNeeded(){
+  for modid in $(getModIds); do
+    if isModUpdateNeeded $modid; then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+#
 # Extracts a mod into the ARK Mods directory
 #
 doExtractMod(){
@@ -609,7 +689,7 @@ doExtractMod(){
     fi
 
     find "$modsrcdir" -type d -printf "$moddestdir/%P\0" | xargs -0 -r mkdir -p
-    
+
     find "$modsrcdir" -type f ! \( -name '*.z' -or -name '*.z.uncompressed_size' \) -printf "%P\n" | while read f; do
       if [ ! -f "$moddestdir/$f" -o "$modsrcdir/$f" -nt "$moddestdir/$f" ]; then
         printf "%10d  %s  " "`stat -c '%s' "$modsrcdir/$f"`" "$f"
@@ -740,7 +820,7 @@ doBackup(){
   fi
 
   # ARK server uses Lock-Truncate-Write-Unlock
-  # Unfortunately we can't lock the file, as 
+  # Unfortunately we can't lock the file, as
   # ARK server uses a non-blocking lock and will
   # fail to update the file if the lock fails.
   echo -e "${NORMAL} Copying ARK profile files"
@@ -958,26 +1038,29 @@ while true; do
     ;;
     -h|--help)
       echo -e "Usage: arkmanager [OPTION]\n"
-      echo "Option            Description"
-      echo "backup            Saves a backup of your server inside the backup directory"
-      echo "broadcast <msg>   Sends a message to all users connected to server"
-      echo "saveworld         Saves the game world to disk"
-      echo "rconcmd <cmd>     Execute RCON command on server"
-      echo "checkupdate       Check for a new ARK server version"
-      echo "install           Install the ARK server files from steamcmd"
-      echo "restart           Stops the server and then starts it"
-      echo "restart --all     Restarts all servers specified in configfile_xxxxx"
-      echo "start             Starts the server"
-      echo "start --all       Starts all servers specified in configfile_xxxxx"
-      echo "stop              Stops the server"
-      echo "stop --all        Stops all servers specified in configfile_xxxxx"
-      echo "status            Returns the status of the current ARK server instance"
-      echo "update            Check for a new ARK server version, if needed, stops the server, updates it, and starts it again"
-      echo "update --force    Apply update without check the current version"
-      echo "update --safe     Wait for server to perform world save and update."
-      echo "update --warn     Warn players before updating server"
-      echo "upgrade           Check for a new ARK Server Tools version and upgrades it if needed"
-      echo "useconfig <name>  Use the configuration overrides in the specified config name or file"
+      echo "Option                Description"
+      echo "backup                Saves a backup of your server inside the backup directory"
+      echo "broadcast <msg>       Sends a message to all users connected to server"
+      echo "saveworld             Saves the game world to disk"
+      echo "rconcmd <cmd>         Execute RCON command on server"
+      echo "checkupdate           Check for a new ARK server version"
+      echo "install               Install the ARK server files from steamcmd"
+      echo "installmod <modid>    Installs a mod from the Steam workshop"
+      echo "restart               Stops the server and then starts it"
+      echo "restart --all         Restarts all servers specified in configfile_xxxxx"
+      echo "start                 Starts the server"
+      echo "start --all           Starts all servers specified in configfile_xxxxx"
+      echo "stop                  Stops the server"
+      echo "stop --all            Stops all servers specified in configfile_xxxxx"
+      echo "status                Returns the status of the current ARK server instance"
+      echo "update                Check for a new ARK server version, if needed, stops the server, updates it, and starts it again"
+      echo "update --force        Apply update without checking the current version"
+      echo "update --safe         Wait for server to perform world save and update."
+      echo "update --warn         Warn players before updating server"
+      echo "update --validate     Validates all ARK server files"
+      echo "update --update-mods  Updates installed and requested mods"
+      echo "upgrade               Check for a new ARK Server Tools version and upgrades it if needed"
+      echo "useconfig <name>      Use the configuration overrides in the specified config name or file"
       exit 1
     ;;
     *)
