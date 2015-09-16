@@ -881,18 +881,14 @@ while true; do
         doInstall
     ;;
     update)
-        if [ "$2" == "--force" ]; then
-          doUpdate --force
+        args=()
+
+	while [[ "$2" =~ ^-- ]]; do
+	  args=( "${args[@]}" "$2" )
 	  shift
-        elif [ "$2" == "--safe" ]; then
-          doUpdate --safe
-	  shift
-        elif [ "$2" == "--warn" ]; then
-          doUpdate --warn
-          shift
-        else
-          doUpdate
-        fi
+	done
+
+	doUpdate "${args[@]}"
     ;;
     checkupdate)
       checkForUpdate
