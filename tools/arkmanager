@@ -448,9 +448,21 @@ doInstall() {
 # Stop the server, update it and then start it back.
 #
 doUpdate() {
+  local appupdate=
+
+  for arg in "$@"; do
+    if [ "$arg" == "--force" ]; then
+      appupdate=1
+    fi
+  done
+
   cd "$arkserverroot"
 
   if isUpdateNeeded; then
+    appupdate=1
+  fi
+
+  if [ -n "$appupdate" ]; then
     forceUpdate
   else
     echo "Your server is already up to date! The most recent version is ${bnumber}."
@@ -870,7 +882,7 @@ while true; do
     ;;
     update)
         if [ "$2" == "--force" ]; then
-          forceUpdate
+          doUpdate --force
 	  shift
         elif [ "$2" == "--safe" ]; then
           doSafeUpdate
