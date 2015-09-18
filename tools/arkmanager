@@ -1015,6 +1015,25 @@ doUpgrade() {
   fi
 }
 
+doUninstallTools() {
+  local sudo=sudo
+  if [ "$steamcmd_user" == "--me" ]; then
+    sudo=
+  fi
+
+  read -p "Are you sure you want to uninstall the ARK Server Tools?" -n 1 -r
+
+  if [[ "$REPLY" =~ ^[Yy]$ ]]; then
+    if [ -n "${install_datadir}" -a -x "${install_datadir}/arkmanager-uninstall.sh" ]; then
+      $sudo "${install_datadir}/arkmanager-uninstall.sh"
+      exit 0
+    elif [ -n "${install_libexecdir}" -a -x "${install_libexecdir}/arkmanager-uninstall.sh" ]; then
+      $sudo "${install_libexecdir}/arkmanager-uninstall.sh"
+      exit 0
+    fi
+  fi
+}
+
 useConfig() {
   for varname in "${!configfile_@}"; do
     if [ "configfile_$1" == "$varname" ]; then
@@ -1107,6 +1126,9 @@ while true; do
     upgrade-tools)
       doUpgrade
     ;;
+    uninstall-tools)
+      doUninstallTools
+    ;;
     useconfig)
       useConfig "$2"
       shift
@@ -1135,6 +1157,7 @@ while true; do
       echo "update --validate     Validates all ARK server files"
       echo "update --update-mods  Updates installed and requested mods"
       echo "upgrade-tools         Check for a new ARK Server Tools version and upgrades it if needed"
+      echo "uninstall-tools       Uninstall the ARK Server Tools"
       echo "useconfig <name>      Use the configuration overrides in the specified config name or file"
       exit 1
     ;;
