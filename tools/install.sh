@@ -75,15 +75,21 @@ else
 fi
 
 if [ "$showusage" == "yes" ]; then
+    echo "Usage: ./install.sh {<user>|--me} [OPTIONS]"
     echo "You must specify your system steam user who own steamcmd directory to install ARK Tools."
     echo "Specify the special used '--me' to perform a user-install."
-    echo "Usage: ./install.sh steam"
     echo
-    echo "Environment variables affecting install:"
-    echo "EXECPREFIX:   prefix in which to install arkmanager executable"
-    echo "              [${EXECPREFIX}]"
-    echo "INSTALL_ROOT: staging directory in which to perform install"
-    echo "              [${INSTALL_ROOT}]"
+    echo "<user>          The user arkmanager should be run as"
+    echo
+    echo "Option          Description"
+    echo "--help, -h      Show this help text"
+    echo "--me            Perform a user-install"
+    echo "--prefix        Specify the prefix under which to install arkmanager"
+    echo "                [PREFIX=${PREFIX}]"
+    echo "--exec-prefix   Specify the prefix under which to install executables"
+    echo "                [EXECPREFIX=${EXECPREFIX}]"
+    echo "--install-root  Specify the staging directory in which to perform the install"
+    echo "                [INSTALL_ROOT=${INSTALL_ROOT}]"
     exit 1
 fi
 
