@@ -35,6 +35,13 @@ while [ -n "$1" ]; do
       INSTALL_ROOT="$2"
       shift
     ;;
+    --bindir=*)
+      BINDIR="${1#--bindir=}"
+    ;;
+    --bindir)
+      BINDIR="$2"
+      shift
+    ;;
     -*)
       echo "Invalid option '$1'"
       showusage=yes
@@ -74,6 +81,8 @@ else
   EXECPREFIX="${EXECPREFIX:-/usr/local}"
 fi
 
+BINDIR="${BINDIR:-${EXECPREFIX}/bin}"
+
 if [ "$showusage" == "yes" ]; then
     echo "Usage: ./install.sh {<user>|--me} [OPTIONS]"
     echo "You must specify your system steam user who own steamcmd directory to install ARK Tools."
@@ -90,14 +99,16 @@ if [ "$showusage" == "yes" ]; then
     echo "                [EXECPREFIX=${EXECPREFIX}]"
     echo "--install-root  Specify the staging directory in which to perform the install"
     echo "                [INSTALL_ROOT=${INSTALL_ROOT}]"
+    echo "--bindir        Specify the directory under which to install executables"
+    echo "                [BINDIR=${BINDIR}]"
     exit 1
 fi
 
 if [ "$userinstall" == "yes" ]; then
     # Copy arkmanager to ~/bin
-    mkdir -p "${INSTALL_ROOT}${EXECPREFIX}/bin"
-    cp arkmanager "${INSTALL_ROOT}${EXECPREFIX}/bin/arkmanager"
-    chmod +x "${INSTALL_ROOT}${EXECPREFIX}/bin/arkmanager"
+    mkdir -p "${INSTALL_ROOT}${BINDIR}"
+    cp arkmanager "${INSTALL_ROOT}${BINDIR}/arkmanager"
+    chmod +x "${INSTALL_ROOT}${BINDIR}/arkmanager"
 
     # Create a folder in ~/logs to let Ark tools write its own log files
     mkdir -p "${INSTALL_ROOT}${PREFIX}/logs/arktools"
@@ -115,8 +126,8 @@ if [ "$userinstall" == "yes" ]; then
     fi
 else
     # Copy arkmanager to /usr/bin and set permissions
-    cp arkmanager "${INSTALL_ROOT}${EXECPREFIX}/bin/arkmanager"
-    chmod +x "${INSTALL_ROOT}${EXECPREFIX}/bin/arkmanager"
+    cp arkmanager "${INSTALL_ROOT}${BINDIR}/arkmanager"
+    chmod +x "${INSTALL_ROOT}${BINDIR}/arkmanager"
 
     # Copy arkdaemon to /etc/init.d ,set permissions and add it to boot
     if [ -f /lib/lsb/init-functions ]; then
@@ -127,7 +138,7 @@ else
         chmod +x "${INSTALL_ROOT}${EXECPREFIX}/libexec/arkmanager/arkmanager.init"
         cp systemd/arkdeamon.service "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
         sed -i "s|=/usr/|=${EXECPREFIX}/|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
-        sed -i "s@^DAEMON=\"/usr@DAEMON=\"${EXECPREFIX}@" "${INSTALL_ROOT}${EXECPREFIX}/libexec/arkmanager/arkmanager.init"
+        sed -i "s@^DAEMON=\"/usr/bin/@DAEMON=\"${BINDIR}/@" "${INSTALL_ROOT}${EXECPREFIX}/libexec/arkmanager/arkmanager.init"
         if [ -z "${INSTALL_ROOT}" ]; then
           systemctl daemon-reload
           systemctl enable arkmanager.service
@@ -137,7 +148,7 @@ else
       else  # systemd not present, so use sysvinit
         cp lsb/arkdaemon "${INSTALL_ROOT}/etc/init.d/arkmanager"
         chmod +x "${INSTALL_ROOT}/etc/init.d/arkmanager"
-        sed -i "s|^DAEMON=\"/usr|DAEMON=\"${EXECPREFIX}|" "${INSTALL_ROOT}/etc/init.d/arkmanager"
+        sed -i "s|^DAEMON=\"/usr/bin/|DAEMON=\"${BINDIR}/|" "${INSTALL_ROOT}/etc/init.d/arkmanager"
         # add to startup if the system use sysinit
         if [ -x /usr/sbin/update-rc.d -a -z "${INSTALL_ROOT}" ]; then
           update-rc.d arkmanager defaults
@@ -153,7 +164,7 @@ else
         chmod +x "${INSTALL_ROOT}${EXECPREFIX}/libexec/arkmanager/arkmanager.init"
         cp systemd/arkdeamon.service "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
         sed -i "s|=/usr/|=${EXECPREFIX}/|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
-        sed -i "s@^DAEMON=\"/usr@DAEMON=\"${EXECPREFIX}@" "${INSTALL_ROOT}${EXECPREFIX}/libexec/arkmanager/arkmanager.init"
+        sed -i "s@^DAEMON=\"/usr/bin/@DAEMON=\"${BINDIR}/@" "${INSTALL_ROOT}${EXECPREFIX}/libexec/arkmanager/arkmanager.init"
         if [ -z "${INSTALL_ROOT}" ]; then
           systemctl daemon-reload
           systemctl enable arkmanager.service
@@ -163,7 +174,7 @@ else
       else # systemd not preset, so use sysvinit
         cp redhat/arkdaemon "${INSTALL_ROOT}/etc/rc.d/init.d/arkmanager"
         chmod +x "${INSTALL_ROOT}/etc/rc.d/init.d/arkmanager"
-        sed -i "s@^DAEMON=\"/usr@DAEMON=\"${EXECPREFIX}@" "${INSTALL_ROOT}/etc/rc.d/init.d/arkmanager"
+        sed -i "s@^DAEMON=\"/usr/bin/@DAEMON=\"${BINDIR}/@" "${INSTALL_ROOT}/etc/rc.d/init.d/arkmanager"
         if [ -x /sbin/chkconfig -a -z "${INSTALL_ROOT}" ]; then
           chkconfig --add arkmanager
           echo "Ark server will now start on boot, if you want to remove this feature run the following line"
@@ -173,7 +184,7 @@ else
     elif [ -f /sbin/runscript ]; then
       cp openrc/arkdaemon "${INSTALL_ROOT}/etc/init.d/arkmanager"
       chmod +x "${INSTALL_ROOT}/etc/init.d/arkmanager"
-      sed -i "s@^DAEMON=\"/usr@DAEMON=\"${EXECPREFIX}@" "${INSTALL_ROOT}/etc/init.d/arkmanager"
+      sed -i "s@^DAEMON=\"/usr/bin/@DAEMON=\"${BINDIR}/@" "${INSTALL_ROOT}/etc/init.d/arkmanager"
       if [ -x /sbin/rc-update -a -z "${INSTALL_ROOT}" ]; then
         rc-update add arkmanager default
         echo "Ark server will now start on boot, if you want to remove this feature run the following line"
@@ -185,7 +196,7 @@ else
       chmod +x "${INSTALL_ROOT}${EXECPREFIX}/libexec/arkmanager/arkmanager.init"
       cp systemd/arkdeamon.service "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
       sed -i "s|=/usr/|=${EXECPREFIX}/|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
-      sed -i "s@^DAEMON=\"/usr@DAEMON=\"${EXECPREFIX}@" "${INSTALL_ROOT}${EXECPREFIX}/libexec/arkmanager/arkmanager.init"
+      sed -i "s@^DAEMON=\"/usr/bin/@DAEMON=\"${BINDIR}/@" "${INSTALL_ROOT}${EXECPREFIX}/libexec/arkmanager/arkmanager.init"
       if [ -z "${INSTALL_ROOT}" ]; then
         systemctl enable arkmanager.service
         echo "Ark server will now start on boot, if you want to remove this feature run the following line"
