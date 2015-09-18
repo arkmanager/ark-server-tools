@@ -420,6 +420,8 @@ forceUpdate(){
   if isTheServerRunning ;then
     serverWasAlive=1
   fi
+  echo "Saving world"
+  doSaveWorld
   doStop
   cd "$steamcmdroot"
   ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid +quit
