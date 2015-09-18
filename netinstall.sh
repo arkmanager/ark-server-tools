@@ -4,7 +4,9 @@
 # Net Installer, used with curl
 #
 
+steamcmd_user="$1"
 channel=${2:-master} # if defined by 2nd argument install the defined version, otherwise install master
+shift 2
 
 # Download and untar installation files
 cd /tmp
@@ -33,7 +35,7 @@ sed -i "s|^arkstCommit='.*'$|arkstCommit='${COMMIT}'|" arkmanager
 version=`<../.version`
 sed -i "s|^arkstVersion=\".*\"|arkstVersion='${version}'|" arkmanager
 chmod +x install.sh
-bash install.sh $1 > /dev/null
+bash install.sh "$steamcmd_user" "$@" > /dev/null
 
 status=$?
 

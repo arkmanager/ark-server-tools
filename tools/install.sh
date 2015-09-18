@@ -129,6 +129,8 @@ if [ "$userinstall" == "yes" ]; then
     sed -i -e "s|^steamcmd_user=\"steam\"|steamcmd_user=\"--me\"|" \
            -e "s|\"/home/steam|\"${PREFIX}|" \
            -e "s|/var/log/arktools|${PREFIX}/logs/arktools|" \
+           -e "s|^install_bindir=.*|install_bindir=\"${BINDIR}\"|" \
+           -e "s|^install_libexecdir=.*|install_libexecdir=\"${LIBEXECDIR}\"|" \
            "${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg.NEW"
 
     # Copy arkmanager.cfg to ~/.arkmanager.cfg if it doesn't already exist
@@ -229,6 +231,8 @@ else
     chown "$1" "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg.NEW"
     sed -i -e "s|^steamcmd_user=\"steam\"|steamcmd_user=\"$1\"|" \
            -e "s|\"/home/steam|\"/home/$1|" \
+           -e "s|^install_bindir=.*|install_bindir=\"${BINDIR}\"|" \
+           -e "s|^install_libexecdir=.*|install_libexecdir=\"${LIBEXECDIR}\"|" \
            "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg"
 
     if [ -f "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg" ]; then
