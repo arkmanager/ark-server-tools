@@ -68,10 +68,50 @@ doUninstallTools() {
   fi
 }
 
+runAsRoot(){
+  getConfigVar(){
+    val="$(echo -ne "$(sed -n "/^$1=/{s|^[^=]*||;s|^\"\\(.*\\)\"\$|\\1|;s|^'\\(.*\\)\$|\\1|;p}" <"/etc/arkmanager/arkmanager.cfg" | tail -n1)")"
+    if [ -n "$val" ]; then
+      echo "$val"
+    else
+      echo "$2"
+    fi
+  }
+
+  arkstChannel="$(getConfigVar arkstChannel "master")"
+  install_bindir="$(getConfigVar install_bindir "${0%/*}")"
+  install_libexecdir="$(getConfigVar install_libexecdir "${install_bindir%/*}/libexec/arkmanager")"
+  install_datadir="$(getConfigVar install_datadir "${install_bindir%/*}/share/arkmanager")"
+  steamcmd_user="$(getConfigVar steamcmd_user "steam")"
+
+  if ! getent passwd "$steamcmd_user" >/dev/null 2>&1; then
+    echo "Invalid steamcmd_user in config file"
+    exit 1
+  fi
+
+  if [ "$1" == "upgrade-tools" ]; then
+    doUpgrade
+  elif [ "$1" == "uninstall-tools" ]; then
+    doUninstallTools
+  else
+    echo -n "arkmanager v${arkstVersion}: "
+    if [ $# -eq 0 ]; then
+      echo "no command specified"
+    else
+      echo "unknown command '$1' specified"
+    fi
+    echo -e "Usage: arkmanager [OPTION]\n"
+    echo "Option                Description"
+    echo "upgrade-tools         Check for a new ARK Server Tools version and upgrades it if needed"
+    echo "uninstall-tools       Uninstall the ARK Server Tools"
+    exit 1
+  fi
+}
+
 # Check the user is not currently running this script as root
 if [ "$(id -u)" == "0" ]; then
-   echo "This script must NOT be run as root" 1>&2
-   exit 1
+  runAsRoot "$@"
+  exit 0
 fi
 
 #---------------------
