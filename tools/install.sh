@@ -142,6 +142,16 @@ if [ "$userinstall" == "yes" ]; then
     cp arkmanager "${INSTALL_ROOT}${BINDIR}/arkmanager"
     chmod +x "${INSTALL_ROOT}${BINDIR}/arkmanager"
 
+    # Create a folder in ~/.local/share to store arkmanager support files
+    mkdir -p "${INSTALL_ROOT}${DATADIR}"
+
+    # Copy the uninstall script to ~/.local/share/arkmanager
+    cp uninstall-user.sh "${INSTALL_ROOT}${DATADIR}/arkmanager-uninstall.sh"
+    chmod +x "${INSTALL_ROOT}${DATADIR}/arkmanager-uninstall.sh"
+    sed -i -e "s|^BINDIR=.*|BINDIR=\"${BINDIR}\"|" \
+           -e "s|^DATADIR=.*|DATADIR=\"${DATADIR}\"|" \
+           "${INSTALL_ROOT}${DATADIR}/arkmanager-uninstall.sh"
+
     # Create a folder in ~/logs to let Ark tools write its own log files
     mkdir -p "${INSTALL_ROOT}${PREFIX}/logs/arktools"
 
@@ -168,6 +178,15 @@ else
     # Copy arkmanager to /usr/bin and set permissions
     cp arkmanager "${INSTALL_ROOT}${BINDIR}/arkmanager"
     chmod +x "${INSTALL_ROOT}${BINDIR}/arkmanager"
+
+    # Copy the uninstall script to ~/.local/share/arkmanager
+    mkdir -p "${INSTALL_ROOT}${LIBEXECDIR}"
+    cp uninstall.sh "${INSTALL_ROOT}${DATADIR}/arkmanager-uninstall.sh"
+    chmod +x "${INSTALL_ROOT}${DATADIR}/arkmanager-uninstall.sh"
+    sed -i -e "s|^BINDIR=.*|BINDIR=\"${BINDIR}\"|" \
+           -e "s|^LIBEXECDIR=.*|LIBEXECDIR=\"${LIBEXECDIR}\"|" \
+           -e "s|^DATADIR=.*|DATADIR=\"${DATADIR}\"|" \
+           "${INSTALL_ROOT}${DATADIR}/arkmanager-uninstall.sh"
 
     # Copy arkdaemon to /etc/init.d ,set permissions and add it to boot
     if [ -f /lib/lsb/init-functions ]; then
