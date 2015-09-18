@@ -626,6 +626,8 @@ doUpdate() {
     if isTheServerRunning ;then
       serverWasAlive=1
     fi
+    echo "Saving world"
+    doSaveWorld
     doStop
 
     if [ -n "$appupdate" ]; then
