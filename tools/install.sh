@@ -14,6 +14,27 @@ while [ -n "$1" ]; do
       showusage=yes
       break
     ;;
+    --prefix=*)
+      PREFIX="${1#--prefix=}"
+    ;;
+    --prefix)
+      PREFIX="$2"
+      shift
+    ;;
+    --exec-prefix=*)
+      EXECPREFIX="${1#--exec-prefix=}"
+    ;;
+    --exec-prefix)
+      EXECPREFIX="$2"
+      shift
+    ;;
+    --install-root=*)
+      INSTALL_ROOT="${1#--install-root=}"
+    ;;
+    --install-root)
+      INSTALL_ROOT="$2"
+      shift
+    ;;
     -*)
       echo "Invalid option '$1'"
       showusage=yes
