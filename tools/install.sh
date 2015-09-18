@@ -78,7 +78,8 @@ if [ "$userinstall" == "yes" ]; then
   PREFIX="${PREFIX:-${HOME}}"
   EXECPREFIX="${EXECPREFIX:-${PREFIX}}"
 else
-  EXECPREFIX="${EXECPREFIX:-/usr/local}"
+  PREFIX="${PREFIX:-/usr/local}"
+  EXECPREFIX="${EXECPREFIX:-${PREFIX}}"
 fi
 
 BINDIR="${BINDIR:-${EXECPREFIX}/bin}"
