@@ -6,6 +6,64 @@
 # Maintainer:           FezVrasta
 # Contributors:         Sispheor, Atriusftw, klightspeed, lexat, puseidr
 
+doUpgradeTools() {
+  local sudo=sudo
+  if [ "$steamcmd_user" == "--me" ]; then
+    sudo=
+  fi
+  echo "arkmanager v${arkstVersion}: Checking for updates..."
+  arkstLatestVersion=`curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/.version`
+  arkstLatestCommit=`curl -s https://api.github.com/repos/FezVrasta/ark-server-tools/git/refs/heads/${arkstChannel} | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p'`
+  reinstall_args=()
+  if [ -n "$install_bindir" ]; then
+    reinstall_args=( "${reinstall_args[@]}" "--bindir" "$install_bindir" )
+  fi
+  if [ -n "$install_libexecdir" ]; then
+    reinstall_args=( "${reinstall_args[@]}" "--libexecdir" "$install_libexecdir" )
+  fi
+  if [ -n "$install_datadir" ]; then
+    reinstall_args=( "${reinstall_args[@]}" "--datadir" "$install_datadir" )
+  fi
+  if [[ $arkstLatestVersion > $arkstVersion ]]; then
+    read -p "A new version was found! Do you want to upgrade ARK Server Tools to v${arkstLatestVersion}?" -n 1 -r
+    echo -en "\n"
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/netinstall.sh | $sudo bash -s -- ${steamcmd_user} ${arkstChannel} "${reinstall_args[@]}"
+      else
+        exit 0
+    fi
+  elif [[ "$arkstLatestCommit" != "$arkstCommit" ]]; then
+    read -p "A hotfix is available for v${arkstLatestVersion}.  Do you wish to install it?" -n 1 -r
+    echo -en "\n"
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/netinstall.sh | $sudo bash -s -- ${steamcmd_user} ${arkstChannel} "${reinstall_args[@]}"
+      else
+        exit 0
+    fi
+  else
+    echo "Your ARK server tools are already up to date"
+  fi
+}
+
+doUninstallTools() {
+  local sudo=sudo
+  if [ "$steamcmd_user" == "--me" ]; then
+    sudo=
+  fi
+
+  read -p "Are you sure you want to uninstall the ARK Server Tools?" -n 1 -r
+
+  if [[ "$REPLY" =~ ^[Yy]$ ]]; then
+    if [ -n "${install_datadir}" -a -x "${install_datadir}/arkmanager-uninstall.sh" ]; then
+      $sudo "${install_datadir}/arkmanager-uninstall.sh"
+      exit 0
+    elif [ -n "${install_libexecdir}" -a -x "${install_libexecdir}/arkmanager-uninstall.sh" ]; then
+      $sudo "${install_libexecdir}/arkmanager-uninstall.sh"
+      exit 0
+    fi
+  fi
+}
+
 # Check the user is not currently running this script as root
 if [ "$(id -u)" == "0" ]; then
    echo "This script must NOT be run as root" 1>&2
@@ -983,64 +1041,6 @@ printStatus(){
   fi
   getCurrentVersion
   echo -e "$NORMAL" "Server version: " "$GREEN" $instver "$NORMAL"
-}
-
-doUpgradeTools() {
-  local sudo=sudo
-  if [ "$steamcmd_user" == "--me" ]; then
-    sudo=
-  fi
-  echo "arkmanager v${arkstVersion}: Checking for updates..."
-  arkstLatestVersion=`curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/.version`
-  arkstLatestCommit=`curl -s https://api.github.com/repos/FezVrasta/ark-server-tools/git/refs/heads/${arkstChannel} | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p'`
-  reinstall_args=()
-  if [ -n "$install_bindir" ]; then
-    reinstall_args=( "${reinstall_args[@]}" "--bindir" "$install_bindir" )
-  fi
-  if [ -n "$install_libexecdir" ]; then
-    reinstall_args=( "${reinstall_args[@]}" "--libexecdir" "$install_libexecdir" )
-  fi
-  if [ -n "$install_datadir" ]; then
-    reinstall_args=( "${reinstall_args[@]}" "--datadir" "$install_datadir" )
-  fi
-  if [[ $arkstLatestVersion > $arkstVersion ]]; then
-    read -p "A new version was found! Do you want to upgrade ARK Server Tools to v${arkstLatestVersion}?" -n 1 -r
-    echo -en "\n"
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/netinstall.sh | $sudo bash -s -- ${steamcmd_user} ${arkstChannel} "${reinstall_args[@]}"
-      else
-        exit 0
-    fi
-  elif [[ "$arkstLatestCommit" != "$arkstCommit" ]]; then
-    read -p "A hotfix is available for v${arkstLatestVersion}.  Do you wish to install it?" -n 1 -r
-    echo -en "\n"
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/netinstall.sh | $sudo bash -s -- ${steamcmd_user} ${arkstChannel} "${reinstall_args[@]}"
-      else
-        exit 0
-    fi
-  else
-    echo "Your ARK server tools are already up to date"
-  fi
-}
-
-doUninstallTools() {
-  local sudo=sudo
-  if [ "$steamcmd_user" == "--me" ]; then
-    sudo=
-  fi
-
-  read -p "Are you sure you want to uninstall the ARK Server Tools?" -n 1 -r
-
-  if [[ "$REPLY" =~ ^[Yy]$ ]]; then
-    if [ -n "${install_datadir}" -a -x "${install_datadir}/arkmanager-uninstall.sh" ]; then
-      $sudo "${install_datadir}/arkmanager-uninstall.sh"
-      exit 0
-    elif [ -n "${install_libexecdir}" -a -x "${install_libexecdir}/arkmanager-uninstall.sh" ]; then
-      $sudo "${install_libexecdir}/arkmanager-uninstall.sh"
-      exit 0
-    fi
-  fi
 }
 
 useConfig() {
