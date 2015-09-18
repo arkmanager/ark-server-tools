@@ -1104,7 +1104,7 @@ while true; do
     status)
       printStatus
     ;;
-    upgrade)
+    upgrade-tools)
       doUpgrade
     ;;
     useconfig)
@@ -1134,7 +1134,7 @@ while true; do
       echo "update --warn         Warn players before updating server"
       echo "update --validate     Validates all ARK server files"
       echo "update --update-mods  Updates installed and requested mods"
-      echo "upgrade               Check for a new ARK Server Tools version and upgrades it if needed"
+      echo "upgrade-tools         Check for a new ARK Server Tools version and upgrades it if needed"
       echo "useconfig <name>      Use the configuration overrides in the specified config name or file"
       exit 1
     ;;
