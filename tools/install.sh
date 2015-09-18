@@ -123,16 +123,21 @@ if [ "$userinstall" == "yes" ]; then
     # Create a folder in ~/logs to let Ark tools write its own log files
     mkdir -p "${INSTALL_ROOT}${PREFIX}/logs/arktools"
 
+    # Copy arkmanager.cfg to ~/.arkmanager.cfg.NEW
+    cp arkmanager.cfg "${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg.NEW"
+    # Change the defaults in the new config file
+    sed -i -e "s|^steamcmd_user=\"steam\"|steamcmd_user=\"--me\"|" \
+           -e "s|\"/home/steam|\"${PREFIX}|" \
+           -e "s|/var/log/arktools|${PREFIX}/logs/arktools|" \
+           "${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg.NEW"
+
     # Copy arkmanager.cfg to ~/.arkmanager.cfg if it doesn't already exist
     if [ -f "${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg" ]; then
-      cp -n arkmanager.cfg "${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg.NEW"
-      sed -i "s|^steamcmd_user=\"steam\"|steamcmd_user=\"--me\"|;s|\"/home/steam|\"${PREFIX}|;s|/var/log/arktools|${PREFIX}/logs/arktools|" "${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg.NEW"
       echo "A previous version of ARK Server Tools was detected in your system, your old configuration was not overwritten. You may need to manually update it."
       echo "A copy of the new configuration file was included in '${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg.NEW'. Make sure to review any changes and update your config accordingly!"
       exit 2
     else
-      cp -n arkmanager.cfg "${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg"
-      sed -i "s|^steamcmd_user=\"steam\"|steamcmd_user=\"--me\"|;s|\"/home/steam|\"${PREFIX}|;s|/var/log/arktools|${PREFIX}/logs/arktools|" "${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg"
+      mv -n "${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg.NEW" "${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg"
     fi
 else
     # Copy arkmanager to /usr/bin and set permissions
@@ -220,16 +225,18 @@ else
 
     # Copy arkmanager.cfg inside linux configuation folder if it doesn't already exists
     mkdir -p "${INSTALL_ROOT}/etc/arkmanager"
+    cp arkmanager.cfg "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg.NEW"
+    chown "$1" "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg.NEW"
+    sed -i -e "s|^steamcmd_user=\"steam\"|steamcmd_user=\"$1\"|" \
+           -e "s|\"/home/steam|\"/home/$1|" \
+           "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg"
+
     if [ -f "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg" ]; then
-      cp -n arkmanager.cfg "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg.NEW"
-      chown "$1" "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg.NEW"
       echo "A previous version of ARK Server Tools was detected in your system, your old configuration was not overwritten. You may need to manually update it."
       echo "A copy of the new configuration file was included in /etc/arkmanager. Make sure to review any changes and update your config accordingly!"
       exit 2
     else
-      cp -n arkmanager.cfg "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg"
-      chown "$1" "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg"
-      sed -i "s|^steamcmd_user=\"steam\"|steamcmd_user=\"$1\"|;s|\"/home/steam|\"/home/$1|" "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg"
+      mv -n "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg.NEW" "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg"
     fi
 fi
 
