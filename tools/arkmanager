@@ -575,6 +575,7 @@ doUpdate() {
   local updatetype=normal
   local validate=
   local modupdate=
+  local saveworld=
 
   for arg in "$@"; do
     if [ "$arg" == "--force" ]; then
@@ -586,6 +587,8 @@ doUpdate() {
     elif [ "$arg" == "--validate" ]; then
       validate=validate
       appupdate=1
+    elif [ "$arg" == "--saveworld" ]; then
+      saveworld=1
     elif [ "$arg" == "--update-mods" ]; then
       modupdate=1
     fi
@@ -626,8 +629,12 @@ doUpdate() {
     if isTheServerRunning ;then
       serverWasAlive=1
     fi
-    echo "Saving world"
-    doSaveWorld
+
+    if [ -n "$saveworld" ]; then
+      echo "Saving world"
+      doSaveWorld
+    fi
+
     doStop
 
     if [ -n "$appupdate" ]; then
@@ -1157,6 +1164,7 @@ while true; do
       echo "update --safe         Wait for server to perform world save and update."
       echo "update --warn         Warn players before updating server"
       echo "update --validate     Validates all ARK server files"
+      echo "update --saveworld    Saves world before update"
       echo "update --update-mods  Updates installed and requested mods"
       echo "upgrade-tools         Check for a new ARK Server Tools version and upgrades it if needed"
       echo "uninstall-tools       Uninstall the ARK Server Tools"
