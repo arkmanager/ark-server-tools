@@ -1,14 +1,72 @@
 #!/bin/bash
 
-if [ "$1" == "--me" ]; then
+userinstall=no
+steamcmd_user=
+showusage=no
+
+while [ -n "$1" ]; do
+  case "$1" in
+    --me)
+      userinstall=yes
+      steamcmd_user="--me"
+    ;;
+    -h|--help)
+      showusage=yes
+      break
+    ;;
+    -*)
+      echo "Invalid option '$1'"
+      showusage=yes
+      break;
+    ;;
+    *)
+      if [ -n "$steamcmd_user" ]; then
+        echo "Multiple users specified"
+        showusage=yes
+        break;
+      elif getent passwd "$1" >/dev/null 2>&1; then
+        steamcmd_user="$1"
+      else
+        echo "Invalid user '$1'"
+        showusage=yes
+        break;
+      fi
+    ;;
+  esac
+  shift
+done
+
+if [ "$userinstall" == "yes" -a "$UID" -eq 0 ]; then
+  echo "Refusing to perform user-install as root"
+  showusage=yes
+fi
+
+if [ "$showusage" == "no" -a -z "$steamcmd_user" ]; then
+  echo "No user specified"
+  showusage=yes
+fi
+
+if [ "$userinstall" == "yes" ]; then
   PREFIX="${PREFIX:-${HOME}}"
   EXECPREFIX="${EXECPREFIX:-${PREFIX}}"
 else
   EXECPREFIX="${EXECPREFIX:-/usr/local}"
 fi
 
-if [ ! -z "$1" ]; then
-  if [ "$1" == "--me" -a "$UID" -ne 0 ]; then
+if [ "$showusage" == "yes" ]; then
+    echo "You must specify your system steam user who own steamcmd directory to install ARK Tools."
+    echo "Specify the special used '--me' to perform a user-install."
+    echo "Usage: ./install.sh steam"
+    echo
+    echo "Environment variables affecting install:"
+    echo "EXECPREFIX:   prefix in which to install arkmanager executable"
+    echo "              [${EXECPREFIX}]"
+    echo "INSTALL_ROOT: staging directory in which to perform install"
+    echo "              [${INSTALL_ROOT}]"
+    exit 1
+fi
+
+if [ "$userinstall" == "yes" ]; then
     # Copy arkmanager to ~/bin
     mkdir -p "${INSTALL_ROOT}${EXECPREFIX}/bin"
     cp arkmanager "${INSTALL_ROOT}${EXECPREFIX}/bin/arkmanager"
@@ -28,10 +86,7 @@ if [ ! -z "$1" ]; then
       cp -n arkmanager.cfg "${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg"
       sed -i "s|^steamcmd_user=\"steam\"|steamcmd_user=\"--me\"|;s|\"/home/steam|\"${PREFIX}|;s|/var/log/arktools|${PREFIX}/logs/arktools|" "${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg"
     fi
-  elif [ "$1" == "--me" ]; then
-    echo "You specified the special '--me' user while running as root. This is not permitted."
-    exit 1
-  else
+else
     # Copy arkmanager to /usr/bin and set permissions
     cp arkmanager "${INSTALL_ROOT}${EXECPREFIX}/bin/arkmanager"
     chmod +x "${INSTALL_ROOT}${EXECPREFIX}/bin/arkmanager"
@@ -128,18 +183,6 @@ if [ ! -z "$1" ]; then
       chown "$1" "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg"
       sed -i "s|^steamcmd_user=\"steam\"|steamcmd_user=\"$1\"|;s|\"/home/steam|\"/home/$1|" "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg"
     fi
-  fi
-else
-    echo "You must specify your system steam user who own steamcmd directory to install ARK Tools."
-    echo "Specify the special used '--me' to perform a user-install."
-    echo "Usage: ./install.sh steam"
-    echo
-    echo "Environment variables affecting install:"
-    echo "EXECPREFIX:   prefix in which to install arkmanager executable"
-    echo "              [${EXECPREFIX}]"
-    echo "INSTALL_ROOT: staging directory in which to perform install"
-    echo "              [${INSTALL_ROOT}]"
-    exit 1
 fi
 
 exit 0
