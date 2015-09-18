@@ -8,7 +8,7 @@
 
 doUpgradeTools() {
   local sudo=sudo
-  if [ "$steamcmd_user" == "--me" ]; then
+  if [ "$UID" == 0 -o "$steamcmd_user" == "--me" ]; then
     sudo=
   fi
   echo "arkmanager v${arkstVersion}: Checking for updates..."
@@ -47,7 +47,7 @@ doUpgradeTools() {
 
 doUninstallTools() {
   local sudo=sudo
-  if [ "$steamcmd_user" == "--me" ]; then
+  if [ "$UID" == 0 -o "$steamcmd_user" == "--me" ]; then
     sudo=
   fi
 
