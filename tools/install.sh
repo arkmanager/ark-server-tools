@@ -42,6 +42,13 @@ while [ -n "$1" ]; do
       BINDIR="$2"
       shift
     ;;
+    --libexecdir=*)
+      LIBEXECDIR="${1#--libexecdir=}"
+    ;;
+    --libexecdir)
+      LIBEXECDIR="$2"
+      shift
+    ;;
     -*)
       echo "Invalid option '$1'"
       showusage=yes
@@ -83,6 +90,7 @@ else
 fi
 
 BINDIR="${BINDIR:-${EXECPREFIX}/bin}"
+LIBEXECDIR="${LIBEXECDIR:-${EXECPREFIX}/libexec/arkmanager}"
 
 if [ "$showusage" == "yes" ]; then
     echo "Usage: ./install.sh {<user>|--me} [OPTIONS]"
@@ -102,6 +110,7 @@ if [ "$showusage" == "yes" ]; then
     echo "                [INSTALL_ROOT=${INSTALL_ROOT}]"
     echo "--bindir        Specify the directory under which to install executables"
     echo "                [BINDIR=${BINDIR}]"
+    echo "--libexecdir    Specify the directory under which to install executable support files"
     exit 1
 fi
 
@@ -134,12 +143,12 @@ else
     if [ -f /lib/lsb/init-functions ]; then
       # on debian 8, sysvinit and systemd are present. If systemd is available we use it instead of sysvinit
       if [ -f /etc/systemd/system.conf ]; then   # used by systemd
-        mkdir -p "${INSTALL_ROOT}${EXECPREFIX}/libexec/arkmanager"
-        cp lsb/arkdaemon "${INSTALL_ROOT}${EXECPREFIX}/libexec/arkmanager/arkmanager.init"
-        chmod +x "${INSTALL_ROOT}${EXECPREFIX}/libexec/arkmanager/arkmanager.init"
+        mkdir -p "${INSTALL_ROOT}${LIBEXECDIRPREFIX}"
+        cp lsb/arkdaemon "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
+        chmod +x "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
         cp systemd/arkdeamon.service "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
-        sed -i "s|=/usr/|=${EXECPREFIX}/|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
-        sed -i "s@^DAEMON=\"/usr/bin/@DAEMON=\"${BINDIR}/@" "${INSTALL_ROOT}${EXECPREFIX}/libexec/arkmanager/arkmanager.init"
+        sed -i "s|=/usr/libexec/arkmanager/|=${LIBEXECDIR}/|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
+        sed -i "s@^DAEMON=\"/usr/bin/@DAEMON=\"${BINDIR}/@" "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
         if [ -z "${INSTALL_ROOT}" ]; then
           systemctl daemon-reload
           systemctl enable arkmanager.service
@@ -160,12 +169,12 @@ else
     elif [ -f /etc/rc.d/init.d/functions ]; then
       # on RHEL 7, sysvinit and systemd are present. If systemd is available we use it instead of sysvinit
       if [ -f /etc/systemd/system.conf ]; then   # used by systemd
-        mkdir -p "${INSTALL_ROOT}${EXECPREFIX}/libexec/arkmanager"
-        cp redhat/arkdaemon "${INSTALL_ROOT}${EXECPREFIX}/libexec/arkmanager/arkmanager.init"
-        chmod +x "${INSTALL_ROOT}${EXECPREFIX}/libexec/arkmanager/arkmanager.init"
+        mkdir -p "${INSTALL_ROOT}${LIBEXECDIR}"
+        cp redhat/arkdaemon "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
+        chmod +x "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
         cp systemd/arkdeamon.service "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
-        sed -i "s|=/usr/|=${EXECPREFIX}/|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
-        sed -i "s@^DAEMON=\"/usr/bin/@DAEMON=\"${BINDIR}/@" "${INSTALL_ROOT}${EXECPREFIX}/libexec/arkmanager/arkmanager.init"
+        sed -i "s|=/usr/libexec/arkmanager/|=${LIBEXECDIR}/|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
+        sed -i "s@^DAEMON=\"/usr/bin/@DAEMON=\"${BINDIR}/@" "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
         if [ -z "${INSTALL_ROOT}" ]; then
           systemctl daemon-reload
           systemctl enable arkmanager.service
@@ -192,12 +201,12 @@ else
         echo "rc-update del arkmanager default"
       fi
     elif [ -f /etc/systemd/system.conf ]; then   # used by systemd
-      mkdir -p "${INSTALL_ROOT}${EXECPREFIX}/libexec/arkmanager"
-      cp systemd/arkdaemon.init "${INSTALL_ROOT}${EXECPREFIX}/libexec/arkmanager/arkmanager.init"
-      chmod +x "${INSTALL_ROOT}${EXECPREFIX}/libexec/arkmanager/arkmanager.init"
+      mkdir -p "${INSTALL_ROOT}${LIBEXECDIR}"
+      cp systemd/arkdaemon.init "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
+      chmod +x "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
       cp systemd/arkdeamon.service "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
-      sed -i "s|=/usr/|=${EXECPREFIX}/|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
-      sed -i "s@^DAEMON=\"/usr/bin/@DAEMON=\"${BINDIR}/@" "${INSTALL_ROOT}${EXECPREFIX}/libexec/arkmanager/arkmanager.init"
+      sed -i "s|=/usr/libexec/arkmanager/|=${LIBEXECDIR}/|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
+      sed -i "s@^DAEMON=\"/usr/bin/@DAEMON=\"${BINDIR}/@" "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
       if [ -z "${INSTALL_ROOT}" ]; then
         systemctl enable arkmanager.service
         echo "Ark server will now start on boot, if you want to remove this feature run the following line"
