@@ -6,6 +6,10 @@
 # Maintainer:           FezVrasta
 # Contributors:         Sispheor, Atriusftw, klightspeed, lexat, puseidr
 
+# Script version
+arkstVersion="1.3"
+arkstCommit=''
+
 doUpgradeTools() {
   local sudo=sudo
   if [ "$UID" == 0 -o "$steamcmd_user" == "--me" ]; then
@@ -111,10 +115,6 @@ if [ "$steamcmd_user" == "--me" ]; then
 else
   install_datadir="${install_datadir:-${install_bindir%/*}/share/arkmanager}"
 fi
-
-# Script version
-arkstVersion="1.3"
-arkstCommit=''
 
 #---------------------
 # functions
