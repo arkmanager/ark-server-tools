@@ -985,7 +985,7 @@ printStatus(){
   echo -e "$NORMAL" "Server version: " "$GREEN" $instver "$NORMAL"
 }
 
-doUpgrade() {
+doUpgradeTools() {
   local sudo=sudo
   if [ "$steamcmd_user" == "--me" ]; then
     sudo=
@@ -1133,7 +1133,7 @@ while true; do
       printStatus
     ;;
     upgrade-tools)
-      doUpgrade
+      doUpgradeTools
     ;;
     uninstall-tools)
       doUninstallTools
