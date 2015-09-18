@@ -28,6 +28,13 @@ while [ -n "$1" ]; do
       EXECPREFIX="$2"
       shift
     ;;
+    --data-prefix=*)
+      DATAPREFIX="${1#--data-prefix=}"
+    ;;
+    --data-prefix)
+      DATAPREFIX="$2"
+      shift
+    ;;
     --install-root=*)
       INSTALL_ROOT="${1#--install-root=}"
     ;;
@@ -47,6 +54,13 @@ while [ -n "$1" ]; do
     ;;
     --libexecdir)
       LIBEXECDIR="$2"
+      shift
+    ;;
+    --datadir=*)
+      DATADIR="${1#--datadir=}"
+    ;;
+    --datadir)
+      DATADIR="$2"
       shift
     ;;
     -*)
@@ -84,13 +98,16 @@ fi
 if [ "$userinstall" == "yes" ]; then
   PREFIX="${PREFIX:-${HOME}}"
   EXECPREFIX="${EXECPREFIX:-${PREFIX}}"
+  DATAPREFIX="${DATAPREFIX:-${PREFIX}/.local/share}"
 else
   PREFIX="${PREFIX:-/usr/local}"
   EXECPREFIX="${EXECPREFIX:-${PREFIX}}"
+  DATAPREFIX="${DATAPREFIX:-${PREFIX}/share}"
 fi
 
 BINDIR="${BINDIR:-${EXECPREFIX}/bin}"
 LIBEXECDIR="${LIBEXECDIR:-${EXECPREFIX}/libexec/arkmanager}"
+DATADIR="${DATADIR:-${DATAPREFIX}/arkmanager}"
 
 if [ "$showusage" == "yes" ]; then
     echo "Usage: ./install.sh {<user>|--me} [OPTIONS]"
@@ -106,11 +123,16 @@ if [ "$showusage" == "yes" ]; then
     echo "                [PREFIX=${PREFIX}]"
     echo "--exec-prefix   Specify the prefix under which to install executables"
     echo "                [EXECPREFIX=${EXECPREFIX}]"
+    echo "--data-prefix   Specify the prefix under which to install suppor files"
+    echo "                [DATAPREFIX=${DATAPREFIX}]"
     echo "--install-root  Specify the staging directory in which to perform the install"
     echo "                [INSTALL_ROOT=${INSTALL_ROOT}]"
     echo "--bindir        Specify the directory under which to install executables"
     echo "                [BINDIR=${BINDIR}]"
     echo "--libexecdir    Specify the directory under which to install executable support files"
+    echo "                [LIBEXECDIR=${LIBEXECDIR}]"
+    echo "--datadir       Specify the directory under which to install support files"
+    echo "                [DATADIR=${DATADIR}]"
     exit 1
 fi
 
@@ -131,6 +153,7 @@ if [ "$userinstall" == "yes" ]; then
            -e "s|/var/log/arktools|${PREFIX}/logs/arktools|" \
            -e "s|^install_bindir=.*|install_bindir=\"${BINDIR}\"|" \
            -e "s|^install_libexecdir=.*|install_libexecdir=\"${LIBEXECDIR}\"|" \
+           -e "s|^install_datadir=.*|install_datadir=\"${DATADIR}\"|" \
            "${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg.NEW"
 
     # Copy arkmanager.cfg to ~/.arkmanager.cfg if it doesn't already exist
@@ -233,6 +256,7 @@ else
            -e "s|\"/home/steam|\"/home/$1|" \
            -e "s|^install_bindir=.*|install_bindir=\"${BINDIR}\"|" \
            -e "s|^install_libexecdir=.*|install_libexecdir=\"${LIBEXECDIR}\"|" \
+           -e "s|^install_datadir=.*|install_datadir=\"${DATADIR}\"|" \
            "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg"
 
     if [ -f "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg" ]; then

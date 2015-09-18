@@ -48,6 +48,12 @@ arkautorestartfile="${arkautorestartfile:-ShooterGame/Saved/.autorestart}"
 install_bindir="${install_bindir:-${0%/*}}"
 install_libexecdir="${install_libexecdir:-${install_bindir%/*}/libexec/arkmanager}"
 
+if [ "$steamcmd_user" == "--me" ]; then
+  install_datadir="${install_datadir:-${HOME}/.share/local/arkmanager}"
+else
+  install_datadir="${install_datadir:-${install_bindir%/*}/share/arkmanager}"
+fi
+
 # Script version
 arkstVersion="1.3"
 arkstCommit=''
@@ -984,6 +990,9 @@ doUpgrade() {
   fi
   if [ -n "$install_libexecdir" ]; then
     reinstall_args=( "${reinstall_args[@]}" "--libexecdir" "$install_libexecdir" )
+  fi
+  if [ -n "$install_datadir" ]; then
+    reinstall_args=( "${reinstall_args[@]}" "--datadir" "$install_datadir" )
   fi
   if [[ $arkstLatestVersion > $arkstVersion ]]; then
     read -p "A new version was found! Do you want to upgrade ARK Server Tools to v${arkstLatestVersion}?" -n 1 -r
