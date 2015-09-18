@@ -20,16 +20,16 @@ if [ ! -z "$1" ]; then
     # Copy arkmanager.cfg to ~/.arkmanager.cfg if it doesn't already exist
     if [ -f "${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg" ]; then
       cp -n arkmanager.cfg "${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg.NEW"
-      sed -i "s|^steamcmd_user=\"steam\"|steamcmd_user=\"me\"|;s|\"/home/steam|\"${PREFIX}|;s|/var/log/arktools|${PREFIX}/logs/arktools|" "${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg.NEW"
+      sed -i "s|^steamcmd_user=\"steam\"|steamcmd_user=\"--me\"|;s|\"/home/steam|\"${PREFIX}|;s|/var/log/arktools|${PREFIX}/logs/arktools|" "${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg.NEW"
       echo "A previous version of ARK Server Tools was detected in your system, your old configuration was not overwritten. You may need to manually update it."
       echo "A copy of the new configuration file was included in '${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg.NEW'. Make sure to review any changes and update your config accordingly!"
       exit 2
     else
       cp -n arkmanager.cfg "${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg"
-      sed -i "s|^steamcmd_user=\"steam\"|steamcmd_user=\"me\"|;s|\"/home/steam|\"${PREFIX}|;s|/var/log/arktools|${PREFIX}/logs/arktools|" "${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg"
+      sed -i "s|^steamcmd_user=\"steam\"|steamcmd_user=\"--me\"|;s|\"/home/steam|\"${PREFIX}|;s|/var/log/arktools|${PREFIX}/logs/arktools|" "${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg"
     fi
-  elif [ "$1" == "me" ]; then
-    echo "You specified the special 'me' user while running as root. This is not permitted."
+  elif [ "$1" == "--me" ]; then
+    echo "You specified the special '--me' user while running as root. This is not permitted."
     exit 1
   else
     # Copy arkmanager to /usr/bin and set permissions
