@@ -575,6 +575,7 @@ doUpdate() {
   local updatetype=normal
   local validate=
   local modupdate=
+  local saveworld=
 
   for arg in "$@"; do
     if [ "$arg" == "--force" ]; then
@@ -586,6 +587,8 @@ doUpdate() {
     elif [ "$arg" == "--validate" ]; then
       validate=validate
       appupdate=1
+    elif [ "$arg" == "--saveworld" ]; then
+      saveworld=1
     elif [ "$arg" == "--update-mods" ]; then
       modupdate=1
     fi
@@ -626,6 +629,12 @@ doUpdate() {
     if isTheServerRunning ;then
       serverWasAlive=1
     fi
+
+    if [ -n "$saveworld" ]; then
+      echo "Saving world"
+      doSaveWorld
+    fi
+
     doStop
 
     if [ -n "$appupdate" ]; then
@@ -1150,15 +1159,18 @@ while true; do
       echo "stop                  Stops the server"
       echo "stop --all            Stops all servers specified in configfile_xxxxx"
       echo "status                Returns the status of the current ARK server instance"
-      echo "update                Check for a new ARK server version, if needed, stops the server, updates it, and starts it again"
-      echo "update --force        Apply update without checking the current version"
-      echo "update --safe         Wait for server to perform world save and update."
-      echo "update --warn         Warn players before updating server"
-      echo "update --validate     Validates all ARK server files"
-      echo "update --update-mods  Updates installed and requested mods"
+      echo "update [OPTION ...]   Check for a new ARK server version, if needed, stops the server, updates it, and starts it again"
       echo "upgrade-tools         Check for a new ARK Server Tools version and upgrades it if needed"
       echo "uninstall-tools       Uninstall the ARK Server Tools"
       echo "useconfig <name>      Use the configuration overrides in the specified config name or file"
+      echo
+      echo "Update command takes the below options:"
+      echo "       --force        Apply update without checking the current version"
+      echo "       --safe         Wait for server to perform world save and update."
+      echo "       --warn         Warn players before updating server"
+      echo "       --validate     Validates all ARK server files"
+      echo "       --saveworld    Saves world before update"
+      echo "       --update-mods  Updates installed and requested mods"
       exit 1
     ;;
     *)
