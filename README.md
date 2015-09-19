@@ -91,14 +91,23 @@ Waits for server to perform world save and then updates.
 #### arkmanager update --warn
 Warns the players for a configurable amount of time before updating.  Should be suitable for adding to a cron job.
 
+#### arkmanager update --validate
+Validates all ARK server files
+
+#### arkmanager update --update-mods
+Updates installed and requested mods
+
 #### arkmanager status
 Get the status of the server. Show if the process is running, if the server is up and the current version number
 
 #### arkmanager checkupdate
 Check if a new version of the server is available but not apply it
 
-#### arkmanager upgrade
+#### arkmanager upgrade-tools
 Check for a new ARK Server Tools version and upgrades it if needed
+
+#### arkmanager uninstall-tools
+Uninstalls the ARK Server Tools
 
 #### arkmanager backup
 Saves a backup of your server inside the backup directory
@@ -106,7 +115,7 @@ Saves a backup of your server inside the backup directory
 #### arkmanager broadcast "message"
 Broadcast a message to all curently connected players. Example:
 ```
-arkmanager broadcast "Hi, admin there"
+arkmanager broadcast "Hi, admin here"
 ```
 
 #### arkmanager saveworld
