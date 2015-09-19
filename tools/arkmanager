@@ -556,6 +556,7 @@ doUpdateWarn(){
       fi
       doBroadcastWithEcho "$warnmsg"
       sleep $(( warnseconds - warninterval ))s
+      warnseconds=$warninterval
     done
   fi
 
