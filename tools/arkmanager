@@ -489,6 +489,7 @@ doWarnUpdate(){
         fi
         doBroadcastWithEcho "This ARK server will shutdown for an update in $warnseconds seconds"
         sleep $(( warnseconds - warninterval ))s
+        warnseconds=$warninterval
       done
     fi
 
