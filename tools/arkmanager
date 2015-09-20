@@ -428,6 +428,8 @@ doRun() {
 
     if [ -n "$val" ]; then
       arkserveropts="${arkserveropts}?${name}=${val}"
+    else
+      arkserveropts="${arkserveropts}?${name}"
     fi
   done
 
