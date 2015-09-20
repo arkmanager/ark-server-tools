@@ -639,6 +639,9 @@ doUpdate() {
     doStop
 
     if [ -n "$appupdate" ]; then
+      if [ "$arkBackupPreUpdate" == "true" ]; then
+        doBackup
+      fi
       cd "$steamcmdroot"
       ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid $validate +quit
       # the current version should be the last version. We set our version
