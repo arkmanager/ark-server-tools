@@ -649,8 +649,8 @@ doUpdateWarn(){
         echo "Server has stopped.  Aborting update"
         return 1
       fi
-      if [ -n "$msgWarnUpdateMinutes" ]; then
-        warnmsg="$(printf "$msgWarnUpdateMinutes" "$warnminutes")"
+      if [ -n "$msgWarnUpdateSeconds" ]; then
+        warnmsg="$(printf "$msgWarnUpdateSeconds" "$warnmseconds")"
       else
         warnmsg="$(printf "This ARK server will shutdown for an update in %d seconds" "$warnseconds")"
       fi
