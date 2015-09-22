@@ -592,6 +592,8 @@ doUpdate() {
       saveworld=1
     elif [ "$arg" == "--update-mods" ]; then
       modupdate=1
+    elif [ "$arg" == "--backup" ]; then
+      arkBackupPreUpdate=true
     fi
   done
 
@@ -637,11 +639,14 @@ doUpdate() {
     fi
 
     doStop
+    
+    # If user wants to back-up, we do it here.
+    
+    if [ "$arkBackupPreUpdate" == "true" ]; then
+        doBackup
+    fi
 
     if [ -n "$appupdate" ]; then
-      if [ "$arkBackupPreUpdate" == "true" ]; then
-        doBackup
-      fi
       cd "$steamcmdroot"
       ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid $validate +quit
       # the current version should be the last version. We set our version
@@ -657,7 +662,7 @@ doUpdate() {
         fi
       done
     fi
-
+    
     # we restart the server only if it was started before the update
     if [ $serverWasAlive -eq 1 ]; then
       doStart
