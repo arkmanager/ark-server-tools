@@ -650,7 +650,7 @@ doUpdateWarn(){
         return 1
       fi
       if [ -n "$msgWarnUpdateSeconds" ]; then
-        warnmsg="$(printf "$msgWarnUpdateSeconds" "$warnmseconds")"
+        warnmsg="$(printf "$msgWarnUpdateSeconds" "$warnseconds")"
       else
         warnmsg="$(printf "This ARK server will shutdown for an update in %d seconds" "$warnseconds")"
       fi
