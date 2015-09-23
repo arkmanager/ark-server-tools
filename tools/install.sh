@@ -276,7 +276,7 @@ else
            -e "s|^install_bindir=.*|install_bindir=\"${BINDIR}\"|" \
            -e "s|^install_libexecdir=.*|install_libexecdir=\"${LIBEXECDIR}\"|" \
            -e "s|^install_datadir=.*|install_datadir=\"${DATADIR}\"|" \
-           "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg"
+           "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg.NEW"
 
     if [ -f "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg" ]; then
       echo "A previous version of ARK Server Tools was detected in your system, your old configuration was not overwritten. You may need to manually update it."
