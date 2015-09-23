@@ -1180,6 +1180,7 @@ while true; do
       echo "       --validate     Validates all ARK server files"
       echo "       --saveworld    Saves world before update"
       echo "       --update-mods  Updates installed and requested mods"
+      echo "       --backup       Takes a backup of the save files before updating"
       exit 1
     ;;
     *)
