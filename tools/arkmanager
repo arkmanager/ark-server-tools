@@ -70,7 +70,7 @@ doUninstallTools() {
 
 runAsRoot(){
   getConfigVar(){
-    val="$(echo -ne "$(sed -n "/^$1=/{s|^[^=]*||;s|^\"\\(.*\\)\"\$|\\1|;s|^'\\(.*\\)\$|\\1|;p}" <"/etc/arkmanager/arkmanager.cfg" | tail -n1)")"
+    val="$(echo -ne "$(sed -n "/^$1=/{s|^[^=]*=||;s|[[:space:]]*\(#.*\)*\$||;s|^\"\\(.*\\)\"\$|\\1|;s|^'\\(.*\\)'\$|\\1|;p}" <"/etc/arkmanager/arkmanager.cfg" | tail -n1)")"
     if [ -n "$val" ]; then
       echo "$val"
     else
