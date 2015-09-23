@@ -97,6 +97,9 @@ Validates all ARK server files
 #### arkmanager update --update-mods
 Updates installed and requested mods
 
+#### arkmanager update --backup
+Takes a backup of the save files before updating.
+
 #### arkmanager status
 Get the status of the server. Show if the process is running, if the server is up and the current version number
 
