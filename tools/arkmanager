@@ -692,6 +692,8 @@ doUpdate() {
       saveworld=1
     elif [ "$arg" == "--update-mods" ]; then
       modupdate=1
+    elif [ "$arg" == "--backup" ]; then
+      arkBackupPreUpdate=true
     fi
   done
 
@@ -737,6 +739,12 @@ doUpdate() {
     fi
 
     doStop
+    
+    # If user wants to back-up, we do it here.
+    
+    if [ "$arkBackupPreUpdate" == "true" ]; then
+        doBackup
+    fi
 
     if [ -n "$appupdate" ]; then
       cd "$steamcmdroot"
@@ -754,7 +762,7 @@ doUpdate() {
         fi
       done
     fi
-
+    
     # we restart the server only if it was started before the update
     if [ $serverWasAlive -eq 1 ]; then
       doStart
@@ -1214,6 +1222,7 @@ while true; do
       echo "       --validate     Validates all ARK server files"
       echo "       --saveworld    Saves world before update"
       echo "       --update-mods  Updates installed and requested mods"
+      echo "       --backup       Takes a backup of the save files before updating"
       exit 1
     ;;
     *)
