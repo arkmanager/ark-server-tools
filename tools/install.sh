@@ -251,11 +251,12 @@ else
       fi
     elif [ -f /etc/systemd/system.conf ]; then   # used by systemd
       mkdir -p "${INSTALL_ROOT}${LIBEXECDIR}"
-      cp systemd/arkdaemon.init "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
+      cp systemd/arkmanager.init "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
       chmod +x "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
-      cp systemd/arkdeamon.service "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
+      cp systemd/arkmanager.service "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
       sed -i "s|=/usr/libexec/arkmanager/|=${LIBEXECDIR}/|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
-      sed -i "s@^DAEMON=\"/usr/bin/@DAEMON=\"${BINDIR}/@" "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
+      cp systemd/arkmanager@.service "${INSTALL_ROOT}/etc/systemd/system/arkmanager@.service"
+      sed -i "s|=/usr/bin/|=${BINDIR}/|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager@.service"
       if [ -z "${INSTALL_ROOT}" ]; then
         systemctl enable arkmanager.service
         echo "Ark server will now start on boot, if you want to remove this feature run the following line"
