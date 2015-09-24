@@ -271,12 +271,12 @@ else
     mkdir -p "${INSTALL_ROOT}/etc/arkmanager"
     cp arkmanager.cfg "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg.NEW"
     chown "$1" "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg.NEW"
-    sed -i -e "s|^steamcmd_user=\"steam\"|steamcmd_user=\"$1\"|" \
-           -e "s|\"/home/steam|\"/home/$1|" \
+    sed -i -e "s|^steamcmd_user=\"steam\"|steamcmd_user=\"$steamcmd_user\"|" \
+           -e "s|\"/home/steam|\"/home/$steamcmd_user|" \
            -e "s|^install_bindir=.*|install_bindir=\"${BINDIR}\"|" \
            -e "s|^install_libexecdir=.*|install_libexecdir=\"${LIBEXECDIR}\"|" \
            -e "s|^install_datadir=.*|install_datadir=\"${DATADIR}\"|" \
-           "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg"
+           "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg.NEW"
 
     if [ -f "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg" ]; then
       echo "A previous version of ARK Server Tools was detected in your system, your old configuration was not overwritten. You may need to manually update it."
