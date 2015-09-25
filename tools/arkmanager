@@ -828,10 +828,17 @@ isModUpdateNeeded(){
   local modid=$1
   local modsrcdir="$steamcmdroot/steamapps/workshop/content/$mod_appid/$modid"
   local moddestdir="$arkserverroot/ShooterGame/Content/Mods/$modid"
+  local modbranch="${mod_branch:-Linux}"
+
+  for varname in "${!mod_branch_@}"; do
+    if [ "mod_branch_$modid" == "$varname" ]; then
+      modbranch="${!varname}"
+    fi
+  done
 
   if [ -f "$modsrcdir/mod.info" ]; then
-    if [ -f "$modsrcdir/LinuxNoEditor/mod.info" ]; then
-      modsrcdir="$modsrcdir/LinuxNoEditor"
+    if [ -f "$modsrcdir/${modbranch}NoEditor/mod.info" ]; then
+      modsrcdir="$modsrcdir/${modbranch}NoEditor"
     fi
 
     find "$modsrcdir" -type f ! -name "*.z.uncompressed_size" -printf "%P\n" | while read f; do
@@ -864,11 +871,19 @@ doExtractMod(){
   local modid=$1
   local modsrcdir="$steamcmdroot/steamapps/workshop/content/$mod_appid/$modid"
   local moddestdir="$arkserverroot/ShooterGame/Content/Mods/$modid"
+  local modbranch="${mod_branch:-Linux}"
+
+  for varname in "${!mod_branch_@}"; do
+    if [ "mod_branch_$modid" == "$varname" ]; then
+      modbranch="${!varname}"
+    fi
+  done
 
   if [ -f "$modsrcdir/mod.info" ]; then
     echo "Copying files to $moddestdir"
-    if [ -f "$modsrcdir/LinuxNoEditor/mod.info" ]; then
-      modsrcdir="$modsrcdir/LinuxNoEditor"
+
+    if [ -f "$modsrcdir/${modbranch}NoEditor/mod.info" ]; then
+      modsrcdir="$modsrcdir/${modbranch}NoEditor"
     fi
 
     find "$modsrcdir" -type d -printf "$moddestdir/%P\0" | xargs -0 -r mkdir -p
