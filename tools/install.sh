@@ -181,12 +181,12 @@ else
 
     # Copy the uninstall script to ~/.local/share/arkmanager
     mkdir -p "${INSTALL_ROOT}${LIBEXECDIR}"
-    cp uninstall.sh "${INSTALL_ROOT}${DATADIR}/arkmanager-uninstall.sh"
-    chmod +x "${INSTALL_ROOT}${DATADIR}/arkmanager-uninstall.sh"
+    cp uninstall.sh "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager-uninstall.sh"
+    chmod +x "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager-uninstall.sh"
     sed -i -e "s|^BINDIR=.*|BINDIR=\"${BINDIR}\"|" \
            -e "s|^LIBEXECDIR=.*|LIBEXECDIR=\"${LIBEXECDIR}\"|" \
            -e "s|^DATADIR=.*|DATADIR=\"${DATADIR}\"|" \
-           "${INSTALL_ROOT}${DATADIR}/arkmanager-uninstall.sh"
+           "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager-uninstall.sh"
 
     # Copy arkdaemon to /etc/init.d ,set permissions and add it to boot
     if [ -f /lib/lsb/init-functions ]; then
