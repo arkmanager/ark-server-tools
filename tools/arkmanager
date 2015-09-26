@@ -833,7 +833,7 @@ isModUpdateNeeded(){
     fi
 
     find "$modsrcdir" -type f ! -name "*.z.uncompressed_size" -printf "%P\n" | while read f; do
-      if [ ! -f "$moddestdir/${f%.z}" -o "$modsrcdir/$f" -nt "$moddestdir/${f%.z}" ]; then
+      if [ \( ! -f "$moddestdir/${f%.z}" \) -o "$modsrcdir/$f" -nt "$moddestdir/${f%.z}" ]; then
         return 0
       fi
     done
@@ -880,7 +880,7 @@ doExtractMod(){
     find "$modsrcdir" -type d -printf "$moddestdir/%P\0" | xargs -0 -r mkdir -p
 
     find "$modsrcdir" -type f ! \( -name '*.z' -or -name '*.z.uncompressed_size' \) -printf "%P\n" | while read f; do
-      if [ ! -f "$moddestdir/$f" -o "$modsrcdir/$f" -nt "$moddestdir/$f" ]; then
+      if [ \( ! -f "$moddestdir/$f" \) -o "$modsrcdir/$f" -nt "$moddestdir/$f" ]; then
         printf "%10d  %s  " "`stat -c '%s' "$modsrcdir/$f"`" "$f"
         cp "$modsrcdir/$f" "$moddestdir/$f"
         echo -ne "\r\\033[K"
@@ -888,7 +888,7 @@ doExtractMod(){
     done
 
     find "$modsrcdir" -type f -name '*.z' -printf "%P\n" | while read f; do
-      if [ ! -f "$moddestdir/${f%.z}" -o "$modsrcdir/$f" -nt "$moddestdir/${f%.z}" ]; then
+      if [ \( ! -f "$moddestdir/${f%.z}" \) -o "$modsrcdir/$f" -nt "$moddestdir/${f%.z}" ]; then
         printf "%10d  %s  " "`stat -c '%s' "$modsrcdir/$f"`" "${f%.z}"
         perl -M'Compress::Raw::Zlib' -e '
           my $sig;
