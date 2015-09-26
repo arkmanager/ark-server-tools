@@ -70,7 +70,7 @@ doUninstallTools() {
 
 runAsRoot(){
   getConfigVar(){
-    val="$(echo -ne "$(sed -n "/^$1=/{s|^[^=]*||;s|^\"\\(.*\\)\"\$|\\1|;s|^'\\(.*\\)\$|\\1|;p}" <"/etc/arkmanager/arkmanager.cfg" | tail -n1)")"
+    val="$(echo -ne "$(sed -n "/^$1=/{s|^[^=]*=||;s|[[:space:]]*\(#.*\)*\$||;s|^\"\\(.*\\)\"\$|\\1|;s|^'\\(.*\\)'\$|\\1|;p}" <"/etc/arkmanager/arkmanager.cfg" | tail -n1)")"
     if [ -n "$val" ]; then
       echo "$val"
     else
@@ -94,16 +94,7 @@ runAsRoot(){
   elif [ "$1" == "uninstall-tools" ]; then
     doUninstallTools
   else
-    echo -n "arkmanager v${arkstVersion}: "
-    if [ $# -eq 0 ]; then
-      echo "no command specified"
-    else
-      echo "unknown command '$1' specified"
-    fi
-    echo -e "Usage: arkmanager [OPTION]\n"
-    echo "Option                Description"
-    echo "upgrade-tools         Check for a new ARK Server Tools version and upgrades it if needed"
-    echo "uninstall-tools       Uninstall the ARK Server Tools"
+    su "$steamcmd_user" -c "$(printf "%q" "$0")$(printf " %q" "$@")"
     exit 1
   fi
 }
