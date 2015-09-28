@@ -461,22 +461,28 @@ doRun() {
     "$arkserverroot/$arkserverexec" "$arkserveropts" "${arkextraopts[@]}" &
     # Grab the server PID
     serverpid=$!
+    echo "`timestamp`: Server PID: $serverpid"
     # Disable auto-restart so we don't get caught in a restart loop
-    rm "$arkserverroot/$arkautorestartfile"
+    rm -f "$arkserverroot/$arkautorestartfile"
     restartserver=0
+
+    sleep 5
 
     while true; do
       # Grab the current server PID
-      local pid="`getServerPid`"
+      local pid="`getServerPID`"
       if [ "$pid" == "$serverpid" ]; then
-        # Check if the server has fully started
-        if ! isTheServerUp; then
-	  # Enable auto-restart if the server is up
-	  echo "`timestamp`: server is up"
-	  touch "$arkserverroot/$arkautorestartfile"
-	  restartserver=1
+        if [ "$restartserver" -eq 0 ]; then
+          # Check if the server has fully started
+          if ! isTheServerUp; then
+            # Enable auto-restart if the server is up
+            echo "`timestamp`: server is up"
+            touch "$arkserverroot/$arkautorestartfile"
+            restartserver=1
+          fi
 	fi
       else
+        echo "`timestamp`: Bad PID '$pid'; expected '$serverpid'"
         if [ "$pid" != "" ]; then
 	  # Another instance must be running - disable autorestart
 	  restartserver=0
@@ -491,7 +497,11 @@ doRun() {
     echo "`timestamp`: exited with status $?"
 
     # doStop will remove the autorestart file
-    if [ "$restartserver" -ne 0 -a -f "$arkserverroot/$arkautorestartfile" ]; then
+    if [ ! -f "$arkserverroot/$arkautorestartfile" ]; then
+      restartserver=0
+    fi
+
+    if [ "$restartserver" -ne 0 ]; then
       echo "`timestamp`: restarting server"
     fi
   done
@@ -537,11 +547,12 @@ doStop() {
     tput sc
     echo "Stopping server..."
     echo "`timestamp`: stopping" >> "$logdir/$arkmanagerLog"
+    rm -f "$arkserverroot/$arkautorestartfile"
     # kill the server with the PID
     PID=`getServerPID`
     kill -INT $PID
 
-    for (( i = 0; i < 10; i++ )); do
+    for (( i = 0; i < 20; i++ )); do
       sleep 1
       if ! isTheServerRunning; then
         break
@@ -551,7 +562,6 @@ doStop() {
     if isTheServerRunning; then
       tput rc
       echo "Killing server..."
-      rm "$arkserverroot/$arkautorestartfile"
       kill -KILL $PID
     fi
 
