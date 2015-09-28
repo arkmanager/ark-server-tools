@@ -434,6 +434,15 @@ doRun() {
     fi
   done
 
+  # bring in arkopt_... options
+  for varname in "${!arkopt_@}"; do
+    name="${varname#arkopt_}"
+    val="${!varname}"
+
+    if [ -n "$val" ]; then
+      arkextraopts=( "${arkextraopts[@]}" "-${name}=${val}" )
+    fi
+  done
 
   arkserveropts="${arkserveropts}?listen"
   # run the server in background
