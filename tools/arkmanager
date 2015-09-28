@@ -837,6 +837,10 @@ isModUpdateNeeded(){
     fi
   done
 
+  if [ \( ! -f "$moddestdir/.modbranch" \) ] || [ "$(<"$moddestdir/.modbranch")" != "$modbranch" ]; then
+    return 0
+  fi
+
   if [ -f "$modsrcdir/mod.info" ]; then
     if [ -f "$modsrcdir/${modbranch}NoEditor/mod.info" ]; then
       modsrcdir="$modsrcdir/${modbranch}NoEditor"
@@ -872,13 +876,17 @@ doExtractMod(){
   local modid=$1
   local modsrcdir="$steamcmdroot/steamapps/workshop/content/$mod_appid/$modid"
   local moddestdir="$arkserverroot/ShooterGame/Content/Mods/$modid"
-  local modbranch="${mod_branch:-Linux}"
+  local modbranch="${mod_branch:-Windows}"
 
   for varname in "${!mod_branch_@}"; do
     if [ "mod_branch_$modid" == "$varname" ]; then
       modbranch="${!varname}"
     fi
   done
+
+  if [ \( ! -f "$moddestdir/.modbranch" \) ] || [ "$(<"$moddestdir/.modbranch")" != "$modbranch" ]; then
+    rm -rf "$moddestdir"
+  fi
 
   if [ -f "$modsrcdir/mod.info" ]; then
     echo "Copying files to $moddestdir"
