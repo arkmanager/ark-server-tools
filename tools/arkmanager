@@ -354,7 +354,7 @@ function getCurrentVersion(){
 #
 function getAvailableVersion(){
   rm -f "$steamcmd_appinfocache"
-  bnumber=`$steamcmdroot/$steamcmdexec +login anonymous +app_info_update 1 +app_info_print "$appid" +quit | while read name val; do if [ "${name}" == "{" ]; then parseSteamACF ".depots.branches.public" "buildid"; break; fi; done`
+  bnumber=`$steamcmdroot/$steamcmdexec +@NoPromptForPassword 1 +login ${steamlogin:-anonymous} +app_info_update 1 +app_info_print "$appid" +quit | while read name val; do if [ "${name}" == "{" ]; then parseSteamACF ".depots.branches.public" "buildid"; break; fi; done`
   return $bnumber
 }
 
@@ -605,7 +605,7 @@ doInstall() {
 
   cd "$steamcmdroot"
   # install the server
-  ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid validate +quit
+  ./$steamcmdexec +@NoPromptForPassword 1 +login ${steamlogin:-anonymous} +force_install_dir "$arkserverroot" +app_update $appid validate +quit
   # the current version should be the last version. We set our version
   getCurrentVersion
 }
@@ -749,7 +749,7 @@ doUpdate() {
 
     if [ -n "$appupdate" ]; then
       cd "$steamcmdroot"
-      ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid $validate +quit
+      ./$steamcmdexec +@NoPromptForPassword 1 +login ${steamlogin:-anonymous} +force_install_dir "$arkserverroot" +app_update $appid $validate +quit
       # the current version should be the last version. We set our version
       getCurrentVersion
       echo "`timestamp`: update to $instver complete" >> "$logdir/update.log"
@@ -797,7 +797,7 @@ doDownloadMod(){
   cd "$steamcmdroot"
 
   while true; do
-    ./$steamcmdexec +login anonymous +workshop_download_item $mod_appid $modid +quit
+    ./$steamcmdexec +@NoPromptForPassword 1 +login ${steamlogin:-anonymous} +workshop_download_item $mod_appid $modid +quit
     if [ ! -d "$moddldir" ]; then break; fi
     local newsize="`du -s "$moddldir" | cut -f1`"
     if [ $newsize -eq $dlsize ]; then break; fi
