@@ -427,11 +427,8 @@ doRun() {
   # bring in arkflag_... flags
   for varname in "${!arkflag_@}"; do
     name="${varname#arkflag_}"
-    val="${!varname}"
 
-    if [ -n "$val" ]; then
-      arkextraopts=( "${arkextraopts[@]}" "-${name}" )
-    fi
+    arkextraopts=( "${arkextraopts[@]}" "-${name}" )
   done
 
   # bring in arkopt_... options
