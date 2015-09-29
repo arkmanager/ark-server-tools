@@ -466,6 +466,9 @@ doRun() {
 
   # Auto-restart loop
   while [ $restartserver -ne 0 ]; do
+    echo -n "`timestamp`: Running"
+    printf " %q" "$arkserverroot/$arkserverexec" "$arkserveropts" "${arkextraopts[@]}"
+    echo
     # Put the server process into the background so we can monitor it
     "$arkserverroot/$arkserverexec" "$arkserveropts" "${arkextraopts[@]}" &
     # Grab the server PID
