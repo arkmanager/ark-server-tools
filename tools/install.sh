@@ -192,7 +192,7 @@ else
     if [ -f /lib/lsb/init-functions ]; then
       # on debian 8, sysvinit and systemd are present. If systemd is available we use it instead of sysvinit
       if [ -f /etc/systemd/system.conf ]; then   # used by systemd
-        mkdir -p "${INSTALL_ROOT}${LIBEXECDIRPREFIX}"
+        mkdir -p "${INSTALL_ROOT}${LIBEXECDIR}"
         cp lsb/arkdaemon "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
         chmod +x "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
         cp systemd/arkdeamon.service "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
