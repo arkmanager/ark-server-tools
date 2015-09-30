@@ -354,7 +354,7 @@ function getCurrentVersion(){
 #
 function getAvailableVersion(){
   rm -f "$steamcmd_appinfocache"
-  bnumber=`$steamcmdroot/$steamcmdexec +login anonymous +app_info_update 1 +app_info_print "$appid" +quit | while read name val; do if [ "${name}" == "{" ]; then parseSteamACF ".depots.branches.public" "buildid"; break; fi; done`
+  bnumber=`$steamcmdroot/$steamcmdexec +@NoPromptForPassword 1 +login ${steamlogin:-anonymous} +app_info_update 1 +app_info_print "$appid" +quit | while read name val; do if [ "${name}" == "{" ]; then parseSteamACF ".depots.branches.public" "buildid"; break; fi; done`
   return $bnumber
 }
 
@@ -427,13 +427,19 @@ doRun() {
   # bring in arkflag_... flags
   for varname in "${!arkflag_@}"; do
     name="${varname#arkflag_}"
+
+    arkextraopts=( "${arkextraopts[@]}" "-${name}" )
+  done
+
+  # bring in arkopt_... options
+  for varname in "${!arkopt_@}"; do
+    name="${varname#arkopt_}"
     val="${!varname}"
 
     if [ -n "$val" ]; then
-      arkextraopts=( "${arkextraopts[@]}" "-${name}" )
+      arkextraopts=( "${arkextraopts[@]}" "-${name}=${val}" )
     fi
   done
-
 
   arkserveropts="${arkserveropts}?listen"
   # run the server in background
@@ -457,6 +463,9 @@ doRun() {
 
   # Auto-restart loop
   while [ $restartserver -ne 0 ]; do
+    echo -n "`timestamp`: Running"
+    printf " %q" "$arkserverroot/$arkserverexec" "$arkserveropts" "${arkextraopts[@]}"
+    echo
     # Put the server process into the background so we can monitor it
     "$arkserverroot/$arkserverexec" "$arkserveropts" "${arkextraopts[@]}" &
     # Grab the server PID
@@ -605,7 +614,7 @@ doInstall() {
 
   cd "$steamcmdroot"
   # install the server
-  ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid validate +quit
+  ./$steamcmdexec +@NoPromptForPassword 1 +login ${steamlogin:-anonymous} +force_install_dir "$arkserverroot" +app_update $appid validate +quit
   # the current version should be the last version. We set our version
   getCurrentVersion
 }
@@ -749,7 +758,7 @@ doUpdate() {
 
     if [ -n "$appupdate" ]; then
       cd "$steamcmdroot"
-      ./$steamcmdexec +login anonymous +force_install_dir "$arkserverroot" +app_update $appid $validate +quit
+      ./$steamcmdexec +@NoPromptForPassword 1 +login ${steamlogin:-anonymous} +force_install_dir "$arkserverroot" +app_update $appid $validate +quit
       # the current version should be the last version. We set our version
       getCurrentVersion
       echo "`timestamp`: update to $instver complete" >> "$logdir/update.log"
@@ -797,7 +806,7 @@ doDownloadMod(){
   cd "$steamcmdroot"
 
   while true; do
-    ./$steamcmdexec +login anonymous +workshop_download_item $mod_appid $modid +quit
+    ./$steamcmdexec +@NoPromptForPassword 1 +login ${steamlogin:-anonymous} +workshop_download_item $mod_appid $modid +quit
     if [ ! -d "$moddldir" ]; then break; fi
     local newsize="`du -s "$moddldir" | cut -f1`"
     if [ $newsize -eq $dlsize ]; then break; fi
@@ -837,6 +846,10 @@ isModUpdateNeeded(){
     fi
   done
 
+  if [ \( ! -f "$moddestdir/.modbranch" \) ] || [ "$(<"$moddestdir/.modbranch")" != "$modbranch" ]; then
+    return 0
+  fi
+
   if [ -f "$modsrcdir/mod.info" ]; then
     if [ -f "$modsrcdir/${modbranch}NoEditor/mod.info" ]; then
       modsrcdir="$modsrcdir/${modbranch}NoEditor"
@@ -872,13 +885,17 @@ doExtractMod(){
   local modid=$1
   local modsrcdir="$steamcmdroot/steamapps/workshop/content/$mod_appid/$modid"
   local moddestdir="$arkserverroot/ShooterGame/Content/Mods/$modid"
-  local modbranch="${mod_branch:-Linux}"
+  local modbranch="${mod_branch:-Windows}"
 
   for varname in "${!mod_branch_@}"; do
     if [ "mod_branch_$modid" == "$varname" ]; then
       modbranch="${!varname}"
     fi
   done
+
+  if [ \( ! -f "$moddestdir/.modbranch" \) ] || [ "$(<"$moddestdir/.modbranch")" != "$modbranch" ]; then
+    rm -rf "$moddestdir"
+  fi
 
   if [ -f "$modsrcdir/mod.info" ]; then
     echo "Copying files to $moddestdir"
