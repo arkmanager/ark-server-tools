@@ -18,6 +18,16 @@ doUpgradeTools() {
   echo "arkmanager v${arkstVersion}: Checking for updates..."
   arkstLatestVersion=`curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/.version`
   arkstLatestCommit=`curl -s https://api.github.com/repos/FezVrasta/ark-server-tools/git/refs/heads/${arkstChannel} | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p'`
+
+  if [ "$arkstLatestVersion" == "Not Found" ]; then
+    echo "Channel ${arkstChannel} does not exist"
+    echo
+    echo "Available channels:"
+    curl -s https://api.github.com/repos/FezVrasta/ark-server-tools/git/refs/heads | sed -n 's|^ *"ref": "refs/heads/\(.*\)",|\1|p'
+    echo
+    return
+  fi
+
   reinstall_args=()
   if [ -n "$install_bindir" ]; then
     reinstall_args=( "${reinstall_args[@]}" "--bindir" "$install_bindir" )
