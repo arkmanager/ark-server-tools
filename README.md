@@ -60,6 +60,12 @@ ark_DifficultyOffset=1
 Your session name may not contain special characters (eg. `!![EU]!! Aw&some ARK`) as it could break the startup command.  
 In this case you may want to comment out the `ark_SessionName` variable and define it inside your **GameUserSettings.ini** file instead.
 
+To specify an option without an argument (e.g. `bRawSockets`), specify an empty argument (e.g. `ark_bRawSockets=""`).
+
+To specify a dash-option without an argument (e.g. `-log`), add the option="" prefixed with `arkflag_` (e.g. `arkflag_log=""`).
+
+To specify a dash-option with an argument (e.g. `-StructureDestructionTag=DestroySwampSnowStructures`), add the option=value prefixed with `arkopt_` (e.g. `arkopt_StructureDestructionTag=DestroySwampSnowStructures`).
+
 You can override or add variables for a specific system user creating a file called `.arkmanager.cfg` in the home directory of the system user.
 
 ## Install ARK Server
