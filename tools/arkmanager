@@ -46,7 +46,7 @@ doUpgradeTools() {
       else
         exit 0
     fi
-  elif [[ "$arkstLatestCommit" != "$arkstCommit" ]]; then
+  elif [[ $arkstLatestVersion == $arkstVersion && "$arkstLatestCommit" != "$arkstCommit" ]]; then
     read -p "A hotfix is available for v${arkstLatestVersion}.  Do you wish to install it?" -n 1 -r
     echo -en "\n"
     if [[ $REPLY =~ ^[Yy]$ ]]; then
