@@ -993,6 +993,10 @@ doExtractMod(){
 doInstallMod(){
   local modid=$1
 
+  if [ -f "$steamcmdroot/steamapps/workshop/appworkshop_${mod_appid}.acf" ]; then
+    sed -i "/^\\t\\t\"${modid}\"/,/^\\t\\t}/d" "$steamcmdroot/steamapps/workshop/appworkshop_${mod_appid}.acf"
+  fi
+
   if doDownloadMod $modid; then
     doExtractMod $modid
     echo "Mod $modid installed"
