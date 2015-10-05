@@ -311,12 +311,11 @@ function checkForUpdate(){
 function isUpdateNeeded(){
   getCurrentVersion
   getAvailableVersion
-  if [ "$bnumber" -eq "$instver" ]; then
+  if [ "$bnumber" = "Unknown" -o "$bnumber" -eq "$instver" ]; then
     return 1   # no update needed
   else
     return 0   # update needed
   fi
-
 }
 
 #
@@ -365,6 +364,9 @@ function getCurrentVersion(){
 function getAvailableVersion(){
   rm -f "$steamcmd_appinfocache"
   bnumber=`$steamcmdroot/$steamcmdexec +@NoPromptForPassword 1 +login ${steamlogin:-anonymous} +app_info_update 1 +app_info_print "$appid" +quit | while read name val; do if [ "${name}" == "{" ]; then parseSteamACF ".depots.branches.public" "buildid"; break; fi; done`
+  if [ -z "$bnumber" ]; then
+    bnumber="Unknown"
+  fi
   return $bnumber
 }
 
