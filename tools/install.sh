@@ -168,6 +168,26 @@ if [ "$userinstall" == "yes" ]; then
 
     # Copy arkmanager.cfg to ~/.arkmanager.cfg if it doesn't already exist
     if [ -f "${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg" ]; then
+      newopts=( arkbackupdir arkautorestartfile install_bindir install_libexecdir install_datadir mod_appid )
+      newopt_steamcmd_appinfocache="${PREFIX}/Steam/appcache/appinfo.vdf"
+      newopt_arkbackupdir="${PREFIX}/ARK-Backups"
+      newopt_arkautorestartfile="ShooterGame/Saved/.autorestart"
+      newopt_install_bindir="${BINDIR}"
+      newopt_install_libexecdir="${LIBEXECDIR}"
+      newopt_install_datadir="${DATADIR}"
+      newopt_mod_appid=346110
+
+      if grep '^\(servermail\|arkstVersion\)=' "${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg" >/dev/null 2>&1; then
+        sed -i '/^\(servermail\|arkstVersion\)=/d' "${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg"
+      fi
+
+      for optname in "${newopts[@]}"; do
+        if ! grep "^${optname}=" "${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg" >/dev/null 2>&1; then
+	  noptname="newopt_${optname}"
+	  echo "${optname}='${!noptname}'" >>"${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg"
+	fi
+      done
+
       echo "A previous version of ARK Server Tools was detected in your system, your old configuration was not overwritten. You may need to manually update it."
       echo "A copy of the new configuration file was included in '${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg.NEW'. Make sure to review any changes and update your config accordingly!"
       exit 2
@@ -279,6 +299,26 @@ else
            "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg.NEW"
 
     if [ -f "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg" ]; then
+      newopts=( arkbackupdir arkautorestartfile install_bindir install_libexecdir install_datadir mod_appid )
+      newopt_steamcmd_appinfocache="/home/${steamcmd_user}/Steam/appcache/appinfo.vdf"
+      newopt_arkbackupdir="/home/${steamcmd_user}/ARK-Backups"
+      newopt_arkautorestartfile="ShooterGame/Saved/.autorestart"
+      newopt_install_bindir="${BINDIR}"
+      newopt_install_libexecdir="${LIBEXECDIR}"
+      newopt_install_datadir="${DATADIR}"
+      newopt_mod_appid=346110
+
+      if grep '^\(servermail\|arkstVersion\)=' "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg" >/dev/null 2>&1; then
+        sed -i '/^\(servermail\|arkstVersion\)=/d' "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg"
+      fi
+
+      for optname in "${newopts[@]}"; do
+        if ! grep "^${optname}=" "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg" >/dev/null 2>&1; then
+	  noptname="newopt_${optname}"
+	  echo "${optname}='${!noptname}'" >>"${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg"
+	fi
+      done
+
       echo "A previous version of ARK Server Tools was detected in your system, your old configuration was not overwritten. You may need to manually update it."
       echo "A copy of the new configuration file was included in /etc/arkmanager. Make sure to review any changes and update your config accordingly!"
       exit 2
