@@ -387,7 +387,7 @@ function isTheServerRunning(){
 }
 
 #
-# Check if the server is up and visible in steam server list
+# Check if the server is up
 #
 #
 function isTheServerUp(){
@@ -400,6 +400,26 @@ function isTheServerUp(){
     return 1
   else
     return 0
+  fi
+}
+
+#
+# Check if the server is visible in the steam server list
+#
+function isTheServerOnline(){
+  publicip="$(curl -s https://api.ipify.org/)"
+  local serverresp
+
+  if [[ "$publicip" =~ [1-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]* ]]; then
+    serverresp="$(curl -s "http://api.steampowered.com/ISteamApps/GetServersAtAddress/v0001?addr=${publicip}:${ark_QueryPort}")"
+  fi
+
+  # If the Steam server response contains "addr": "$ip:$port",
+  # then the server has registered with the Steam master server
+  if [[ "$serverresp" =~ \"addr\":\ \"([^\"]*):([0-9]*)\" ]]; then
+    return 0
+  else
+    return 1
   fi
 }
 
@@ -1115,9 +1135,9 @@ printStatus(){
   fi
 
   if isTheServerUp ;then
-    echo -e "$NORMAL" "Server online: " "$RED" "No" "$NORMAL"
+    echo -e "$NORMAL" "Server listening: " "$RED" "No" "$NORMAL"
   else
-    echo -e "$NORMAL" "Server online: " "$GREEN" "Yes" "$NORMAL"
+    echo -e "$NORMAL" "Server listening: " "$GREEN" "Yes" "$NORMAL"
     perl -MSocket -e '
       my $port = int($ARGV[0]);
       socket(my $socket, PF_INET, SOCK_DGRAM, 0);
@@ -1132,7 +1152,15 @@ printStatus(){
       print "Server Name: $servername\n";
       print "Players: $players / $maxplayers\n";
       ' "${ark_QueryPort}"
+
+    if isTheServerOnline; then
+      echo -e "$NORMAL" "Server online: " "$GREEN" "Yes" "$NORMAL"
+      echo -e "$NORMAL" "ARKServers link: " "$GREEN" "http://arkservers.net/server/${publicip}:${ark_QueryPort}" "$NORMAL"
+    else
+      echo -e "$NORMAL" "Server online: " "$RED" "No" "$NORMAL"
+    fi
   fi
+
   getCurrentVersion
   echo -e "$NORMAL" "Server version: " "$GREEN" $instver "$NORMAL"
 }
