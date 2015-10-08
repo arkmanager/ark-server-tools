@@ -1,0 +1,11 @@
+[Unit]
+Description=Starts and stops all ark server instances
+After=network.target
+
+[Service]
+ExecStart=/usr/libexec/arkmanager/arkmanager.init start
+ExecStop=/usr/libexec/arkmanager/arkmanager.init stop
+Type=oneshot
+
+[Install]
+WantedBy=multi-user.target

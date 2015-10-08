@@ -1138,6 +1138,9 @@ printStatus(){
 }
 
 useConfig() {
+  if [ "$1" == "main" ]; then
+    return
+  fi
   for varname in "${!configfile_@}"; do
     if [ "configfile_$1" == "$varname" ]; then
       source "${!varname}"
@@ -1156,6 +1159,9 @@ checkConfig
 
 while true; do
   case "$1" in
+    run)
+        doRun
+    ;;
     start)
         if [ "$2" == "--all" ]; then
           doStartAll
@@ -1248,6 +1254,7 @@ while true; do
       echo "installmod <modid>    Installs a mod from the Steam workshop"
       echo "restart               Stops the server and then starts it"
       echo "restart --all         Restarts all servers specified in configfile_xxxxx"
+      echo "run                   Runs the server without daemonizing"
       echo "start                 Starts the server"
       echo "start --all           Starts all servers specified in configfile_xxxxx"
       echo "stop                  Stops the server"

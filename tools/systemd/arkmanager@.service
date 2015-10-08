@@ -1,0 +1,6 @@
+[Unit]
+Description=Daemon to start an ark server instance
+
+[Service]
+ExecStart=/usr/bin/arkmanager useconfig %i run
+Type=simple
