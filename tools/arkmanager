@@ -311,12 +311,11 @@ function checkForUpdate(){
 function isUpdateNeeded(){
   getCurrentVersion
   getAvailableVersion
-  if [ "$bnumber" -eq "$instver" ]; then
+  if [ "$bnumber" = "Unknown" -o "$bnumber" -eq "$instver" ]; then
     return 1   # no update needed
   else
     return 0   # update needed
   fi
-
 }
 
 #
@@ -365,6 +364,9 @@ function getCurrentVersion(){
 function getAvailableVersion(){
   rm -f "$steamcmd_appinfocache"
   bnumber=`$steamcmdroot/$steamcmdexec +@NoPromptForPassword 1 +login ${steamlogin:-anonymous} +app_info_update 1 +app_info_print "$appid" +quit | while read name val; do if [ "${name}" == "{" ]; then parseSteamACF ".depots.branches.public" "buildid"; break; fi; done`
+  if [ -z "$bnumber" ]; then
+    bnumber="Unknown"
+  fi
   return $bnumber
 }
 
@@ -393,6 +395,30 @@ function isTheServerRunning(){
 function isTheServerUp(){
   $lsof -i :"$ark_Port" > /dev/null
   result=$?
+  if [ $result -ne 0 ]; then
+    perl -MSocket -MFcntl -e '
+      my $port = int($ARGV[0]);
+      socket(my $socket, PF_INET, SOCK_DGRAM, 0);
+      setsockopt($socket, SOL_SOCKET, SO_RCVTIMEO, pack("i4", 1, 0, 0, 0));
+      my $sockaddr = pack_sockaddr_in($port, inet_aton("127.0.0.1"));
+      send($socket, "\xff\xff\xff\xffTSource Engine Query\x00", 0, $sockaddr);
+      my $flags = fcntl($socket, F_GETFL, 0) or exit(1);
+      fcntl($socket, F_SETFL, $flags | O_NONBLOCK) or exit(1);
+      my $data = "";
+      my $rin = "";
+      vec($rin, fileno($socket), 1) = 1;
+      if (select($rin, undef, undef, 0.25) >= 0) {
+        recv($socket, $data, 1400, 0) or exit(1);
+        my ($servername, $mapname, $game, $fullname, $rest) = split(/\x00/, substr($data, 6), 5);
+        my $maxplayers = ord(substr($rest, 3, 1));
+        if ($maxplayers == 0) { exit(1); }
+        exit(0);
+      } else {
+        exit(1);
+      }
+      ' "${ark_QueryPort}"
+    result=$?
+  fi
   # In this case, the result is:
   # 1 if the command fail. The port is not listenning
   # 0 if the command succeed. The port is listenning
@@ -1012,6 +1038,10 @@ doExtractMod(){
 #
 doInstallMod(){
   local modid=$1
+
+  if [ -f "$steamcmdroot/steamapps/workshop/appworkshop_${mod_appid}.acf" ]; then
+    sed -i "/^\\t\\t\"${modid}\"/,/^\\t\\t}/d" "$steamcmdroot/steamapps/workshop/appworkshop_${mod_appid}.acf"
+  fi
 
   if doDownloadMod $modid; then
     doExtractMod $modid

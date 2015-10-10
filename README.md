@@ -37,6 +37,12 @@ NB: You may want to change the `bash -s` parameter to fit your steam user if dif
 
 This will copy the `arkmanager` script and its daemon to the proper directories and will create an empty log directory in `/var/log` for ARK Server Tools.
 
+To instead perform a user-install of ARK Server Tools as an unprivileged user, run this command:
+
+```sh
+curl -sL http://git.io/vtf5N | bash -s -- --me
+```
+
 ## Configuration
 
 Stored in `/etc/arkmanager/arkmanager.cfg` you can find the variables needed to start the server, like the port numbers, the system environment variables and so on.
@@ -53,6 +59,12 @@ ark_DifficultyOffset=1
 
 Your session name may not contain special characters (eg. `!![EU]!! Aw&some ARK`) as it could break the startup command.  
 In this case you may want to comment out the `ark_SessionName` variable and define it inside your **GameUserSettings.ini** file instead.
+
+To specify an option without an argument (e.g. `bRawSockets`), specify an empty argument (e.g. `ark_bRawSockets=""`).
+
+To specify a dash-option without an argument (e.g. `-log`), add the option="" prefixed with `arkflag_` (e.g. `arkflag_log=""`).
+
+To specify a dash-option with an argument (e.g. `-StructureDestructionTag=DestroySwampSnowStructures`), add the option=value prefixed with `arkopt_` (e.g. `arkopt_StructureDestructionTag=DestroySwampSnowStructures`).
 
 You can override or add variables for a specific system user creating a file called `.arkmanager.cfg` in the home directory of the system user.
 
@@ -80,24 +92,25 @@ Stops ARK server
 Restarts ARK server
 
 #### arkmanager update
-Manually updates ARK server if a new version is available
+Manually updates ARK server if a new version is available.
+This accepts zero or more of the below options.
 
-#### arkmanager update --force
+##### arkmanager update --force
 Apply update without check the current version
 
-#### arkmanager update --safe
+##### arkmanager update --safe
 Waits for server to perform world save and then updates.
 
-#### arkmanager update --warn
+##### arkmanager update --warn
 Warns the players for a configurable amount of time before updating.  Should be suitable for adding to a cron job.
 
-#### arkmanager update --validate
+##### arkmanager update --validate
 Validates all ARK server files
 
-#### arkmanager update --update-mods
+##### arkmanager update --update-mods
 Updates installed and requested mods
 
-#### arkmanager update --backup
+##### arkmanager update --backup
 Takes a backup of the save files before updating.
 
 #### arkmanager status
