@@ -311,7 +311,7 @@ function checkForUpdate(){
 function isUpdateNeeded(){
   getCurrentVersion
   getAvailableVersion
-  if [ "$bnumber" = "Unknown" -o "$bnumber" -eq "$instver" ]; then
+  if [[ "$bnumber" == "Unknown" || "$bnumber" -eq "$instver" ]]; then
     return 1   # no update needed
   else
     return 0   # update needed
@@ -355,7 +355,6 @@ function getCurrentVersion(){
   else
     instver=""
   fi
-  return $instver
 }
 
 #
@@ -367,7 +366,6 @@ function getAvailableVersion(){
   if [ -z "$bnumber" ]; then
     bnumber="Unknown"
   fi
-  return $bnumber
 }
 
 #
