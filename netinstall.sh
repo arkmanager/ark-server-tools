@@ -44,7 +44,7 @@ rm -rf /tmp/ark-server-tools-${channel}
 # Print messages
 case "$status" in
   "0")
-    echo "ARK Server Tools were correctly installed in your system inside the home directory of $1!"
+    echo "ARK Server Tools were correctly installed in your system inside the home directory of $steamcmd_user!"
     ;;
 
   "1")
@@ -52,6 +52,6 @@ case "$status" in
     ;;
   "2")
     echo "WARNING: A previous version of ARK Server Tools was detected in your system, your old configuration was not overwritten. You may need to manually update it."
-    echo "ARK Server Tools were correctly installed in your system inside the home directory of $1!"
+    echo "ARK Server Tools were correctly installed in your system inside the home directory of $steamcmd_user!"
     ;;
 esac
