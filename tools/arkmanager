@@ -390,7 +390,7 @@ function isTheServerRunning(){
 #
 #
 function isTheServerUp(){
-  $lsof -i "udp@${ark_MultiHome}:${ark_Port}" > /dev/null
+  $lsof -i "${ark_MultiHome:+udp@}${ark_MultiHome}:${ark_Port}" > /dev/null
   result=$?
   if [ $result -ne 0 ]; then
     perl -MSocket -MFcntl -e '
