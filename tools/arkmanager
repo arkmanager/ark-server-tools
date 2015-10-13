@@ -241,17 +241,18 @@ rconcmd() {
     }
 
     my $port = $ARGV[0];
-    my $password = $ARGV[1];
-    my $command = $ARGV[2];
+    my $ipaddr = $ARGV[1];
+    my $password = $ARGV[2];
+    my $command = $ARGV[3];
     socket(my $socket, PF_INET, SOCK_STREAM, 0);
     setsockopt($socket, SOL_SOCKET, SO_RCVTIMEO, pack("i4", 30, 0, 0, 0));
-    my $sockaddr = pack_sockaddr_in($port, inet_aton("127.0.0.1"));
+    my $sockaddr = pack_sockaddr_in($port, inet_aton($ipaddr));
     connect($socket, $sockaddr) or die "Error connecting to server";
     auth($socket, $password);
     sendpkt($socket, 2, 2, $command);
     my ($resid, $restype, $rcvbody) = recvpkt($socket);
     print $rcvbody, "\n";
-    ' "${ark_RCONPort}" "`getAdminPassword`" "$1"
+    ' "${ark_RCONPort}" "${ark_MultiHome:-127.0.0.1}" "`getAdminPassword`" "$1"
 }
 
 #
@@ -393,14 +394,14 @@ function isTheServerRunning(){
 #
 #
 function isTheServerUp(){
-  $lsof -i :"$ark_Port" > /dev/null
+  $lsof -i "udp@${ark_MultiHome}:${ark_Port}" > /dev/null
   result=$?
   if [ $result -ne 0 ]; then
     perl -MSocket -MFcntl -e '
       my $port = int($ARGV[0]);
       socket(my $socket, PF_INET, SOCK_DGRAM, 0);
       setsockopt($socket, SOL_SOCKET, SO_RCVTIMEO, pack("i4", 1, 0, 0, 0));
-      my $sockaddr = pack_sockaddr_in($port, inet_aton("127.0.0.1"));
+      my $sockaddr = pack_sockaddr_in($port, inet_aton($ARGV[1]));
       send($socket, "\xff\xff\xff\xffTSource Engine Query\x00", 0, $sockaddr);
       my $flags = fcntl($socket, F_GETFL, 0) or exit(1);
       fcntl($socket, F_SETFL, $flags | O_NONBLOCK) or exit(1);
@@ -416,7 +417,7 @@ function isTheServerUp(){
       } else {
         exit(1);
       }
-      ' "${ark_QueryPort}"
+      ' "${ark_QueryPort}" "${ark_MultiHome:-127.0.0.1}"
     result=$?
   fi
   # In this case, the result is:
@@ -433,7 +434,11 @@ function isTheServerUp(){
 # Check if the server is visible in the steam server list
 #
 function isTheServerOnline(){
-  publicip="$(curl -s https://api.ipify.org/)"
+  if [ -n "$ark_MultiHome" ]; then
+    publicip="$(curl --interface "${ark_MultiHome}" -s https://api.ipify.org/)"
+  else
+    publicip="$(curl -s https://api.ipify.org/)"
+  fi
   local serverresp
 
   if [[ "$publicip" =~ [1-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]* ]]; then
@@ -1172,7 +1177,7 @@ printStatus(){
       my $port = int($ARGV[0]);
       socket(my $socket, PF_INET, SOCK_DGRAM, 0);
       setsockopt($socket, SOL_SOCKET, SO_RCVTIMEO, pack("i4", 1, 0, 0, 0));
-      my $sockaddr = pack_sockaddr_in($port, inet_aton("127.0.0.1"));
+      my $sockaddr = pack_sockaddr_in($port, inet_aton($ARGV[1]));
       send($socket, "\xff\xff\xff\xffTSource Engine Query\x00", 0, $sockaddr);
       my $data = "";
       recv($socket, $data, 1400, 0) or (print "Unable to query server\n" and exit(1));
@@ -1181,7 +1186,7 @@ printStatus(){
       my $maxplayers = ord(substr($rest, 3, 1));
       print "Server Name: $servername\n";
       print "Players: $players / $maxplayers\n";
-      ' "${ark_QueryPort}"
+      ' "${ark_QueryPort}" "${ark_MultiHome:-127.0.0.1}"
 
     if isTheServerOnline; then
       echo -e "$NORMAL" "Server online: " "$GREEN" "Yes" "$NORMAL"
