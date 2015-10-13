@@ -43,7 +43,6 @@ doUpgradeTools() {
     echo -en "\n"
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/netinstall.sh | $sudo bash -s -- ${steamcmd_user} ${arkstChannel} "${reinstall_args[@]}"
-      else
         exit 0
     fi
   elif [[ $arkstLatestVersion == $arkstVersion && "$arkstLatestCommit" != "$arkstCommit" ]]; then
@@ -51,7 +50,6 @@ doUpgradeTools() {
     echo -en "\n"
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/netinstall.sh | $sudo bash -s -- ${steamcmd_user} ${arkstChannel} "${reinstall_args[@]}"
-      else
         exit 0
     fi
   else
@@ -312,7 +310,7 @@ function checkForUpdate(){
 function isUpdateNeeded(){
   getCurrentVersion
   getAvailableVersion
-  if [ "$bnumber" = "Unknown" -o "$bnumber" -eq "$instver" ]; then
+  if [[ "$bnumber" == "Unknown" || "$bnumber" -eq "$instver" ]]; then
     return 1   # no update needed
   else
     return 0   # update needed
@@ -356,7 +354,6 @@ function getCurrentVersion(){
   else
     instver=""
   fi
-  return $instver
 }
 
 #
@@ -368,7 +365,6 @@ function getAvailableVersion(){
   if [ -z "$bnumber" ]; then
     bnumber="Unknown"
   fi
-  return $bnumber
 }
 
 #
