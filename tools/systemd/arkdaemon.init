@@ -20,6 +20,9 @@
 #
 ### END INIT INFO
 
+# Set TERM to "dumb" if TERM is not set
+export TERM=${TERM:-dumb}
+
 # Global variables
 source /etc/arkmanager/arkmanager.cfg
 
