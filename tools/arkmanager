@@ -454,6 +454,8 @@ function isTheServerOnline(){
 # run function
 #
 doRun() {
+  cd "$arkserverroot"
+
   arkserveropts="$serverMap"
 
   if [ -n "$serverMapModId" ]; then
