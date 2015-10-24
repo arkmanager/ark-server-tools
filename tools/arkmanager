@@ -39,6 +39,9 @@ YELLOW="\\e[0;33m"
 NORMAL="\\033[0;39m"
 maxOpenFiles=100000
 
+# Set TERM to "dumb" if TERM is not set
+export TERM=${TERM:-dumb}
+
 arkmanagerLog="arkmanager.log"  # here are logged the actions performed by arkmanager
 arkserverLog="arkserver.log"    # here is logged the output of ShooterGameServer
 
