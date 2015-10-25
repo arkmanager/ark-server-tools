@@ -6,7 +6,8 @@
 
 steamcmd_user="$1"
 channel=${2:-master} # if defined by 2nd argument install the defined version, otherwise install master
-shift 2
+shift
+shift
 
 # Download and untar installation files
 cd /tmp
