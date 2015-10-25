@@ -4,7 +4,9 @@
 # Net Installer, used with curl
 #
 
+steamcmd_user="$1"
 channel=${2:-master} # if defined by 2nd argument install the defined version, otherwise install master
+shift 2
 
 # Download and untar installation files
 cd /tmp
@@ -33,7 +35,7 @@ sed -i "s|^arkstCommit='.*'$|arkstCommit='${COMMIT}'|" arkmanager
 version=`<../.version`
 sed -i "s|^arkstVersion=\".*\"|arkstVersion='${version}'|" arkmanager
 chmod +x install.sh
-bash install.sh $1 > /dev/null
+bash install.sh "$steamcmd_user" "$@" > /dev/null
 
 status=$?
 
@@ -42,7 +44,7 @@ rm -rf /tmp/ark-server-tools-${channel}
 # Print messages
 case "$status" in
   "0")
-    echo "ARK Server Tools were correctly installed in your system inside the home directory of $1!"
+    echo "ARK Server Tools were correctly installed in your system inside the home directory of $steamcmd_user!"
     ;;
 
   "1")
@@ -50,6 +52,6 @@ case "$status" in
     ;;
   "2")
     echo "WARNING: A previous version of ARK Server Tools was detected in your system, your old configuration was not overwritten. You may need to manually update it."
-    echo "ARK Server Tools were correctly installed in your system inside the home directory of $1!"
+    echo "ARK Server Tools were correctly installed in your system inside the home directory of $steamcmd_user!"
     ;;
 esac
