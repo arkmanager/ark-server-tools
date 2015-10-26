@@ -1036,6 +1036,8 @@ doExtractMod(){
     else
       echo -ne '\x01\x00\x00\x00\x08\x00\x00\x00ModType\x00\x02\x00\x00\x001\x00' >>"$moddestdir/.mod"
     fi
+
+    echo "$modbranch" >"$moddestdir/.modbranch"
   fi
 }
 
