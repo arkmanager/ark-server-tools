@@ -917,11 +917,11 @@ isModUpdateNeeded(){
       modsrcdir="$modsrcdir/${modbranch}NoEditor"
     fi
 
-    find "$modsrcdir" -type f ! -name "*.z.uncompressed_size" -printf "%P\n" | while read f; do
+    while read f; do
       if [ \( ! -f "$moddestdir/${f%.z}" \) -o "$modsrcdir/$f" -nt "$moddestdir/${f%.z}" ]; then
         return 0
       fi
-    done
+    done < <(find "$modsrcdir" -type f ! -name "*.z.uncompressed_size" -printf "%P\n")
   fi
 
   return 1
