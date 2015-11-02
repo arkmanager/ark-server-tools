@@ -1160,6 +1160,10 @@ doBackup(){
   else
     echo -e "${NORMAL}[ ${RED}FAILED${NORMAL} ]"
   fi
+#Tar the files and remove the original Backup Directory.  Saves about 50MB of disk space per backup
+tar -Pzcvf "${datestamp}.tar.gz" "${backupdir}"
+rm -rf ${backupdir}
+
 }
 
 #
