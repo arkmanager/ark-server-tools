@@ -98,7 +98,7 @@ runAsRoot(){
   fi
 
   if [ "$1" == "upgrade-tools" ]; then
-    doUpgrade
+    doUpgradeTools
   elif [ "$1" == "uninstall-tools" ]; then
     doUninstallTools
   else
