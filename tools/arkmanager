@@ -1161,7 +1161,7 @@ doBackup(){
     echo -e "${NORMAL}[ ${RED}FAILED${NORMAL} ]"
   fi
 #Tar the files and remove the original Backup Directory.  Saves about 50MB of disk space per backup
-tar -Pzcvf "${datestamp}.tar.gz" "${backupdir}"
+ tar -zcvf "${arkbackupdir}/${datestamp}.tar.gz" -C "${arkbackupdir}" "${datestamp}"
 rm -rf ${backupdir}
 
 }
