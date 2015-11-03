@@ -1172,7 +1172,7 @@ doBackup(){
   rm -rf ${backupdir}
 
   if [ -f "${arkbackupdir}/${daystamp}/${datestamp}.tar.bz2" ]; then
-   echo -e "${NORMAL}[ ${GREEN}OK${NORMAL} ]"
+   echo -e "${NORMAL}[   ${GREEN}OK${NORMAL}   ]"
   else
     echo -e "${NORMAL}[ ${RED}FAILED${NORMAL} ]"
   fi
