@@ -1168,7 +1168,7 @@ doBackup(){
 
   echo -ne "${NORMAL} Compressing Directory "
 
-  tar -jcvf "${arkbackupdir}/${daystamp}/${datestamp}.tar.bz2" -C "${arkbackupdir}" "${datestamp}"
+  tar -jcf "${arkbackupdir}/${daystamp}/${datestamp}.tar.bz2" -C "${arkbackupdir}" "${datestamp}"
   rm -rf ${backupdir}
 
   if [ -f "${arkbackupdir}/${daystamp}/${datestamp}.tar.bz2" ]; then
