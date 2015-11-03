@@ -1160,11 +1160,20 @@ doBackup(){
   else
     echo -e "${NORMAL}[ ${RED}FAILED${NORMAL} ]"
   fi
-#Tar the files and remove the original Backup Directory.  Saves about 50MB of disk space per backup
- tar -jcvf "${arkbackupdir}/${datestamp}.tar.bz2" -C "${arkbackupdir}" "${datestamp}"
-rm -rf ${backupdir}
+  #Tar the files and remove the original Backup Directory.  Saves about 50MB of disk space per backup
 
+  echo -ne "${NORMAL} Compressing Directory "
+
+  tar -jcvf "${arkbackupdir}/${datestamp}.tar.bz2" -C "${arkbackupdir}" "${datestamp}"
+  rm -rf ${backupdir}
+
+  if [ -f "${arkbackupdir}/${datestamp}.tar.bz2" ]; then
+   echo -e "${NORMAL}[ ${GREEN}OK${NORMAL} ]"
+  else
+    echo -e "${NORMAL}[ ${RED}FAILED${NORMAL} ]"
+  fi
 }
+
 
 #
 # Print the status of the server (running? online? version?)
