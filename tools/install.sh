@@ -289,12 +289,12 @@ else
 
     # Create a folder in /var/log to let Ark tools write its own log files
     mkdir -p "${INSTALL_ROOT}/var/log/arktools"
-    chown "$1" "${INSTALL_ROOT}/var/log/arktools"
+    chown "$steamcmd_user" "${INSTALL_ROOT}/var/log/arktools"
 
     # Copy arkmanager.cfg inside linux configuation folder if it doesn't already exists
     mkdir -p "${INSTALL_ROOT}/etc/arkmanager"
     cp arkmanager.cfg "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg.NEW"
-    chown "$1" "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg.NEW"
+    chown "$steamcmd_user" "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg.NEW"
     sed -i -e "s|^steamcmd_user=\"steam\"|steamcmd_user=\"$steamcmd_user\"|" \
            -e "s|\"/home/steam|\"/home/$steamcmd_user|" \
            -e "s|^install_bindir=.*|install_bindir=\"${BINDIR}\"|" \

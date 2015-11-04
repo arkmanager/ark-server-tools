@@ -7,7 +7,7 @@
 # Contributors:         Sispheor, Atriusftw, klightspeed, lexat, puseidr
 
 # Script version
-arkstVersion="1.4"
+arkstVersion="1.5"
 arkstCommit=''
 
 doUpgradeTools() {
@@ -98,7 +98,7 @@ runAsRoot(){
   fi
 
   if [ "$1" == "upgrade-tools" ]; then
-    doUpgrade
+    doUpgradeTools
   elif [ "$1" == "uninstall-tools" ]; then
     doUninstallTools
   else
@@ -917,11 +917,11 @@ isModUpdateNeeded(){
       modsrcdir="$modsrcdir/${modbranch}NoEditor"
     fi
 
-    find "$modsrcdir" -type f ! -name "*.z.uncompressed_size" -printf "%P\n" | while read f; do
+    while read f; do
       if [ \( ! -f "$moddestdir/${f%.z}" \) -o "$modsrcdir/$f" -nt "$moddestdir/${f%.z}" ]; then
         return 0
       fi
-    done
+    done < <(find "$modsrcdir" -type f ! -name "*.z.uncompressed_size" -printf "%P\n")
   fi
 
   return 1
