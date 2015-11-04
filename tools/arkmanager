@@ -1163,7 +1163,22 @@ doBackup(){
   else
     echo -e "${NORMAL}\e[68G[ ${RED}FAILED${NORMAL} ]"
   fi
- 
+   
+   
+   echo -ne "${NORMAL} Copying Game.ini "
+  
+  cp -p "${arkserverroot}/ShooterGame/Saved/Config/LinuxServer/Game.ini" "${backupdir}/Game.ini"
+  if [ ! -s "${backupdir}/Game.ini" ]; then
+    sleep 2
+    cp -p "${f}" "${backupdir}/${f##*/}"
+  fi
+  if [ -f "${backupdir}/Game.ini" ]; then
+    echo -e "${NORMAL}\e[68G[   ${GREEN}OK${NORMAL}   ]"
+  else
+    echo -e "${NORMAL}\e[68G[ ${RED}FAILED${NORMAL} ]"
+  fi
+  
+  
   #Tar the files and remove the original Backup Directory.  Saves about 50MB of disk space per backup
 
   echo -ne "${NORMAL} Compressing Directory "
