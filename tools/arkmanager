@@ -1101,9 +1101,9 @@ doBackup(){
     cp -p "${arkserverroot}/ShooterGame/Saved/${savedir}/${serverMap##*/}.tmp" "${backupdir##*/}/${serverMap##*/}.ark"
   fi
   if [ -f "${backupdir}/${serverMap##*/}.ark" ]; then
-    echo -e "${NORMAL}[   ${GREEN}OK${NORMAL}   ]"
+    echo -e "${NORMAL}\e[68G[   ${GREEN}OK${NORMAL}   ]"
   else
-    echo -e "${NORMAL}[ ${RED}FAILED${NORMAL} ]"
+    echo -e "${NORMAL}\e[68G[ ${RED}FAILED${NORMAL} ]"
   fi
 
   # ARK server uses Lock-Truncate-Write-Unlock
@@ -1124,9 +1124,9 @@ doBackup(){
       cp -p "${f%.arkprofile}.tmpprofile" "${backupdir}/${f##*/}"
     fi
     if [ -s "${backupdir}/${f##*/}" ]; then
-      echo -e "${NORMAL}[   ${GREEN}OK${NORMAL}   ]"
+      echo -e "${NORMAL}\e[68G[   ${GREEN}OK${NORMAL}   ]"
     else
-      echo -e "${NORMAL}[ ${RED}FAILED${NORMAL} ]"
+      echo -e "${NORMAL}\e[68G[ ${RED}FAILED${NORMAL} ]"
     fi
   done
 
@@ -1145,9 +1145,9 @@ doBackup(){
       cp -p "${f%.arktribe}.tmptribe" "${backupdir}/${f##*/}"
     fi
     if [ -s "${backupdir}/${f##*/}" ]; then
-      echo -e "${NORMAL}[   ${GREEN}OK${NORMAL}   ]"
+      echo -e "${NORMAL}\e[68G[   ${GREEN}OK${NORMAL}   ]"
     else
-      echo -e "${NORMAL}[ ${RED}FAILED${NORMAL} ]"
+      echo -e "${NORMAL}\e[68G[ ${RED}FAILED${NORMAL} ]"
     fi
   done
 
@@ -1159,9 +1159,9 @@ doBackup(){
     cp -p "${f}" "${backupdir}/${f##*/}"
   fi
   if [ -f "${backupdir}/GameUserSettings.ini" ]; then
-    echo -e "${NORMAL}[   ${GREEN}OK${NORMAL}   ]"
+    echo -e "${NORMAL}\e[68G[   ${GREEN}OK${NORMAL}   ]"
   else
-    echo -e "${NORMAL}[ ${RED}FAILED${NORMAL} ]"
+    echo -e "${NORMAL}\e[68G[ ${RED}FAILED${NORMAL} ]"
   fi
  
   #Tar the files and remove the original Backup Directory.  Saves about 50MB of disk space per backup
@@ -1172,9 +1172,9 @@ doBackup(){
   rm -rf ${backupdir}
 
   if [ -f "${arkbackupdir}/${daystamp}/${datestamp}.tar.bz2" ]; then
-   echo -e "${NORMAL}[   ${GREEN}OK${NORMAL}   ]"
+   echo -e "${NORMAL}\e[68G[   ${GREEN}OK${NORMAL}   ]"
   else
-    echo -e "${NORMAL}[ ${RED}FAILED${NORMAL} ]"
+    echo -e "${NORMAL}\e[68G[ ${RED}FAILED${NORMAL} ]"
   fi
 
 }
