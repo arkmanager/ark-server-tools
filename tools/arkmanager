@@ -1062,10 +1062,13 @@ doInstallMod(){
 #
 doBackup(){
   local datestamp=`date +"%Y-%m-%d_%H.%M.%S"`
+  local daystamp=`date +"%Y-%m-%d"`
   local backupdir="${arkbackupdir}/${datestamp}"
+  local backupdirdaily="${arkbackupdir}/${daystamp}"
   local savedir="SavedArks"
   mkdir -p "$backupdir"
-
+  mkdir -p "$backupdirdaily"
+  
   # extract the map name from the active map mod
   if [ -n "$serverMapModId" ]; then
     serverMap="$(perl -e '
@@ -1098,9 +1101,9 @@ doBackup(){
     cp -p "${arkserverroot}/ShooterGame/Saved/${savedir}/${serverMap##*/}.tmp" "${backupdir##*/}/${serverMap##*/}.ark"
   fi
   if [ -f "${backupdir}/${serverMap##*/}.ark" ]; then
-    echo -e "${NORMAL}[   ${GREEN}OK${NORMAL}   ]"
+    echo -e "${NORMAL}\e[68G[   ${GREEN}OK${NORMAL}   ]"
   else
-    echo -e "${NORMAL}[ ${RED}FAILED${NORMAL} ]"
+    echo -e "${NORMAL}\e[68G[ ${RED}FAILED${NORMAL} ]"
   fi
 
   # ARK server uses Lock-Truncate-Write-Unlock
@@ -1121,9 +1124,9 @@ doBackup(){
       cp -p "${f%.arkprofile}.tmpprofile" "${backupdir}/${f##*/}"
     fi
     if [ -s "${backupdir}/${f##*/}" ]; then
-      echo -e "${NORMAL}[   ${GREEN}OK${NORMAL}   ]"
+      echo -e "${NORMAL}\e[68G[   ${GREEN}OK${NORMAL}   ]"
     else
-      echo -e "${NORMAL}[ ${RED}FAILED${NORMAL} ]"
+      echo -e "${NORMAL}\e[68G[ ${RED}FAILED${NORMAL} ]"
     fi
   done
 
@@ -1142,9 +1145,9 @@ doBackup(){
       cp -p "${f%.arktribe}.tmptribe" "${backupdir}/${f##*/}"
     fi
     if [ -s "${backupdir}/${f##*/}" ]; then
-      echo -e "${NORMAL}[   ${GREEN}OK${NORMAL}   ]"
+      echo -e "${NORMAL}\e[68G[   ${GREEN}OK${NORMAL}   ]"
     else
-      echo -e "${NORMAL}[ ${RED}FAILED${NORMAL} ]"
+      echo -e "${NORMAL}\e[68G[ ${RED}FAILED${NORMAL} ]"
     fi
   done
 
@@ -1156,11 +1159,26 @@ doBackup(){
     cp -p "${f}" "${backupdir}/${f##*/}"
   fi
   if [ -f "${backupdir}/GameUserSettings.ini" ]; then
-    echo -e "${NORMAL}[   ${GREEN}OK${NORMAL}   ]"
+    echo -e "${NORMAL}\e[68G[   ${GREEN}OK${NORMAL}   ]"
   else
-    echo -e "${NORMAL}[ ${RED}FAILED${NORMAL} ]"
+    echo -e "${NORMAL}\e[68G[ ${RED}FAILED${NORMAL} ]"
   fi
+ 
+  #Tar the files and remove the original Backup Directory.  Saves about 50MB of disk space per backup
+
+  echo -ne "${NORMAL} Compressing Directory "
+
+  tar -jcf "${arkbackupdir}/${daystamp}/${datestamp}.tar.bz2" -C "${arkbackupdir}" "${datestamp}"
+  rm -rf ${backupdir}
+
+  if [ -f "${arkbackupdir}/${daystamp}/${datestamp}.tar.bz2" ]; then
+   echo -e "${NORMAL}\e[68G[   ${GREEN}OK${NORMAL}   ]"
+  else
+    echo -e "${NORMAL}\e[68G[ ${RED}FAILED${NORMAL} ]"
+  fi
+
 }
+
 
 #
 # Print the status of the server (running? online? version?)
