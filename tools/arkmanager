@@ -771,6 +771,10 @@ doUpdate() {
       arkStagingDir="${ark#--stagingdir=}"
     elif [ "$arg" == "--downloadonly" ]; then
       downloadonly=1
+    else
+      echo "Unrecognized option $arg"
+      echo "Try 'arkmanager -h' or 'arkmanager --help' for more information."
+      exit 1
     fi
   done
 
@@ -790,6 +794,7 @@ doUpdate() {
 
     if [ -n "${arkStagingDir}" -a "${arkStagingDir}" != "${arkserverroot}" ]; then
       if [ ! -d "$arkStagingDir/ShooterGame" ]; then
+        echo "Copying to staging directory"
         mkdir -p "$arkStagingDir"
         if [ "$(stat -c "%d" "$arkserverroot")" == "$(stat -c "%d" "$arkStagingDir")" ]; then
           cp -al "$arkserverroot/ShooterGame/." "$arkStagingDir/ShooterGame"
@@ -805,6 +810,7 @@ doUpdate() {
         rm -rf "$arkStagingDir/ShooterGame/Saved/"*
       fi
 
+      echo "Downloading ARK update"
       cd "$steamcmdroot"
       ./$steamcmdexec +@NoPromptForPassword 1 +login ${steamlogin:-anonymous} +force_install_dir "$arkStagingDir" +app_update $appid $validate +quit
       if [ -d "${arkStagingDir}/steamapps/downloading/${appid}" ]; then
@@ -858,6 +864,7 @@ doUpdate() {
 
     if [ -n "$appupdate" ]; then
       if [ -d "${arkStagingDir}" -a "${arkStagingDir}" != "${arkserverroot}" ]; then
+        echo "Applying update from staging directory"
         if [ "$(stat -c "%d" "$arkserverroot")" == "$(stat -c "%d" "$arkStagingDir")" ]; then
           cp -alu --remove-destination "$arkStagingDir/ShooterGame/." "$arkserverroot/ShooterGame"
           cp -alu --remove-destination "$arkStagingDir/Engine/." "$arkserverroot/Engine"
@@ -869,6 +876,7 @@ doUpdate() {
           rsync -a "$arkStagingDir/." "$arkserverroot"
         fi
       else
+        echo "Performing ARK update"
         cd "$steamcmdroot"
         ./$steamcmdexec +@NoPromptForPassword 1 +login ${steamlogin:-anonymous} +force_install_dir "$arkserverroot" +app_update $appid $validate +quit
       fi
@@ -880,6 +888,7 @@ doUpdate() {
     if [ -n "$modupdate" ]; then
       for modid in $(getModIds); do
         if isModUpdateNeeded $modid; then
+          echo "Updating mod $modid"
           doExtractMod $modid
           echo "`timestamp`: Mod $modid updated" >> "$logdir/update.log"
         fi
