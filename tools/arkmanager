@@ -286,6 +286,13 @@ doBroadcastWithEcho(){
 }
 
 #
+# SteamCMD helper function
+#
+function runSteamCMD(){
+  "$steamcmdroot/$steamcmdexec" +@NoPromptForPassword 1 +login ${steamlogin:-anonymous} "$@" +quit
+}
+
+#
 # Check if a new version is available but not apply it
 #
 function checkForUpdate(){
@@ -364,7 +371,7 @@ function getCurrentVersion(){
 #
 function getAvailableVersion(){
   rm -f "$steamcmd_appinfocache"
-  bnumber=`$steamcmdroot/$steamcmdexec +@NoPromptForPassword 1 +login ${steamlogin:-anonymous} +app_info_update 1 +app_info_print "$appid" +quit | while read name val; do if [ "${name}" == "{" ]; then parseSteamACF ".depots.branches.public" "buildid"; break; fi; done`
+  bnumber=`runSteamCMD +app_info_update 1 +app_info_print "$appid" +quit | while read name val; do if [ "${name}" == "{" ]; then parseSteamACF ".depots.branches.public" "buildid"; break; fi; done`
   if [ -z "$bnumber" ]; then
     bnumber="Unknown"
   fi
@@ -660,6 +667,13 @@ doStopAll(){
 }
 
 #
+# install / update / download update
+#
+runSteamCMDAppUpdate(){
+  runSteamCMD +force_install_dir "$1" +app_update $appid $2
+}
+
+#
 # install of ARK server
 #
 doInstall() {
@@ -676,7 +690,7 @@ doInstall() {
 
   cd "$steamcmdroot"
   # install the server
-  ./$steamcmdexec +@NoPromptForPassword 1 +login ${steamlogin:-anonymous} +force_install_dir "$arkserverroot" +app_update $appid validate +quit
+  runSteamCMDAppUpdate "$arkserverroot" validate
   # the current version should be the last version. We set our version
   getCurrentVersion
 }
@@ -812,7 +826,7 @@ doUpdate() {
 
       echo "Downloading ARK update"
       cd "$steamcmdroot"
-      ./$steamcmdexec +@NoPromptForPassword 1 +login ${steamlogin:-anonymous} +force_install_dir "$arkStagingDir" +app_update $appid $validate +quit
+      runSteamCMDAppUpdate "$arkStagingDir" $validate
       if [ -d "${arkStagingDir}/steamapps/downloading/${appid}" ]; then
         echo "Update download interrupted"
         return 1
@@ -878,7 +892,7 @@ doUpdate() {
       else
         echo "Performing ARK update"
         cd "$steamcmdroot"
-        ./$steamcmdexec +@NoPromptForPassword 1 +login ${steamlogin:-anonymous} +force_install_dir "$arkserverroot" +app_update $appid $validate +quit
+	runSteamCMDAppUpdate "$arkserverroot" $validate
       fi
       # the current version should be the last version. We set our version
       getCurrentVersion
@@ -928,7 +942,7 @@ doDownloadMod(){
   cd "$steamcmdroot"
 
   while true; do
-    ./$steamcmdexec +@NoPromptForPassword 1 +login ${steamlogin:-anonymous} +workshop_download_item $mod_appid $modid +quit
+    runSteamCMD +workshop_download_item $mod_appid $modid
     if [ ! -d "$moddldir" ]; then break; fi
     local newsize="`du -s "$moddldir" | cut -f1`"
     if [ $newsize -eq $dlsize ]; then break; fi
