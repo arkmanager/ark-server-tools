@@ -942,11 +942,15 @@ doDownloadMod(){
   cd "$steamcmdroot"
 
   while true; do
+    echo "Downloading mod $modid"
     runSteamCMD +workshop_download_item $mod_appid $modid
+    echo
+    echo "Checking mod $modid"
     if [ ! -d "$moddldir" ]; then break; fi
     local newsize="`du -s "$moddldir" | cut -f1`"
     if [ $newsize -eq $dlsize ]; then break; fi
     dlsize=$newsize
+    echo "Mod $modid not fully downloaded - retrying"
   done
 
   if [ -f "$modsrcdir/mod.info" ]; then
