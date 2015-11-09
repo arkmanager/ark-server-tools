@@ -218,7 +218,7 @@ else
         cp systemd/arkmanager.service "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
         sed -i "s|=/usr/libexec/arkmanager/|=${LIBEXECDIR}/|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
         cp systemd/arkmanager@.service "${INSTALL_ROOT}/etc/systemd/system/arkmanager@.service"
-        sed -i "s|=/usr/bin/|=${BINDIR}/|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
+        sed -i "s|=/usr/bin/|=${BINDIR}/|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager@.service"
         if [ -z "${INSTALL_ROOT}" ]; then
           systemctl daemon-reload
           systemctl enable arkmanager.service
@@ -245,7 +245,7 @@ else
         cp systemd/arkmanager.service "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
         sed -i "s|=/usr/libexec/arkmanager/|=${LIBEXECDIR}/|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
         cp systemd/arkmanager@.service "${INSTALL_ROOT}/etc/systemd/system/arkmanager@.service"
-        sed -i "s|=/usr/bin/|=${BINDIR}/|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
+        sed -i "s|=/usr/bin/|=${BINDIR}/|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager@.service"
         if [ -z "${INSTALL_ROOT}" ]; then
           systemctl daemon-reload
           systemctl enable arkmanager.service
