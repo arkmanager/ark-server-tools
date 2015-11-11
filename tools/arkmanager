@@ -889,6 +889,18 @@ doUpdate() {
         else
           rsync -a "$arkStagingDir/." "$arkserverroot"
         fi
+        cd "$arkserverroot"
+        find Engine ShooterGame linux64 -depth -print |
+          grep -v '^ShooterGame/\(Saved\|Content/Mods\)' |
+          while read f; do
+            if [ ! -e "staging/${f}" ]; then
+              if [ -f "$f" ]; then
+                rm "${f}"
+              else
+                rmdir "${f}"
+              fi
+            fi
+          done
       else
         echo "Performing ARK update"
         cd "$steamcmdroot"
