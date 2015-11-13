@@ -454,6 +454,24 @@ function isTheServerOnline(){
 }
 
 #
+# Check if anybody is connected to the server
+#
+function numPlayersConnected(){
+  perl -MSocket -e '
+    my $port = int($ARGV[0]);
+    socket(my $socket, PF_INET, SOCK_DGRAM, 0);
+    setsockopt($socket, SOL_SOCKET, SO_RCVTIMEO, pack("i4", 1, 0, 0, 0));
+    my $sockaddr = pack_sockaddr_in($port, inet_aton($ARGV[1]));
+    send($socket, "\xff\xff\xff\xffTSource Engine Query\x00", 0, $sockaddr);
+    my $data = "";
+    recv($socket, $data, 1400, 0) or (print "0" and exit(1));
+    my ($servername, $mapname, $game, $fullname, $rest) = split(/\x00/, substr($data, 6), 5);
+    my $players = ord(substr($rest, 2, 1));
+    print "$players\n";
+    ' "${ark_QueryPort}" "${ark_MultiHome:-127.0.0.1}"
+}
+
+#
 # run function
 #
 doRun() {
@@ -757,6 +775,8 @@ doUpdate() {
       updatetype=safe
     elif [ "$arg" == "--warn" ]; then
       updatetype=warn
+    elif [ "$arg" == "--ifempty" ]; then
+      updatetype=ifempty
     elif [ "$arg" == "--validate" ]; then
       validate=validate
       appupdate=1
@@ -794,6 +814,12 @@ doUpdate() {
         echo "`timestamp`: Save file newer than 1 minute. Performing an update." >> "$logdir/update.log"
       elif [ "$updatetype" == "warn" ]; then
         if ! doUpdateWarn; then
+          return 1
+        fi
+      elif [ "$updatetype" == "ifempty" ]; then
+        numplayers=$(( $(numPlayersConnected) + 0 ))
+        if (( numplayers == 0 )); then
+          echo "${numplayers} players are still connected"
           return 1
         fi
       fi
