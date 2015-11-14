@@ -714,14 +714,14 @@ doUpdateWarn(){
       warnminutes=60
     fi
 
-    local warnintervals=( 90 60 45 30 20 15 10 5 4 3 2 1 )
+    local warnintervals=( 90 60 45 30 20 15 10 5 4 3 2 )
 
     for warninterval in "${warnintervals[@]}"; do
       if [ "`getServerPID`" != "$pid" ]; then
         echo "Server has stopped.  Aborting update"
         return 1
       fi
-      if (( arkwarnminutes > warninterval )); then
+      if (( warnminutes > warninterval )); then
         sleep 1m &
         sleeppid=$!
         if [ -n "$msgWarnUpdateMinutes" ]; then
@@ -746,8 +746,8 @@ doUpdateWarn(){
       fi
     done
 
-    local warnseconds=90
-    warnintervals=( 60 45 30 20 15 10 5 0 )
+    local warnseconds=120
+    warnintervals=( 90 60 45 30 20 15 10 5 0 )
     for warninterval in "${warnintervals[@]}"; do
       sleep $(( warnseconds - warninterval ))s &
       sleeppid=$!
