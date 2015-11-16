@@ -286,6 +286,13 @@ doBroadcastWithEcho(){
 }
 
 #
+# SteamCMD helper function
+#
+function runSteamCMD(){
+  "$steamcmdroot/$steamcmdexec" +@NoPromptForPassword 1 +login ${steamlogin:-anonymous} "$@" +quit
+}
+
+#
 # Check if a new version is available but not apply it
 #
 function checkForUpdate(){
@@ -364,7 +371,7 @@ function getCurrentVersion(){
 #
 function getAvailableVersion(){
   rm -f "$steamcmd_appinfocache"
-  bnumber=`$steamcmdroot/$steamcmdexec +@NoPromptForPassword 1 +login ${steamlogin:-anonymous} +app_info_update 1 +app_info_print "$appid" +quit | while read name val; do if [ "${name}" == "{" ]; then parseSteamACF ".depots.branches.public" "buildid"; break; fi; done`
+  bnumber=`runSteamCMD +app_info_update 1 +app_info_print "$appid" +quit | while read name val; do if [ "${name}" == "{" ]; then parseSteamACF ".depots.branches.public" "buildid"; break; fi; done`
   if [ -z "$bnumber" ]; then
     bnumber="Unknown"
   fi
@@ -678,6 +685,13 @@ doStopAll(){
 }
 
 #
+# install / update / download update
+#
+runSteamCMDAppUpdate(){
+  runSteamCMD +force_install_dir "$1" +app_update $appid $2
+}
+
+#
 # install of ARK server
 #
 doInstall() {
@@ -694,7 +708,7 @@ doInstall() {
 
   cd "$steamcmdroot"
   # install the server
-  ./$steamcmdexec +@NoPromptForPassword 1 +login ${steamlogin:-anonymous} +force_install_dir "$arkserverroot" +app_update $appid validate +quit
+  runSteamCMDAppUpdate "$arkserverroot" validate
   # the current version should be the last version. We set our version
   getCurrentVersion
 }
@@ -790,6 +804,7 @@ doUpdate() {
   local validate=
   local modupdate=
   local saveworld=
+  local downloadonly=
 
   for arg in "$@"; do
     if [ "$arg" == "--force" ]; then
@@ -809,6 +824,14 @@ doUpdate() {
       modupdate=1
     elif [ "$arg" == "--backup" ]; then
       arkBackupPreUpdate=true
+    elif [[ "$arg" =~ "^--stagingdir=" ]]; then
+      arkStagingDir="${ark#--stagingdir=}"
+    elif [ "$arg" == "--downloadonly" ]; then
+      downloadonly=1
+    else
+      echo "Unrecognized option $arg"
+      echo "Try 'arkmanager -h' or 'arkmanager --help' for more information."
+      exit 1
     fi
   done
 
@@ -825,9 +848,44 @@ doUpdate() {
 
   if isUpdateNeeded; then
     appupdate=1
+
+    if [ -n "${arkStagingDir}" -a "${arkStagingDir}" != "${arkserverroot}" ]; then
+      if [ ! -d "$arkStagingDir/ShooterGame" ]; then
+        echo "Copying to staging directory"
+        mkdir -p "$arkStagingDir"
+        if [ "$(stat -c "%d" "$arkserverroot")" == "$(stat -c "%d" "$arkStagingDir")" ]; then
+          cp -al "$arkserverroot/ShooterGame/." "$arkStagingDir/ShooterGame"
+          cp -al "$arkserverroot/Engine/." "$arkStagingDir/Engine"
+          cp -al "$arkserverroot/linux64/." "$arkStagingDir/linux64"
+          cp -al "$arkserverroot/PackageInfo.bin" "$arkStagingDir/PackageInfo.bin"
+          cp -al "$arkserverroot/steamclient.so" "$arkStagingDir/steamclient.so"
+          cp -a "$arkserverroot/steamapps/." "$arkStagingDir/steamapps"
+        else
+          rsync -a "$arkserverroot/." "$arkStagingDir/."
+        fi
+        rm -rf "$arkStagingDir/ShooterGame/Content/Mods/"*
+        rm -rf "$arkStagingDir/ShooterGame/Saved/"*
+      fi
+
+      echo "Downloading ARK update"
+      cd "$steamcmdroot"
+      runSteamCMDAppUpdate "$arkStagingDir" $validate
+      if [ -d "${arkStagingDir}/steamapps/downloading/${appid}" ]; then
+        echo "Update download interrupted"
+        return 1
+      fi
+    fi
   fi
 
-  if [ -n "$appupdate" -o -n "$modupdate" ]; then
+  if [ -n "$downloadonly" ]; then
+    if [ -n "$appupdate" -a -n "$arkStagingDir" -a "$arkStagingDir" != "$arkserverroot" ]; then
+      echo "Server update downloaded"
+    fi
+    if [ -n "$modupdate" ]; then
+      echo "Mod update downloaded"
+    fi
+    echo "Not applying update - download-only enabled"
+  elif [ -n "$appupdate" -o -n "$modupdate" ]; then
     if isTheServerRunning; then
       if [ "$updatetype" == "safe" ]; then
         while [ ! `find $arkserverroot/ShooterGame/Saved/SavedArks -mmin -1 -name ${serverMap##*/}.ark` ]; do
@@ -860,16 +918,43 @@ doUpdate() {
     fi
 
     doStop
-    
+
     # If user wants to back-up, we do it here.
-    
+
     if [ "$arkBackupPreUpdate" == "true" ]; then
         doBackup
     fi
 
     if [ -n "$appupdate" ]; then
-      cd "$steamcmdroot"
-      ./$steamcmdexec +@NoPromptForPassword 1 +login ${steamlogin:-anonymous} +force_install_dir "$arkserverroot" +app_update $appid $validate +quit
+      if [ -d "${arkStagingDir}" -a "${arkStagingDir}" != "${arkserverroot}" ]; then
+        echo "Applying update from staging directory"
+        if [ "$(stat -c "%d" "$arkserverroot")" == "$(stat -c "%d" "$arkStagingDir")" ]; then
+          cp -alu --remove-destination "$arkStagingDir/ShooterGame/." "$arkserverroot/ShooterGame"
+          cp -alu --remove-destination "$arkStagingDir/Engine/." "$arkserverroot/Engine"
+          cp -alu --remove-destination "$arkStagingDir/linux64/." "$arkserverroot/linux64"
+          cp -alu --remove-destination "$arkStagingDir/PackageInfo.bin" "$arkserverroot/PackageInfo.bin"
+          cp -alu --remove-destination "$arkStagingDir/steamclient.so" "$arkserverroot/steamclient.so"
+          cp -au --remove-destination "$arkStagingDir/steamapps/." "$arkserverroot/steamapps"
+        else
+          rsync -a "$arkStagingDir/." "$arkserverroot"
+        fi
+        cd "$arkserverroot"
+        find Engine ShooterGame linux64 -depth -print |
+          grep -v '^ShooterGame/\(Saved\|Content/Mods\)' |
+          while read f; do
+            if [ ! -e "staging/${f}" ]; then
+              if [ -f "$f" ]; then
+                rm "${f}"
+              else
+                rmdir "${f}"
+              fi
+            fi
+          done
+      else
+        echo "Performing ARK update"
+        cd "$steamcmdroot"
+	runSteamCMDAppUpdate "$arkserverroot" $validate
+      fi
       # the current version should be the last version. We set our version
       getCurrentVersion
       echo "`timestamp`: update to $instver complete" >> "$logdir/update.log"
@@ -878,12 +963,13 @@ doUpdate() {
     if [ -n "$modupdate" ]; then
       for modid in $(getModIds); do
         if isModUpdateNeeded $modid; then
+          echo "Updating mod $modid"
           doExtractMod $modid
           echo "`timestamp`: Mod $modid updated" >> "$logdir/update.log"
         fi
       done
     fi
-    
+
     # we restart the server only if it was started before the update
     if [ $serverWasAlive -eq 1 ]; then
       doStart
@@ -917,11 +1003,15 @@ doDownloadMod(){
   cd "$steamcmdroot"
 
   while true; do
-    ./$steamcmdexec +@NoPromptForPassword 1 +login ${steamlogin:-anonymous} +workshop_download_item $mod_appid $modid +quit
+    echo "Downloading mod $modid"
+    runSteamCMD +workshop_download_item $mod_appid $modid
+    echo
+    echo "Checking mod $modid"
     if [ ! -d "$moddldir" ]; then break; fi
     local newsize="`du -s "$moddldir" | cut -f1`"
     if [ $newsize -eq $dlsize ]; then break; fi
     dlsize=$newsize
+    echo "Mod $modid not fully downloaded - retrying"
   done
 
   if [ -f "$modsrcdir/mod.info" ]; then
@@ -1414,13 +1504,15 @@ while true; do
       echo "useconfig <name>      Use the configuration overrides in the specified config name or file"
       echo
       echo "Update command takes the below options:"
-      echo "       --force        Apply update without checking the current version"
-      echo "       --safe         Wait for server to perform world save and update."
-      echo "       --warn         Warn players before updating server"
-      echo "       --validate     Validates all ARK server files"
-      echo "       --saveworld    Saves world before update"
-      echo "       --update-mods  Updates installed and requested mods"
-      echo "       --backup       Takes a backup of the save files before updating"
+      echo "   --force            Apply update without checking the current version"
+      echo "   --safe             Wait for server to perform world save and update."
+      echo "   --warn             Warn players before updating server"
+      echo "   --validate         Validates all ARK server files"
+      echo "   --saveworld        Saves world before update"
+      echo "   --update-mods      Updates installed and requested mods"
+      echo "   --backup           Takes a backup of the save files before updating"
+      echo "   --downloadonly     Download the mod and/or server update without applying it"
+      echo "                      Requires arkStagingDir be set to a staging directory on the same filesystem as the server"
       exit 1
     ;;
     *)
