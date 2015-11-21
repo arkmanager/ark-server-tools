@@ -158,6 +158,9 @@ if [ "$userinstall" == "yes" ]; then
     # Create a folder in ~/.config/arkamanger to hold instance configs
     mkdir -p "${INSTALL_ROOT}${PREFIX}/.config/arkmanager/instances"
 
+    # Copy example instance config
+    cp instance.cfg.example "${INSTALL_ROOT}/${PREFIX}/.config/arkamanger/instances/instance.cfg.example"
+
     # Copy arkmanager.cfg to ~/.arkmanager.cfg.NEW
     cp arkmanager.cfg "${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg.NEW"
     # Change the defaults in the new config file
@@ -279,6 +282,9 @@ else
     # Create a folder in /etc/arkmanager to hold instance config files
     mkdir -p "${INSTALL_ROOT}/etc/arkmanager/instances"
     chown "$steamcmd_user" "${INSTALL_ROOT}/etc/arkmanager/instances"
+
+    # Copy example instance config
+    cp instance.cfg.example "${INSTALL_ROOT}/etc/arkamanger/instances/instance.cfg.example"
 
     # Copy arkmanager.cfg inside linux configuation folder if it doesn't already exists
     mkdir -p "${INSTALL_ROOT}/etc/arkmanager"
