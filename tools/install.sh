@@ -99,10 +99,14 @@ if [ "$userinstall" == "yes" ]; then
   PREFIX="${PREFIX:-${HOME}}"
   EXECPREFIX="${EXECPREFIX:-${PREFIX}}"
   DATAPREFIX="${DATAPREFIX:-${PREFIX}/.local/share}"
+  CONFIGFILE="${PREFIX}/.arkmanager.cfg"
+  INSTANCEDIR="${PREFIX}/.config/arkmanager/instances"
 else
   PREFIX="${PREFIX:-/usr/local}"
   EXECPREFIX="${EXECPREFIX:-${PREFIX}}"
   DATAPREFIX="${DATAPREFIX:-${PREFIX}/share}"
+  CONFIGFILE="/etc/arkmanager/.arkmanager.cfg"
+  INSTANCEDIR="/etc/arkmanager/instances"
 fi
 
 BINDIR="${BINDIR:-${EXECPREFIX}/bin}"
@@ -156,13 +160,16 @@ if [ "$userinstall" == "yes" ]; then
     mkdir -p "${INSTALL_ROOT}${PREFIX}/logs/arktools"
 
     # Create a folder in ~/.config/arkamanger to hold instance configs
-    mkdir -p "${INSTALL_ROOT}${PREFIX}/.config/arkmanager/instances"
+    mkdir -p "${INSTALL_ROOT}${INSTANCEDIR}"
 
     # Copy example instance config
-    cp instance.cfg.example "${INSTALL_ROOT}/${PREFIX}/.config/arkamanger/instances/instance.cfg.example"
+    cp instance.cfg.example "${INSTALL_ROOT}/${INSTANCEDIR}/instance.cfg.example"
+    # Change the defaults in the new instance config template
+    sed -i -e "s|\"/home/steam|\"${PREFIX}|" \
+           "${INSTALL_ROOT}${INSTANCEDIR}/instance.cfg.example"
 
     # Copy arkmanager.cfg to ~/.arkmanager.cfg.NEW
-    cp arkmanager.cfg "${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg.NEW"
+    cp arkmanager.cfg "${INSTALL_ROOT}${CONFIGFILE}.NEW"
     # Change the defaults in the new config file
     sed -i -e "s|^steamcmd_user=\"steam\"|steamcmd_user=\"--me\"|" \
            -e "s|\"/home/steam|\"${PREFIX}|" \
@@ -170,17 +177,17 @@ if [ "$userinstall" == "yes" ]; then
            -e "s|^install_bindir=.*|install_bindir=\"${BINDIR}\"|" \
            -e "s|^install_libexecdir=.*|install_libexecdir=\"${LIBEXECDIR}\"|" \
            -e "s|^install_datadir=.*|install_datadir=\"${DATADIR}\"|" \
-           "${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg.NEW"
+           "${INSTALL_ROOT}${CONFIGFILE}.NEW"
 
     # Copy arkmanager.cfg to ~/.arkmanager.cfg if it doesn't already exist
-    if [ -f "${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg" ]; then
-      bash ./migrate-config.sh "${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg"
+    if [ -f "${INSTALL_ROOT}${CONFIGFILE}" ]; then
+      bash ./migrate-config.sh "${INSTALL_ROOT}${CONFIGFILE}"
 
       echo "A previous version of ARK Server Tools was detected in your system, your old configuration was not overwritten. You may need to manually update it."
-      echo "A copy of the new configuration file was included in '${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg.NEW'. Make sure to review any changes and update your config accordingly!"
+      echo "A copy of the new configuration file was included in '${CONFIGFILE}.NEW'. Make sure to review any changes and update your config accordingly!"
       exit 2
     else
-      mv -n "${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg.NEW" "${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg"
+      mv -n "${INSTALL_ROOT}${CONFIGFILE}.NEW" "${INSTALL_ROOT}${CONFIGFILE}"
     fi
 else
     # Copy arkmanager to /usr/bin and set permissions
@@ -280,31 +287,31 @@ else
     chown "$steamcmd_user" "${INSTALL_ROOT}/var/log/arktools"
 
     # Create a folder in /etc/arkmanager to hold instance config files
-    mkdir -p "${INSTALL_ROOT}/etc/arkmanager/instances"
-    chown "$steamcmd_user" "${INSTALL_ROOT}/etc/arkmanager/instances"
+    mkdir -p "${INSTALL_ROOT}${INSTANCEDIR}"
+    chown "$steamcmd_user" "${INSTALL_ROOT}${INSTANCEDIR}"
 
     # Copy example instance config
-    cp instance.cfg.example "${INSTALL_ROOT}/etc/arkamanger/instances/instance.cfg.example"
+    cp instance.cfg.example "${INSTALL_ROOT}${INSTANCEDIR}/instance.cfg.example"
 
     # Copy arkmanager.cfg inside linux configuation folder if it doesn't already exists
     mkdir -p "${INSTALL_ROOT}/etc/arkmanager"
-    cp arkmanager.cfg "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg.NEW"
-    chown "$steamcmd_user" "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg.NEW"
+    cp arkmanager.cfg "${INSTALL_ROOT}${CONFIGFILE}.NEW"
+    chown "$steamcmd_user" "${INSTALL_ROOT}${CONFIGFILE}.NEW"
     sed -i -e "s|^steamcmd_user=\"steam\"|steamcmd_user=\"$steamcmd_user\"|" \
            -e "s|\"/home/steam|\"/home/$steamcmd_user|" \
            -e "s|^install_bindir=.*|install_bindir=\"${BINDIR}\"|" \
            -e "s|^install_libexecdir=.*|install_libexecdir=\"${LIBEXECDIR}\"|" \
            -e "s|^install_datadir=.*|install_datadir=\"${DATADIR}\"|" \
-           "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg.NEW"
+           "${INSTALL_ROOT}${CONFIGFILE}.NEW"
 
-    if [ -f "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg" ]; then
-      bash ./migrate-config.sh "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg"
+    if [ -f "${INSTALL_ROOT}${CONFIGFILE}" ]; then
+      bash ./migrate-config.sh "${INSTALL_ROOT}${CONFIGFILE}"
 
       echo "A previous version of ARK Server Tools was detected in your system, your old configuration was not overwritten. You may need to manually update it."
       echo "A copy of the new configuration file was included in /etc/arkmanager. Make sure to review any changes and update your config accordingly!"
       exit 2
     else
-      mv -n "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg.NEW" "${INSTALL_ROOT}/etc/arkmanager/arkmanager.cfg"
+      mv -n "${INSTALL_ROOT}${CONFIGFILE}.NEW" "${INSTALL_ROOT}${CONFIGFILE}.cfg"
     fi
 fi
 
