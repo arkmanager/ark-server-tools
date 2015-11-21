@@ -182,6 +182,7 @@ if [ "$userinstall" == "yes" ]; then
     # Copy arkmanager.cfg to ~/.arkmanager.cfg if it doesn't already exist
     if [ -f "${INSTALL_ROOT}${CONFIGFILE}" ]; then
       bash ./migrate-config.sh "${INSTALL_ROOT}${CONFIGFILE}"
+      bash ./migrate-main-instance.sh "${INSTALL_ROOT}${CONFIGFILE}" "${INSTALL_ROOT}${INSTANCEDIR}/main.cfg"
 
       echo "A previous version of ARK Server Tools was detected in your system, your old configuration was not overwritten. You may need to manually update it."
       echo "A copy of the new configuration file was included in '${CONFIGFILE}.NEW'. Make sure to review any changes and update your config accordingly!"
@@ -306,6 +307,7 @@ else
 
     if [ -f "${INSTALL_ROOT}${CONFIGFILE}" ]; then
       bash ./migrate-config.sh "${INSTALL_ROOT}${CONFIGFILE}"
+      bash ./migrate-main-instance.sh "${INSTALL_ROOT}${CONFIGFILE}" "${INSTALL_ROOT}${INSTANCEDIR}/main.cfg"
 
       echo "A previous version of ARK Server Tools was detected in your system, your old configuration was not overwritten. You may need to manually update it."
       echo "A copy of the new configuration file was included in /etc/arkmanager. Make sure to review any changes and update your config accordingly!"
