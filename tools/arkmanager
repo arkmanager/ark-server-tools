@@ -191,7 +191,7 @@ checkConfig() {
 
   # Environment configuration
   # arkserverexec
-  if [ ! -f "$arkserverroot/$arkserverexec" ] ; then
+  if [ -n "$arkserverroot" ] && [ ! -f "$arkserverroot/$arkserverexec" ] ; then
     echo -e "[" "$YELLOW" "WARN" "$NORMAL" "]" "\tYour ARK server exec could not be found."
   fi
 
@@ -1516,7 +1516,7 @@ useConfig() {
   for varname in "${!configfile_@}"; do
     if [ "configfile_$1" == "$varname" ]; then
       source "${!varname}"
-      return
+      break
     fi
   done
   if [ -z "$arkserverroot" ]; then
@@ -1686,6 +1686,7 @@ while true; do
   (
     echo "Running command '${command}' for instance '${instance}'"
     useConfig "$instance"
+    checkConfig
 
     case "$command" in
       run)
