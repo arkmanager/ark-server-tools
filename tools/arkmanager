@@ -1484,7 +1484,10 @@ useConfig() {
       return
     fi
   done
-  source "$1"
+  if [ -z "$arkserverroot" ]; then
+    echo "Error: arkserverroot not set"
+    exit 1
+  fi
 }
 
 showUsage() {
