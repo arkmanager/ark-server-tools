@@ -1394,6 +1394,12 @@ printStatus(){
 }
 
 useConfig() {
+  if [ -f "/etc/arkmanager/instances/${1}.cfg" ]; then
+    source "/etc/arkmanager/instances/${1}.cfg"
+  fi
+  if [ -f "${HOME}/.config/arkmanager/instances/${1}.cfg" ]; then
+    source "${HOME}/.config/arkmanager/instances/${1}.cfg"
+  fi
   if [ "$1" == "main" ]; then
     return
   fi
