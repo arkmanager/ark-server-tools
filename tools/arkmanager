@@ -1393,6 +1393,41 @@ printStatus(){
   echo -e "$NORMAL" "Server version: " "$GREEN" $instver "$NORMAL"
 }
 
+getAllInstanceNames(){
+  declare -A instancenames
+  for varname in "${!configfile_@}"; do
+    instancename="${varname#configfile_}"
+    instancenames[${instancename}]="${instancename}"
+  done
+  for f in /etc/arkmanager/instances/*.cfg; do
+    if [ -f "${f}" ]; then
+      instancename="${f##*/}"
+      instancename="${instancename%.cfg}"
+      instancenames[${instancename}]="${instancename}"
+    fi
+  done
+  for f in ${HOME}/.config/arkmanager/instances/*.cfg; do
+    if [ -f "${f}" ]; then
+      instancename="${f##*/}"
+      instancename="${instancename%.cfg}"
+      instancenames[${instancename}]="${instancename}"
+    fi
+  done
+
+  echo "${instancenames[@]}"
+}
+
+doListAllInstances(){
+  echo "The following instances are available:"
+  for n in $(getAllInstanceNames); do
+    (
+      echo -n "  @${n}: "
+      useConfig "$n"
+      echo "${arkserverroot}"
+    )
+  done
+}
+
 useConfig() {
   if [ -f "/etc/arkmanager/instances/${1}.cfg" ]; then
     source "/etc/arkmanager/instances/${1}.cfg"
@@ -1422,6 +1457,7 @@ showUsage() {
   echo "Command               Description"
   echo "upgrade-tools         Check for a new ARK Server Tools version and upgrades it if needed"
   echo "uninstall-tools       Uninstall the ARK Server Tools"
+  echo "list-instances        Lists all available instances"
   echo
   echo "Commands that take one or more instances:"
   echo "Command               Description"
@@ -1478,8 +1514,13 @@ while [[ "$#" -gt 0 ]]; do
       doUninstallTools
       exit
     ;;
+    list-instances)
+      doListAllInstances
+      exit
+    ;;
     -h|--help)
       showUsage
+      exit
     ;;
   esac
 
@@ -1527,10 +1568,7 @@ while [[ "$#" -gt 0 ]]; do
 
   # Handle all instances being requested
   if [[ "$allinstances" == "yes" ]]; then
-    instances=( )
-    for varname in "${!configfile_@}"; do
-      instances+=( "${varname#configfile_}" )
-    done
+    instances=( $(getAllInstanceNames) )
   fi
 
   # Run the command for each instance requested
