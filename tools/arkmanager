@@ -1471,6 +1471,41 @@ printStatus(){
   echo -e "$NORMAL" "Server version: " "$GREEN" $instver "$NORMAL"
 }
 
+getAllInstanceNames(){
+  declare -A instancenames
+  for varname in "${!configfile_@}"; do
+    instancename="${varname#configfile_}"
+    instancenames[${instancename}]="${instancename}"
+  done
+  for f in /etc/arkmanager/instances/*.cfg; do
+    if [ -f "${f}" ]; then
+      instancename="${f##*/}"
+      instancename="${instancename%.cfg}"
+      instancenames[${instancename}]="${instancename}"
+    fi
+  done
+  for f in ${HOME}/.config/arkmanager/instances/*.cfg; do
+    if [ -f "${f}" ]; then
+      instancename="${f##*/}"
+      instancename="${instancename%.cfg}"
+      instancenames[${instancename}]="${instancename}"
+    fi
+  done
+
+  echo "${instancenames[@]}"
+}
+
+doListAllInstances(){
+  echo "The following instances are available:"
+  for n in $(getAllInstanceNames); do
+    (
+      echo -n "  @${n}: "
+      useConfig "$n"
+      echo "${arkserverroot}"
+    )
+  done
+}
+
 useConfig() {
   if [ -f "/etc/arkmanager/instances/${1}.cfg" ]; then
     source "/etc/arkmanager/instances/${1}.cfg"
@@ -1501,6 +1536,7 @@ showUsage() {
   echo "upgrade-tools         Check for a new ARK Server Tools version and upgrades it if needed"
   echo "uninstall-tools       Uninstall the ARK Server Tools"
   echo "useconfig <name>      Sets the default instance for the commands that follow"
+  echo "list-instances        Lists all available instances"
   echo "--help                Show this help"
   echo "--version             Show the version info of ARK Server Tools"
   echo
@@ -1601,6 +1637,10 @@ while true; do
       defaultinstance="${args[0]}"
       continue
     ;;
+    list-instances)
+      doListAllInstances
+      exit
+    ;;
     --version)
       echo "Version: ${arkstVersion}"
       echo "Channel: ${arkstChannel}"
@@ -1638,10 +1678,7 @@ while true; do
 
   # Handle all instances being requested
   if [[ "$allinstances" == "yes" ]]; then
-    instances=( )
-    for varname in "${!configfile_@}"; do
-      instances+=( "${varname#configfile_}" )
-    done
+    instances=( $(getAllInstanceNames) )
   fi
 
   # Run the command for each instance requested
