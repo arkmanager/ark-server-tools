@@ -155,6 +155,9 @@ if [ "$userinstall" == "yes" ]; then
     # Create a folder in ~/logs to let Ark tools write its own log files
     mkdir -p "${INSTALL_ROOT}${PREFIX}/logs/arktools"
 
+    # Create a folder in ~/.config/arkamanger to hold instance configs
+    mkdir -p "${INSTALL_ROOT}${PREFIX}/.config/arkmanager/instances"
+
     # Copy arkmanager.cfg to ~/.arkmanager.cfg.NEW
     cp arkmanager.cfg "${INSTALL_ROOT}${PREFIX}/.arkmanager.cfg.NEW"
     # Change the defaults in the new config file
@@ -272,6 +275,10 @@ else
     # Create a folder in /var/log to let Ark tools write its own log files
     mkdir -p "${INSTALL_ROOT}/var/log/arktools"
     chown "$steamcmd_user" "${INSTALL_ROOT}/var/log/arktools"
+
+    # Create a folder in /etc/arkmanager to hold instance config files
+    mkdir -p "${INSTALL_ROOT}/etc/arkmanager/instances"
+    chown "$steamcmd_user" "${INSTALL_ROOT}/etc/arkmanager/instances"
 
     # Copy arkmanager.cfg inside linux configuation folder if it doesn't already exists
     mkdir -p "${INSTALL_ROOT}/etc/arkmanager"
