@@ -296,6 +296,7 @@ else
 
     # Copy arkmanager.cfg inside linux configuation folder if it doesn't already exists
     mkdir -p "${INSTALL_ROOT}/etc/arkmanager"
+    chown "$steamcmd_user" "${INSTALL_ROOT}/etc/arkmanager"
     cp arkmanager.cfg "${INSTALL_ROOT}${CONFIGFILE}.NEW"
     chown "$steamcmd_user" "${INSTALL_ROOT}${CONFIGFILE}.NEW"
     sed -i -e "s|^steamcmd_user=\"steam\"|steamcmd_user=\"$steamcmd_user\"|" \
