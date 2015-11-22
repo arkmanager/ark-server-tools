@@ -1496,14 +1496,18 @@ getAllInstanceNames(){
 }
 
 doListAllInstances(){
-  echo "The following instances are available:"
-  for n in $(getAllInstanceNames); do
-    (
-      echo -n "  @${n}: "
-      useConfig "$n"
-      echo "${arkserverroot}"
-    )
-  done
+  if [ "$1" == "--brief" ]; then
+    getAllInstanceNames
+  else
+    echo "The following instances are available:"
+    for n in $(getAllInstanceNames); do
+      (
+        echo -n "  @${n}: "
+        useConfig "$n"
+        echo "${arkserverroot}"
+      )
+    done
+  fi
 }
 
 useConfig() {
@@ -1638,7 +1642,7 @@ while true; do
       continue
     ;;
     list-instances)
-      doListAllInstances
+      doListAllInstances "${options[@]}"
       exit
     ;;
     --version)
