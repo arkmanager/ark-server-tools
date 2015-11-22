@@ -1418,14 +1418,18 @@ getAllInstanceNames(){
 }
 
 doListAllInstances(){
-  echo "The following instances are available:"
-  for n in $(getAllInstanceNames); do
-    (
-      echo -n "  @${n}: "
-      useConfig "$n"
-      echo "${arkserverroot}"
-    )
-  done
+  if [ "$1" == "--brief" ]; then
+    getAllInstanceNames
+  else
+    echo "The following instances are available:"
+    for n in $(getAllInstanceNames); do
+      (
+        echo -n "  @${n}: "
+        useConfig "$n"
+        echo "${arkserverroot}"
+      )
+    done
+  fi
 }
 
 useConfig() {
@@ -1504,26 +1508,6 @@ while [[ "$#" -gt 0 ]]; do
   shift
   nrarg=0
 
-  # handle upgrade-tools and uninstall-tools separately
-  case "$command" in
-    upgrade-tools)
-      doUpgradeTools
-      exit
-    ;;
-    uninstall-tools)
-      doUninstallTools
-      exit
-    ;;
-    list-instances)
-      doListAllInstances
-      exit
-    ;;
-    -h|--help)
-      showUsage
-      exit
-    ;;
-  esac
-
   # get the number of arguments for commands that take arguments
   case "$command" in
     installmod) nrarg=1; ;;
@@ -1553,6 +1537,26 @@ while [[ "$#" -gt 0 ]]; do
     esac
     shift
   done
+
+  # handle instanceless commands separately
+  case "$command" in
+    upgrade-tools)
+      doUpgradeTools
+      exit
+    ;;
+    uninstall-tools)
+      doUninstallTools
+      exit
+    ;;
+    list-instances)
+      doListAllInstances "${options[@]}"
+      exit
+    ;;
+    -h|--help)
+      showUsage
+      exit
+    ;;
+  esac
 
   # Handle no instances being specified
   if [[ "${#instances[@]}" == 0 && "$allinstances" == "no" ]]; then

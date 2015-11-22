@@ -210,6 +210,7 @@ else
       if [ -f /etc/systemd/system.conf ]; then   # used by systemd
         mkdir -p "${INSTALL_ROOT}${LIBEXECDIR}"
         cp systemd/arkmanager.init "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
+        sed -i "s|^DAEMON=\"/usr/bin/|DAEMON=\"${BINDIR}/|" "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
         chmod +x "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
         cp systemd/arkmanager.service "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
         sed -i "s|=/usr/libexec/arkmanager/|=${LIBEXECDIR}/|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
@@ -237,6 +238,7 @@ else
       if [ -f /etc/systemd/system.conf ]; then   # used by systemd
         mkdir -p "${INSTALL_ROOT}${LIBEXECDIR}"
         cp systemd/arkmanager.init "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
+        sed -i "s|^DAEMON=\"/usr/bin/|DAEMON=\"${BINDIR}/|" "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
         chmod +x "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
         cp systemd/arkmanager.service "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
         sed -i "s|=/usr/libexec/arkmanager/|=${LIBEXECDIR}/|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
@@ -270,6 +272,7 @@ else
     elif [ -f /etc/systemd/system.conf ]; then   # used by systemd
       mkdir -p "${INSTALL_ROOT}${LIBEXECDIR}"
       cp systemd/arkmanager.init "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
+      sed -i "s|^DAEMON=\"/usr/bin/|DAEMON=\"${BINDIR}/|" "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
       chmod +x "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
       cp systemd/arkmanager.service "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
       sed -i "s|=/usr/libexec/arkmanager/|=${LIBEXECDIR}/|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
