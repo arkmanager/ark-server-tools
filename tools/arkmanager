@@ -769,6 +769,22 @@ doUpdate() {
     fi
   done
 
+  echo "$$" >"${arkserverroot}/.ark-update.lock.$$"
+  while true; do
+    if ! ln "${arkserverroot}/.ark-update.lock.$$" "${arkserverroot}/.ark-update.lock"; then
+      local lockpid="$(<"${arkserverroot}/.ark-update.lock")"
+      if [ -n "$lockpid" ] && [ "$lockpid" != "$$" ] && kill -0 "$lockpid"; then
+        echo "Update already in progress (PID: $lockpid)"
+	rm -f "${arkserverroot}/.ark-update.lock.$$"
+        return 1
+      fi
+      rm -f "${arkserverroot}/.ark-update.lock"
+    else
+      break
+    fi
+  done
+  rm -f "${arkserverroot}/.ark-update.lock.$$"
+
   if [ -n "$modupdate" ]; then
     if ! doDownloadAllMods; then
       modupdate=
@@ -843,6 +859,8 @@ doUpdate() {
     echo "Your server is already up to date! The most recent version is ${bnumber}."
     echo "`timestamp`: No update needed." >> "$logdir/update.log"
   fi;
+
+  rm -f "${arkserverroot}/.ark-update.lock"
 }
 
 #
