@@ -191,7 +191,7 @@ checkConfig() {
 
   # Environment configuration
   # arkserverexec
-  if [ ! -f "$arkserverroot/$arkserverexec" ] ; then
+  if [ -n "$arkserverroot" ] && [ ! -f "$arkserverroot/$arkserverexec" ] ; then
     echo -e "[" "$YELLOW" "WARN" "$NORMAL" "]" "\tYour ARK server exec could not be found."
   fi
 
@@ -1393,17 +1393,103 @@ printStatus(){
   echo -e "$NORMAL" "Server version: " "$GREEN" $instver "$NORMAL"
 }
 
+getAllInstanceNames(){
+  declare -A instancenames
+  for varname in "${!configfile_@}"; do
+    instancename="${varname#configfile_}"
+    instancenames[${instancename}]="${instancename}"
+  done
+  for f in /etc/arkmanager/instances/*.cfg; do
+    if [ -f "${f}" ]; then
+      instancename="${f##*/}"
+      instancename="${instancename%.cfg}"
+      instancenames[${instancename}]="${instancename}"
+    fi
+  done
+  for f in ${HOME}/.config/arkmanager/instances/*.cfg; do
+    if [ -f "${f}" ]; then
+      instancename="${f##*/}"
+      instancename="${instancename%.cfg}"
+      instancenames[${instancename}]="${instancename}"
+    fi
+  done
+
+  echo "${instancenames[@]}"
+}
+
+doListAllInstances(){
+  if [ "$1" == "--brief" ]; then
+    getAllInstanceNames
+  else
+    echo "The following instances are available:"
+    for n in $(getAllInstanceNames); do
+      (
+        echo -n "  @${n}: "
+        useConfig "$n"
+        echo "${arkserverroot}"
+      )
+    done
+  fi
+}
+
 useConfig() {
-  if [ "$1" == "main" ]; then
-    return
+  if [ -f "/etc/arkmanager/instances/${1}.cfg" ]; then
+    source "/etc/arkmanager/instances/${1}.cfg"
+  fi
+  if [ -f "${HOME}/.config/arkmanager/instances/${1}.cfg" ]; then
+    source "${HOME}/.config/arkmanager/instances/${1}.cfg"
   fi
   for varname in "${!configfile_@}"; do
     if [ "configfile_$1" == "$varname" ]; then
       source "${!varname}"
-      return
+      break
     fi
   done
-  source "$1"
+  if [ -z "$arkserverroot" ]; then
+    echo "Error: arkserverroot not set"
+    exit 1
+  fi
+}
+
+showUsage() {
+  echo -e "Usage: arkmanager [Commands]\n"
+  echo "Commands can be followed by one or more @instance arguments"
+  echo "The special '@all' instance selects all instances"
+  echo "Commands may also be followed by zero or more --options"
+  echo
+  echo "Commands that take no instances:"
+  echo "Command               Description"
+  echo "upgrade-tools         Check for a new ARK Server Tools version and upgrades it if needed"
+  echo "uninstall-tools       Uninstall the ARK Server Tools"
+  echo "list-instances        Lists all available instances"
+  echo
+  echo "Commands that take one or more instances:"
+  echo "Command               Description"
+  echo "backup                Saves a backup of your server inside the backup directory"
+  echo "broadcast <msg>       Sends a message to all users connected to server"
+  echo "saveworld             Saves the game world to disk"
+  echo "rconcmd <cmd>         Execute RCON command on server"
+  echo "checkupdate           Check for a new ARK server version"
+  echo "install               Install the ARK server files from steamcmd"
+  echo "installmod <modid>    Installs a mod from the Steam workshop"
+  echo "restart               Stops the server and then starts it"
+  echo "run                   Runs the server without daemonizing"
+  echo "start                 Starts the server"
+  echo "stop                  Stops the server"
+  echo "status                Returns the status of the current ARK server instance"
+  echo "update                Check for a new ARK server version, if needed, stops the server, updates it, and starts it again"
+  echo
+  echo "Update command takes the below options:"
+  echo "   --force            Apply update without checking the current version"
+  echo "   --safe             Wait for server to perform world save and update."
+  echo "   --warn             Warn players before updating server"
+  echo "   --validate         Validates all ARK server files"
+  echo "   --saveworld        Saves world before update"
+  echo "   --update-mods      Updates installed and requested mods"
+  echo "   --backup           Takes a backup of the save files before updating"
+  echo "   --downloadonly     Download the mod and/or server update without applying it"
+  echo "                      Requires arkStagingDir be set to a staging directory on the same filesystem as the server"
+  exit 1
 }
 
 #---------------------
@@ -1413,139 +1499,154 @@ useConfig() {
 # check the configuration and throw errors or warnings if needed
 checkConfig
 
-while true; do
-  case "$1" in
-    run)
-        doRun
-    ;;
-    start)
-        if [ "$2" == "--all" ]; then
-          doStartAll
-          shift
-        else
-          doStart
-        fi
-    ;;
-    stop)
-        if [ "$2" == "--all" ]; then
-          doStopAll
-          shift
-        else
-          doStop
-        fi
-    ;;
-    restart)
-        if [ "$2" == "--all" ]; then
-	  doStopAll
-	else
-          doStop
-	fi
-        echo "`timestamp`: stop" >> "$logdir/$arkmanagerLog"
-        sleep 1
-	if [ "$2" == "--all" ]; then
-          doStartAll
-	  shift
-	else
-	  doStart
-	fi
-        echo "`timestamp`: start" >> "$logdir/$arkmanagerLog"
-        echo "`timestamp`: restart" >> "$logdir/$arkmanagerLog"
-    ;;
-    install)
-        doInstall
-    ;;
-    update)
-        args=()
+while [[ "$#" -gt 0 ]]; do
+  options=( )
+  allinstances=no
+  instances=( )
+  args=( )
+  command="$1"
+  shift
+  nrarg=0
 
-	while [[ "$2" =~ ^-- ]]; do
-	  args=( "${args[@]}" "$2" )
-	  shift
-	done
+  # get the number of arguments for commands that take arguments
+  case "$command" in
+    installmod) nrarg=1; ;;
+    broadcast) nrarg=1; ;;
+    rconcmd) nrarg=1; ;;
+  esac
 
-	doUpdate "${args[@]}"
-    ;;
-    checkupdate)
-      checkForUpdate
-    ;;
-    installmod)
-      doInstallMod "$2"
-      shift
-    ;;
-    backup)
-      doBackup
-    ;;
-    broadcast)
-      doBroadcast "$2"
-      shift
-    ;;
-    saveworld)
-      doSaveWorld
-    ;;
-    rconcmd)
-      rconcmd "$2"
-      shift
-    ;;
-    status)
-      printStatus
-    ;;
+  # Enumerate the options, instances and arguments
+  while [ $# -ne 0 ]; do
+    case "$1" in
+      --*)
+        options+=( "$1" )
+      ;;
+      @all)
+        allinstances=yes
+      ;;
+      @*)
+        instances+=( "${1#@}" )
+      ;;
+      *)
+        if [ $nrarg -gt 0 ]; then
+          args+=( "$1" )
+        else
+          break
+        fi
+      ;;
+    esac
+    shift
+  done
+
+  # handle instanceless commands separately
+  case "$command" in
     upgrade-tools)
       doUpgradeTools
+      exit
     ;;
     uninstall-tools)
       doUninstallTools
+      exit
     ;;
-    useconfig)
-      useConfig "$2"
-      shift
+    list-instances)
+      doListAllInstances "${options[@]}"
+      exit
     ;;
     -h|--help)
-      echo -e "Usage: arkmanager [OPTION]\n"
-      echo "Option                Description"
-      echo "backup                Saves a backup of your server inside the backup directory"
-      echo "broadcast <msg>       Sends a message to all users connected to server"
-      echo "saveworld             Saves the game world to disk"
-      echo "rconcmd <cmd>         Execute RCON command on server"
-      echo "checkupdate           Check for a new ARK server version"
-      echo "install               Install the ARK server files from steamcmd"
-      echo "installmod <modid>    Installs a mod from the Steam workshop"
-      echo "restart               Stops the server and then starts it"
-      echo "restart --all         Restarts all servers specified in configfile_xxxxx"
-      echo "run                   Runs the server without daemonizing"
-      echo "start                 Starts the server"
-      echo "start --all           Starts all servers specified in configfile_xxxxx"
-      echo "stop                  Stops the server"
-      echo "stop --all            Stops all servers specified in configfile_xxxxx"
-      echo "status                Returns the status of the current ARK server instance"
-      echo "update [OPTION ...]   Check for a new ARK server version, if needed, stops the server, updates it, and starts it again"
-      echo "upgrade-tools         Check for a new ARK Server Tools version and upgrades it if needed"
-      echo "uninstall-tools       Uninstall the ARK Server Tools"
-      echo "useconfig <name>      Use the configuration overrides in the specified config name or file"
-      echo
-      echo "Update command takes the below options:"
-      echo "   --force            Apply update without checking the current version"
-      echo "   --safe             Wait for server to perform world save and update."
-      echo "   --warn             Warn players before updating server"
-      echo "   --validate         Validates all ARK server files"
-      echo "   --saveworld        Saves world before update"
-      echo "   --update-mods      Updates installed and requested mods"
-      echo "   --backup           Takes a backup of the save files before updating"
-      echo "   --downloadonly     Download the mod and/or server update without applying it"
-      echo "                      Requires arkStagingDir be set to a staging directory on the same filesystem as the server"
-      exit 1
-    ;;
-    *)
-      echo -n "arkmanager v${arkstVersion}: "
-      if [ $# -eq 0 ]; then
-        echo "no command specified"
-      else
-        echo "unknown command '$1' specified"
-      fi
-      echo "Try 'arkmanager -h' or 'arkmanager --help' for more information."
-      exit 1
+      showUsage
+      exit
     ;;
   esac
-  shift
-  if [ $# -eq 0 ]; then
-    break
+
+  # Handle no instances being specified
+  if [[ "${#instances[@]}" == 0 && "$allinstances" == "no" ]]; then
+    echo "No instances supplied for command ${command} ${options[*]} ${args[*]}"
+    read -p "Do you wish to run this command for all instances?" -n 1 -r
+    echo
+    if [[ "$REPLY" =~ ^[Yy]$ ]]; then
+      allinstances=yes
+    else
+      exit 1
+    fi
+  fi
+
+  # Handle all instances being requested
+  if [[ "$allinstances" == "yes" ]]; then
+    instances=( $(getAllInstanceNames) )
+  fi
+
+  # Run the command for each instance requested
+  for instance in "${instances[@]}"; do
+  (
+    echo "Running command '${command}' for instance '${instance}'"
+    useConfig "$instance"
+    checkConfig
+
+    case "$command" in
+      run)
+        doRun
+      ;;
+      start)
+        doStart
+      ;;
+      stop)
+        doStop
+      ;;
+      restart)
+        doStop
+        echo "`timestamp`: stop" >> "$logdir/$arkmanagerLog"
+      ;;
+      install)
+        doInstall
+      ;;
+      update)
+        doUpdate "${options[@]}"
+      ;;
+      checkupdate)
+        checkForUpdate
+      ;;
+      installmod)
+        doInstallMod "${args[0]}"
+      ;;
+      backup)
+        doBackup
+      ;;
+      broadcast)
+        doBroadcast "${args[0]}"
+      ;;
+      saveworld)
+        doSaveWorld
+      ;;
+      rconcmd)
+        rconcmd "${args[0]}"
+      ;;
+      status)
+        printStatus
+      ;;
+      *)
+        echo -n "arkmanager v${arkstVersion}: "
+        if [ "$command" == "" ]; then
+          echo "no command specified"
+        else
+          echo "unknown command '$command' specified"
+        fi
+        echo "Try 'arkmanager -h' or 'arkmanager --help' for more information."
+        exit 1
+      ;;
+    esac
+  )
+  done
+
+  # Perform the restart portion of the restart command
+  if [[ "$command" == "restart" ]]; then
+    sleep 1
+    for instance in "${instances[@]}"; do
+    (
+      useConfig "$instance"
+      doStart
+      echo "`timestamp`: start" >> "$logdir/$arkmanagerLog"
+      echo "`timestamp`: restart" >> "$logdir/$arkmanagerLog"
+    )
+    done
   fi
 done
