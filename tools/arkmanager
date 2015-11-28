@@ -1427,6 +1427,22 @@ doBackup(){
     echo -e "${NORMAL}\e[68G[ ${RED}FAILED${NORMAL} ]"
   fi
   echo -e "${NORMAL} Created Backup: ${GREEN} ${datestamp}.tar.bz2${NORMAL}"
+
+  if [ -n "$arkMaxBackupSizeGB" ] && (( arkMaxBackupSizeGB >= 1 )); then
+    (( arkMaxBackupSizeMB = arkMaxBackupSizeGB * 1024 ))
+  fi
+
+  if [ -n "$arkMaxBackupSizeMB" ] && (( arkMaxBackupSizeMB > 64 )); then
+    find "${arkbackupdir}" -type f -printf "%T@\t%s\t%p\n" |
+      sort -n -r |
+      cut -f2-3 |
+      (sz=0; while read fsz f; do
+	if (( sz / 1048576 > arkMaxBackupSizeMB )); then
+	  rm "$f"
+	fi
+        (( sz += fsz ))
+      done)
+  fi
 }
 
 
