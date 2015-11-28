@@ -1349,6 +1349,10 @@ doBackup(){
     echo -e "${NORMAL}\e[68G[ ${RED}FAILED${NORMAL} ]"
   fi
   echo -e "${NORMAL} Created Backup: ${GREEN} ${datestamp}.tar.bz2${NORMAL}"
+
+  if [ -n "$arkTimeToKeepBackupFiles" ]; then
+    find "${arkbackupdir}" -type f -mtime +$arkTimeToKeepBackupFiles -exec rm "{}" \;
+  fi
 }
 
 
