@@ -334,11 +334,13 @@ function checkForUpdate(){
     echo -e "Available version:" "$GREEN" $bnumber "$NORMAL"
     echo -e "Your server needs to be restarted in order to receive the latest update."
     echo -e "Run \"arkmanager update\" to do so"
+    return 1
   else
     tput rc; tput ed;
     echo -e "Current version:" "$GREEN" $instver "$NORMAL"
     echo -e "Available version:" "$GREEN" $bnumber "$NORMAL"
     echo "Your server is up to date!"
+    return 0
   fi
 }
 
