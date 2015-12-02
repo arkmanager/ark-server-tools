@@ -1410,8 +1410,11 @@ while true; do
       exit 1
     ;;
   esac
+  status=$?
   shift
   if [ $# -eq 0 ]; then
     break
   fi
 done
+
+exit $status
