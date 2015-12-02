@@ -1368,6 +1368,14 @@ while true; do
       useConfig "$2"
       shift
     ;;
+    --version)
+      echo "Version: ${arkstVersion}"
+      echo "Channel: ${arkstChannel}"
+      if [ -n "${arkstCommit}" ]; then
+        echo "Commit: ${arkstCommit:0:7}"
+      fi
+      exit 1
+    ;;
     -h|--help)
       echo -e "Usage: arkmanager [OPTION]\n"
       echo "Option                Description"
@@ -1390,6 +1398,8 @@ while true; do
       echo "upgrade-tools         Check for a new ARK Server Tools version and upgrades it if needed"
       echo "uninstall-tools       Uninstall the ARK Server Tools"
       echo "useconfig <name>      Use the configuration overrides in the specified config name or file"
+      echo "--help                Show this help"
+      echo "--version             Show the version info of ARK Server Tools"
       echo
       echo "Update command takes the below options:"
       echo "       --force        Apply update without checking the current version"
