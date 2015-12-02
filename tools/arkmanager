@@ -552,6 +552,11 @@ doRun() {
   serverpid=0
   restartserver=1
 
+  if [ -n "$DEBUGGER" ]; then
+    $DEBUGGER "$arkserverroot/$arkserverexec" "$arkserveropts" "${arkextraopts[@]}"
+    return
+  fi
+
   # Shutdown the server when we are terminated
   shutdown_server(){
     restartserver=0
