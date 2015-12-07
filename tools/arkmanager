@@ -78,7 +78,7 @@ doUninstallTools() {
 
 runAsRoot(){
   getConfigVar(){
-    val="$(echo -ne "$(sed -n "/^$1=/{s|^[^=]*=||;s|[[:space:]]*\(#.*\)*\$||;s|^\"\\(.*\\)\"\$|\\1|;s|^'\\(.*\\)'\$|\\1|;p}" <"/etc/arkmanager/arkmanager.cfg" | tail -n1)")"
+    val="$(echo -ne "$(sed -n "/^$1=/{s|^[^=]*=||;s|[[:space:]]*\\(#.*\\)*\$||;s|^\"\\(.*\\)\"\$|\\1|;s|^'\\(.*\\)'\$|\\1|;p}" <"/etc/arkmanager/arkmanager.cfg" | tail -n1)")"
     if [ -n "$val" ]; then
       echo "$val"
     else
@@ -203,14 +203,50 @@ checkConfig() {
 }
 
 #
+# Get setting from config or from ini file
+# $1 is the setting name
+# $2 is the default
+#
+getArkServerSetting() {
+  local varname="ark_$1"
+  if [ -n "${!varname}" ]; then
+    echo "${!varname}"
+  else
+    local val="$(tr -d '\0\376\377' <"${arkserverroot}/ShooterGame/Saved/Config/LinuxServer/GameUserSettings.ini" | sed -n '/^\[ServerSettings\]/,/^\[.*\]/{s/^'"$1"'[[:space:]]*=[[:space:]]*//p;}' )"
+    if [ -n "$val" ]; then
+      echo "$val"
+    else
+      echo "$2"
+    fi
+  fi
+}
+
+#
 # Get server admin password
 #
 getAdminPassword() {
-  if [ -n "${ark_ServerAdminPassword}" ]; then
-    echo "${ark_ServerAdminPassword}"
-  else
-    sed -ne '/^\[ServerSettings\]/,/^\[.*\]/{s/^ServerAdminPassword[[:space:]]*=[[:space:]]*//p;}' "${arkserverroot}/ShooterGame/Saved/Config/LinuxServer/GameUserSettings.ini"
-  fi
+  getArkServerSetting "ServerAdminPassword" ""
+}
+
+#
+# Get server RCON Port
+#
+getRconPort() {
+  getArkServerSetting "RCONPort" "32330"
+}
+
+#
+# Get server Game Port
+#
+getGamePort() {
+  echo "${ark_Port:-7778}"
+}
+
+#
+# Get server Query Port
+#
+getQueryPort(){
+  echo "${ark_QueryPort:-27015}"
 }
 
 #
@@ -305,11 +341,13 @@ function checkForUpdate(){
     echo -e "Available version:" "$GREEN" $bnumber "$NORMAL"
     echo -e "Your server needs to be restarted in order to receive the latest update."
     echo -e "Run \"arkmanager update\" to do so"
+    return 1
   else
     tput rc; tput ed;
     echo -e "Current version:" "$GREEN" $instver "$NORMAL"
     echo -e "Available version:" "$GREEN" $bnumber "$NORMAL"
     echo "Your server is up to date!"
+    return 0
   fi
 }
 
@@ -400,7 +438,7 @@ function isTheServerRunning(){
 #
 #
 function isTheServerUp(){
-  $lsof -i "${ark_MultiHome:+udp@}${ark_MultiHome}:${ark_Port}" > /dev/null
+  $lsof -i "${ark_MultiHome:+udp@}${ark_MultiHome}:$(getGamePort)" > /dev/null
   result=$?
   if [ $result -ne 0 ]; then
     perl -MSocket -MFcntl -e '
@@ -423,7 +461,7 @@ function isTheServerUp(){
       } else {
         exit(1);
       }
-      ' "${ark_QueryPort}" "${ark_MultiHome:-127.0.0.1}"
+      ' "$(getQueryPort)" "${ark_MultiHome:-127.0.0.1}"
     result=$?
   fi
   # In this case, the result is:
@@ -448,7 +486,7 @@ function isTheServerOnline(){
   local serverresp
 
   if [[ "$publicip" =~ [1-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]* ]]; then
-    serverresp="$(curl -s "http://api.steampowered.com/ISteamApps/GetServersAtAddress/v0001?addr=${publicip}:${ark_QueryPort}")"
+    serverresp="$(curl -s "http://api.steampowered.com/ISteamApps/GetServersAtAddress/v0001?addr=${publicip}:$(getQueryPort)")"
   fi
 
   # If the Steam server response contains "addr": "$ip:$port",
@@ -488,6 +526,10 @@ doRun() {
 
   if [ -n "$serverMapModId" ]; then
     arkserveropts="-MapModID=$serverMapModId"
+  fi
+
+  if [ -z "$arkserveropts" ]; then
+    arkserveropts="TheIsland"
   fi
 
   arkextraopts=( )
@@ -1379,11 +1421,11 @@ printStatus(){
       my $maxplayers = ord(substr($rest, 3, 1));
       print "Server Name: $servername\n";
       print "Players: $players / $maxplayers\n";
-      ' "${ark_QueryPort}" "${ark_MultiHome:-127.0.0.1}"
+      ' "$(getQueryPort)" "${ark_MultiHome:-127.0.0.1}"
 
     if isTheServerOnline; then
       echo -e "$NORMAL" "Server online: " "$GREEN" "Yes" "$NORMAL"
-      echo -e "$NORMAL" "ARKServers link: " "$GREEN" "http://arkservers.net/server/${publicip}:${ark_QueryPort}" "$NORMAL"
+      echo -e "$NORMAL" "ARKServers link: " "$GREEN" "http://arkservers.net/server/${publicip}:$(getQueryPort)" "$NORMAL"
     else
       echo -e "$NORMAL" "Server online: " "$RED" "No" "$NORMAL"
     fi
@@ -1498,6 +1540,14 @@ while true; do
       useConfig "$2"
       shift
     ;;
+    --version)
+      echo "Version: ${arkstVersion}"
+      echo "Channel: ${arkstChannel}"
+      if [ -n "${arkstCommit}" ]; then
+        echo "Commit: ${arkstCommit:0:7}"
+      fi
+      exit 1
+    ;;
     -h|--help)
       echo -e "Usage: arkmanager [OPTION]\n"
       echo "Option                Description"
@@ -1520,6 +1570,8 @@ while true; do
       echo "upgrade-tools         Check for a new ARK Server Tools version and upgrades it if needed"
       echo "uninstall-tools       Uninstall the ARK Server Tools"
       echo "useconfig <name>      Use the configuration overrides in the specified config name or file"
+      echo "--help                Show this help"
+      echo "--version             Show the version info of ARK Server Tools"
       echo
       echo "Update command takes the below options:"
       echo "   --force            Apply update without checking the current version"
@@ -1544,8 +1596,11 @@ while true; do
       exit 1
     ;;
   esac
+  status=$?
   shift
   if [ $# -eq 0 ]; then
     break
   fi
 done
+
+exit $status
