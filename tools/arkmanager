@@ -212,7 +212,7 @@ getArkServerSetting() {
   if [ -n "${!varname}" ]; then
     echo "${!varname}"
   else
-    local val="$('/^\[ServerSettings\]/,/^\[.*\]/{s/^'"$1"'[[:space:]]*=[[:space:]]*//p;}' "${arkserverroot}/ShooterGame/Saved/Config/LinuxServer/GameUserSettings.ini")"
+    local val="$(tr -d '\0\376\377' <"${arkserverroot}/ShooterGame/Saved/Config/LinuxServer/GameUserSettings.ini" | sed -n '/^\[ServerSettings\]/,/^\[.*\]/{s/^'"$1"'[[:space:]]*=[[:space:]]*//p;}' )"
     if [ -n "$val" ]; then
       echo "$val"
     else
