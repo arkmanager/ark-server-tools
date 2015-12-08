@@ -289,7 +289,7 @@ rconcmd() {
     sendpkt($socket, 2, 2, $command);
     my ($resid, $restype, $rcvbody) = recvpkt($socket);
     print $rcvbody, "\n";
-    ' "${ark_RCONPort}" "${ark_MultiHome:-127.0.0.1}" "`getAdminPassword`" "$1"
+    ' "$(getRconPort)" "${ark_MultiHome:-127.0.0.1}" "$(getAdminPassword)" "$1"
 }
 
 #
@@ -1068,7 +1068,7 @@ doDownloadMod(){
     echo
     echo "Checking mod $modid"
     if [ ! -d "$moddldir" ]; then break; fi
-    local newsize="`du -s "$moddldir" | cut -f1`"
+    local newsize="`du -s "$moddldir/.." | cut -f1`"
     if [ $newsize -eq $dlsize ]; then break; fi
     dlsize=$newsize
     echo "Mod $modid not fully downloaded - retrying"
