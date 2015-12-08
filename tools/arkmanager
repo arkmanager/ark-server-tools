@@ -930,7 +930,7 @@ doDownloadMod(){
   while true; do
     ./$steamcmdexec +@NoPromptForPassword 1 +login ${steamlogin:-anonymous} +workshop_download_item $mod_appid $modid +quit
     if [ ! -d "$moddldir" ]; then break; fi
-    local newsize="`du -s "$moddldir" | cut -f1`"
+    local newsize="`du -s "$moddldir/.." | cut -f1`"
     if [ $newsize -eq $dlsize ]; then break; fi
     dlsize=$newsize
   done
