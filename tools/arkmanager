@@ -63,7 +63,7 @@ doUninstallTools() {
     sudo=
   fi
 
-  read -p "Are you sure you want to uninstall the ARK Server Tools?" -n 1 -r
+  read -p "Are you sure you want to uninstall the ARK Server Tools? - Type [Y] for yes!" -n 1 -r
 
   if [[ "$REPLY" =~ ^[Yy]$ ]]; then
     if [ -n "${install_datadir}" -a -x "${install_datadir}/arkmanager-uninstall.sh" ]; then
