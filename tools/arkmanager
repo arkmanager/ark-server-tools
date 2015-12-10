@@ -1456,12 +1456,51 @@ useConfig() {
 checkConfig
 
 while true; do
-  case "$1" in
+  options=( )
+  args=( )
+  command="$1"
+  shift
+  nrarg=0
+
+  # get the number of arguments for commands that take arguments
+  case "$command" in
+    installmod) nrarg=1; ;;
+    broadcast) nrarg=1; ;;
+    rconcmd) nrarg=1; ;;
+    useconfig) nrarg=1; ;;
+  esac
+
+  # Enumerate the options and arguments
+  while [ $# -ne 0 ]; do
+    case "$1" in
+      --)
+        shift
+        break
+      ;;
+      --args)
+        nrarg=$#
+      ;;
+      --*)
+        options+=( "$1" )
+      ;;
+      *)
+        if [ $nrarg -gt 0 ]; then
+          args+=( "$1" )
+	  (( nrarg-- ))
+        else
+          break
+        fi
+      ;;
+    esac
+    shift
+  done
+
+  case "$command" in
     run)
         doRun
     ;;
     start)
-        if [ "$2" == "--all" ]; then
+        if [ " ${options[*]} " =~ " --all " ]; then
           doStartAll
           shift
         else
@@ -1469,6 +1508,7 @@ while true; do
         fi
     ;;
     stop)
+        if [ " ${options[*]} " =~ " --all " ]; then
         if [ "$2" == "--all" ]; then
           doStopAll
           shift
@@ -1477,6 +1517,7 @@ while true; do
         fi
     ;;
     restart)
+        if [ " ${options[*]} " =~ " --all " ]; then
         if [ "$2" == "--all" ]; then
 	  doStopAll
 	else
@@ -1484,6 +1525,7 @@ while true; do
 	fi
         echo "`timestamp`: stop" >> "$logdir/$arkmanagerLog"
         sleep 1
+        if [ " ${options[*]} " =~ " --all " ]; then
 	if [ "$2" == "--all" ]; then
           doStartAll
 	  shift
@@ -1497,34 +1539,27 @@ while true; do
         doInstall
     ;;
     update)
-        args=()
-
-	while [[ "$2" =~ ^-- ]]; do
-	  args=( "${args[@]}" "$2" )
-	  shift
-	done
-
-	doUpdate "${args[@]}"
+	doUpdate "${options[@]}"
     ;;
     checkupdate)
       checkForUpdate
     ;;
     installmod)
-      doInstallMod "$2"
+      doInstallMod "${args[@]}"
       shift
     ;;
     backup)
       doBackup
     ;;
     broadcast)
-      doBroadcast "$2"
+      doBroadcast "${args[@]}"
       shift
     ;;
     saveworld)
       doSaveWorld
     ;;
     rconcmd)
-      rconcmd "$2"
+      rconcmd "${args[@]}"
       shift
     ;;
     status)
@@ -1597,7 +1632,6 @@ while true; do
     ;;
   esac
   status=$?
-  shift
   if [ $# -eq 0 ]; then
     break
   fi
