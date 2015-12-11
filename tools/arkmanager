@@ -491,7 +491,7 @@ function isTheServerOnline(){
 
   # If the Steam server response contains "addr": "$ip:$port",
   # then the server has registered with the Steam master server
-  if [[ "$serverresp" =~ \"addr\":\ \"([^\"]*):([0-9]*)\" ]]; then
+  if [[ "$serverresp" =~ "\"addr\": \""([^\"]*):([0-9]*)"\"" ]]; then
     return 0
   else
     return 1
