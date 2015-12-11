@@ -1651,6 +1651,10 @@ while true; do
       echo "   --backup           Takes a backup of the save files before updating"
       echo "   --downloadonly     Download the mod and/or server update without applying it"
       echo "                      Requires arkStagingDir be set to a staging directory on the same filesystem as the server"
+      echo
+      echo "stop and restart commands take the below options:"
+      echo "   --warn             Warn players before shutting down the server"
+      echo "   --saveworld        Saves world before shutdown"
       exit 1
     ;;
     *)
