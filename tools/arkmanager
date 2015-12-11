@@ -1542,7 +1542,6 @@ while true; do
     ;;
     stop)
         if [ " ${options[*]} " =~ " --all " ]; then
-        if [ "$2" == "--all" ]; then
           doStopAll
           shift
         else
@@ -1551,7 +1550,6 @@ while true; do
     ;;
     restart)
         if [ " ${options[*]} " =~ " --all " ]; then
-        if [ "$2" == "--all" ]; then
 	  doStopAll
 	else
           doStop restart "${options[@]}"
@@ -1559,7 +1557,6 @@ while true; do
         echo "`timestamp`: stop" >> "$logdir/$arkmanagerLog"
         sleep 1
         if [ " ${options[*]} " =~ " --all " ]; then
-	if [ "$2" == "--all" ]; then
           doStartAll
 	  shift
 	else
