@@ -685,6 +685,9 @@ doStop() {
     if [ " $* " =~ " --warn " ]; then
       doWarn "$1"
     fi
+    if [ " $* " =~ " --saveworld " ]; then
+      doSaveWorld
+    fi
     tput sc
     echo "Stopping server..."
     echo "`timestamp`: stopping" >> "$logdir/$arkmanagerLog"
