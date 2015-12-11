@@ -1605,7 +1605,7 @@ while true; do
       doUninstallTools
     ;;
     useconfig)
-      useConfig "$2"
+      useConfig "${args[0]}"
       shift
     ;;
     --version)
