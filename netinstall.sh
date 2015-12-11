@@ -9,6 +9,16 @@ channel=${2:-master} # if defined by 2nd argument install the defined version, o
 shift
 shift
 
+output=/dev/null
+
+if [ "$1" = "--verbose" ]; then
+  output=/dev/fd/1
+  shift
+elif [[ "$1" =~ ^--output= ]]; then
+  output="${1#--output=}"
+  shift
+fi
+
 # Download and untar installation files
 cd /tmp
 COMMIT="`curl -L -k -s https://api.github.com/repos/FezVrasta/ark-server-tools/git/refs/heads/${channel} | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p'`"
@@ -36,7 +46,7 @@ sed -i "s|^arkstCommit='.*'$|arkstCommit='${COMMIT}'|" arkmanager
 version=`<../.version`
 sed -i "s|^arkstVersion=\".*\"|arkstVersion='${version}'|" arkmanager
 chmod +x install.sh
-bash install.sh "$steamcmd_user" "$@" > /dev/null
+bash install.sh "$steamcmd_user" "$@" >"$output" 2>&1
 
 status=$?
 
