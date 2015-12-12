@@ -1538,7 +1538,6 @@ while true; do
     start)
         if [ " ${options[*]} " =~ " --all " ]; then
           doStartAll
-          shift
         else
           doStart
         fi
@@ -1546,7 +1545,6 @@ while true; do
     stop)
         if [ " ${options[*]} " =~ " --all " ]; then
           doStopAll
-          shift
         else
           doStop stop "${options[@]}"
         fi
@@ -1561,7 +1559,6 @@ while true; do
         sleep 1
         if [ " ${options[*]} " =~ " --all " ]; then
           doStartAll
-	  shift
 	else
 	  doStart
 	fi
@@ -1579,21 +1576,18 @@ while true; do
     ;;
     installmod)
       doInstallMod "${args[@]}"
-      shift
     ;;
     backup)
       doBackup
     ;;
     broadcast)
       doBroadcast "${args[@]}"
-      shift
     ;;
     saveworld)
       doSaveWorld
     ;;
     rconcmd)
       rconcmd "${args[@]}"
-      shift
     ;;
     status)
       printStatus
@@ -1606,7 +1600,6 @@ while true; do
     ;;
     useconfig)
       useConfig "${args[0]}"
-      shift
     ;;
     --version)
       echo "Version: ${arkstVersion}"
