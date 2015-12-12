@@ -685,6 +685,9 @@ doStop() {
     if [ " $* " =~ " --warn " ]; then
       doWarn "$1"
     fi
+    if [ " $* " =~ " --saveworld " ]; then
+      doSaveWorld
+    fi
     tput sc
     echo "Stopping server..."
     echo "`timestamp`: stopping" >> "$logdir/$arkmanagerLog"
@@ -1602,7 +1605,7 @@ while true; do
       doUninstallTools
     ;;
     useconfig)
-      useConfig "$2"
+      useConfig "${args[0]}"
       shift
     ;;
     --version)
@@ -1648,6 +1651,10 @@ while true; do
       echo "   --backup           Takes a backup of the save files before updating"
       echo "   --downloadonly     Download the mod and/or server update without applying it"
       echo "                      Requires arkStagingDir be set to a staging directory on the same filesystem as the server"
+      echo
+      echo "stop and restart commands take the below options:"
+      echo "   --warn             Warn players before shutting down the server"
+      echo "   --saveworld        Saves world before shutdown"
       exit 1
     ;;
     *)
