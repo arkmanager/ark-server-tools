@@ -34,54 +34,103 @@ GREEN="\\033[1;32m"
 RED="\\033[1;31m"
 NORMAL="\\033[0;39m"
 
+SVCNAME="${0##*/}"
+INSTANCE="${SVCNAME#*.}"
+
+if [ "$INSTANCE" == "$SVCNAME" ]; then
+  INSTANCE="$2"
+fi
+
 set -e
 
 # If the daemon is not there, then exit.
 test -x $DAEMON || exit 5
 
+function start_instance(){
+  local INSTANCE="$1"
+  PID="$(<"/var/run/arkmanager.${INSTANCE}.pid")"
+  if [ -n "$PID" ] && kill -0 "$PID" >/dev/null 2>&1; then
+    if grep " ${PID} .* ${DAEMON}" <(ps -ef) >/dev/null 2>&1; then
+      echo "$NAME @${INSTANCE} is already running"
+      return 0
+    fi
+  fi
+  echo -n "Starting $NAME @${INSTANCE}: "
+  ulimit -n 100000
+  "${DAEMON}" run "@${INSTANCE}" &
+  PID="$!"
+
+  sleep 5
+  if kill -0 "$PID" >/dev/null 2>&1; then
+    echo "$PID" >"/var/run/arkmanager.${INSTANCE}.pid"
+    touch "/var/lock/subsys/arkmanager.${INSTANCE}"
+    echo "[" "$GREEN" " OK " "$NORMAL" "]"
+    return 0
+  else
+    echo "[" "$RED" " FAILED " "$NORMAL" "]"
+    return 1
+  fi
+}
+
+function start_all_instances(){
+  local nosuccess=0
+  local anyfailure=0
+  for instance in $("${DAEMON}" list-instances --brief); do
+    if start_instance "$instance"; then
+      nosuccess=0
+    else
+      anyfailure=1
+    fi
+  done
+
+  return $nosuccess
+}
+
+function stop_instance(){
+  local INSTANCE="$1"
+  echo -n "Stopping $NAME @${INSTANCE}: "
+  "${DAEMON}" stop "@${INSTANCE}" &
+  rm -f "/var/lock/subsys/arkmanager.${INSTANCE}"
+  rm -f "/var/run/arkmanager.${INSTANCE}.pid"
+  echo "[" "$GREEN" " OK " "$NORMAL" "]"
+  return 0
+}
+
 case "$1" in
   start)
-    echo -n "Starting $NAME: "
-    ulimit -n 100000
-    su -s /bin/sh -c "$DAEMON start --all" $steamcmd_user > /dev/null
-    sleep 5
-    PID=`ps -ef | grep $NAME | grep -v grep | awk '{print $2}'`
-    if  [ -n "$PID" ];  then
-      echo "${PID}" >/var/run/arkmanager.pid
-      touch /var/lock/subsys/arkmanager
-      echo "[" "$GREEN" " OK " "$NORMAL" "]"
-      exit 0
+    if [ -n "$INSTANCE" ]; then
+      start_instance "$INSTANCE"
+      exit $?
     else
-      echo "[" "$RED" " FAILED " "$NORMAL" "]"
-      exit 1
+      if start_all_instances; then
+        touch /var/lock/subsys/arkmanager
+        exit 0
+      else
+        exit 1
+      fi
     fi
   ;;
 
   stop)
-    echo -n "Stopping $NAME: "
-    su -s /bin/sh -c "$DAEMON stop --all" $steamcmd_user > /dev/null
-    sleep 5
-    PID=`ps -ef | grep $NAME | grep -v grep | awk '{print $2}'`
-    if  [ -n "$PID" ];  then
-      echo "[" "$RED" " FAILED " "$NORMAL" "]"
-      exit 1
+    if [ -n "$INSTANCE" ]; then
+      stop_instance "$INSTANCE"
+      exit $?
     else
-      echo "[" "$GREEN" " OK " "$NORMAL" "]"
-      rm -f /var/lock/subsys/arkmanager
-      rm -f /var/run/arkmanager.pid
-      exit 0
+      for instance in $("${DAEMON}" list-instances --brief); do
+        stop_instance "$instance"
+      done
+      rm -f "/var/lock/subsys/arkmanager"
+      exit $?
     fi
   ;;
 
   restart)
-    echo -n "Restarting $NAME: "
-    ulimit -n 100000
-    su -s /bin/sh -c "$DAEMON restart --all" $steamcmd_user > /dev/null
-    echo "OK"
+    "$0" stop
+    "$0" start
   ;;
 
   status)
-    su -s /bin/sh -c "$DAEMON status" $steamcmd_user
+    "$DAEMON" status "@${INSTANCE:-all}"
     exit 0
   ;;
 
