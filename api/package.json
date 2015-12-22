@@ -1,0 +1,22 @@
+{
+  "name": "ark-server-tools-api",
+  "version": "1.4.0",
+  "description": "A simple Node.js API to interact with ARK Server Tools",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/FezVrasta/ark-server-tools.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/FezVrasta/ark-server-tools/issues"
+  },
+  "homepage": "https://github.com/FezVrasta/ark-server-tools#readme",
+  "dependencies": {
+    "restify": "^4.0.3"
+  }
+}
