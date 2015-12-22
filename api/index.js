@@ -36,7 +36,10 @@ function status() {
 // ============================================ //
 
 server.get('/status', function(req, res, next) {
+    // return the output of `status` and JSONify it
     res.send(JSON.parse(status()));
+    // move to the next route
+    return next();
 });
 
 
