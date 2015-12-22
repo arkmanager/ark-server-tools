@@ -24,6 +24,8 @@ function execute(command, callback){
 
 function status() {
     execute('arkmanager status', function(stdout, stderr) {
+        console.log('stdout:', stdout);
+        console.log('stderr:', stderr);
         return stdout;
     });
 }
@@ -34,7 +36,6 @@ function status() {
 // ============================================ //
 
 server.get('/status', function(req, res, next) {
-    console.log(status());
     res.send(JSON.parse(status()));
 });
 
