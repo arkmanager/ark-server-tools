@@ -4,7 +4,7 @@
   "description": "A simple Node.js API to interact with ARK Server Tools",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "bash start.sh"
   },
   "repository": {
     "type": "git",
