@@ -682,10 +682,10 @@ doStartAll(){
 #
 doStop() {
   if isTheServerRunning; then
-    if [ " $* " =~ " --warn " ]; then
+    if [[ " $* " =~ " --warn " ]]; then
       doWarn "$1"
     fi
-    if [ " $* " =~ " --saveworld " ]; then
+    if [[ " $* " =~ " --saveworld " ]]; then
       doSaveWorld
     fi
     tput sc
