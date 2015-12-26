@@ -253,6 +253,14 @@ getQueryPort(){
 # Execute RCON command
 #
 rconcmd() {
+  local adminpass="$(getAdminPassword)"
+  if [ -z "$adminpass" ]; then
+    echo "ServerAdminPassword is empty - unable to execute RCON command"
+    return 1
+  elif [[ "$adminpass" =~ [?\177-\377] ]]; then
+    echo "ServerAdminPassword contains invalid characters"
+    return 1
+  fi
   perl -MSocket -e '
     sub sendpkt {
       my ($sock, $reqid, $reqtype, $body) = @_;
@@ -263,7 +271,8 @@ rconcmd() {
     sub recvpkt {
       my ($sock) = @_;
       my $data = "";
-      recv($sock, $data, 12, 0);
+      recv($sock, $data, 12, 0) or die "Error receiving response from server"
+      die "Empty response" if len($data) == 0;
       my ($pktlen, $resid, $restype) = unpack("VVV", $data);
       recv($sock, $data, $pktlen - 8, 0);
       return ($resid, $restype, substr($data, 0, $pktlen - 10));
@@ -289,7 +298,7 @@ rconcmd() {
     sendpkt($socket, 2, 2, $command);
     my ($resid, $restype, $rcvbody) = recvpkt($socket);
     print $rcvbody, "\n";
-    ' "$(getRconPort)" "${ark_MultiHome:-127.0.0.1}" "$(getAdminPassword)" "$1"
+    ' "$(getRconPort)" "${ark_MultiHome:-127.0.0.1}" "$adminpass" "$1"
 }
 
 #
