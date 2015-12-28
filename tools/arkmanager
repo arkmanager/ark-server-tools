@@ -271,7 +271,7 @@ rconcmd() {
     sub recvpkt {
       my ($sock) = @_;
       my $data = "";
-      recv($sock, $data, 12, 0) or die "Error receiving response from server: $!";
+      recv($sock, $data, 12, 0);
       die "Empty response" if len($data) == 0;
       my ($pktlen, $resid, $restype) = unpack("VVV", $data);
       recv($sock, $data, $pktlen - 8, 0);
