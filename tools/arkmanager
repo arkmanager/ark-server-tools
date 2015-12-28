@@ -272,7 +272,7 @@ rconcmd() {
       my ($sock) = @_;
       my $data = "";
       recv($sock, $data, 12, 0);
-      die "Empty response" if len($data) == 0;
+      die "Empty response" if length($data) == 0;
       my ($pktlen, $resid, $restype) = unpack("VVV", $data);
       recv($sock, $data, $pktlen - 8, 0);
       return ($resid, $restype, substr($data, 0, $pktlen - 10));
