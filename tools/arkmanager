@@ -661,6 +661,12 @@ doStart() {
   if isTheServerRunning; then
     echo "The server is already running"
   else
+    if [ "$arkAutoUpdateOnStart" == "true" ]; then
+      if ! [[ " $* " =~ " --noautoupdate " ]]; then
+        echo "Updating server"
+        doUpdate --update-mods
+      fi
+    fi
     tput sc
     echo "The server is starting..."
 
@@ -1075,7 +1081,7 @@ doUpdate() {
 
     # we restart the server only if it was started before the update
     if [ $serverWasAlive -eq 1 ]; then
-      doStart
+      doStart --noautoupdate
     fi
   else
     echo "Your server is already up to date! The most recent version is ${bnumber}."
