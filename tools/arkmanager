@@ -667,7 +667,7 @@ doStart() {
     doRun </dev/null >>"$logdir/$arkserverLog" 2>&1 & # output of this command is logged
     echo "`timestamp`: start" >> "$logdir/$arkmanagerLog"
     tput rc; tput ed;
-    echo "The server is now up"
+    echo "The server is now running, and should be up within 10 minutes"
   fi
 }
 
