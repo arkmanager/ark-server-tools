@@ -1728,7 +1728,7 @@ while true; do
         doRun
       ;;
       start)
-        doStart
+        doStart "${options[@]}"
       ;;
       stop)
         doStop shutdown "${options[@]}"
@@ -1785,7 +1785,7 @@ while true; do
     for instance in "${instances[@]}"; do
     (
       useConfig "$instance"
-      doStart
+      doStart "${options[@]}"
       echo "`timestamp`: start" >> "$logdir/$arkmanagerLog"
       echo "`timestamp`: restart" >> "$logdir/$arkmanagerLog"
     )
