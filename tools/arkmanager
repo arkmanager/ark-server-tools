@@ -1126,6 +1126,10 @@ doBackup(){
   local savedir="SavedArks"
   mkdir -p "$backupdir"
 
+#Force Saveworld before a backup.  (Should prevent delays in save from backup.)
+echo -ne "${NORMAL} Saving World "
+doSaveWorld
+
   # extract the map name from the active map mod
   if [ -n "$serverMapModId" ]; then
     serverMap="$(perl -e '
