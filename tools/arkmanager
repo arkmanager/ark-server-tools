@@ -203,6 +203,15 @@ checkConfig() {
     fi
   fi
 
+  # Warn if any mods are requested but not installed
+  if [ -n "$arkserverroot" -a -a -d "${arkserverroot}/ShooterGame/Content/Mods" ]; then
+    for modid in $(getModIds); do
+      if [ ! -f "${arkserverroot}/ShooterGame/Content/Mods/${modid}/mod.info" ]; then
+        echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tMod ${modid} is requested but not installed.  Run 'arkmanager installmod ${modid}' to install this mod."
+      fi
+    done
+  fi
+
   # Service configuration
   # logdir
   if [ ! -w "$logdir" ] ; then
