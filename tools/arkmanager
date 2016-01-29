@@ -1068,7 +1068,7 @@ doUpdate() {
         find Engine ShooterGame linux64 -depth -print |
           grep -v '^ShooterGame/\(Saved\|Content/Mods\)' |
           while read f; do
-            if [ ! -e "staging/${f}" ]; then
+            if [ ! -e "${arkStagingDir}/${f}" ]; then
               if [ -f "$f" ]; then
                 rm "${f}"
               else
