@@ -352,6 +352,7 @@ doBroadcastWithEcho(){
 #
 function runSteamCMD(){
   "$steamcmdroot/$steamcmdexec" +@NoPromptForPassword 1 +login ${steamlogin:-anonymous} "$@" +quit
+  return $?
 }
 
 #
@@ -1129,17 +1130,26 @@ doDownloadMod(){
   local moddldir="$steamcmdroot/steamapps/workshop/downloads/$mod_appid/$modid"
   local dlsize=0
   cd "$steamcmdroot"
+  rm "$steamcmdroot/workshop/appworkshop_${mod_appid}.acf" 2>/dev/null
 
   while true; do
     echo "Downloading mod $modid"
     runSteamCMD +workshop_download_item $mod_appid $modid
-    echo
-    echo "Checking mod $modid"
-    if [ ! -d "$moddldir" ]; then break; fi
-    local newsize="`du -s "$moddldir/.." | cut -f1`"
-    if [ $newsize -eq $dlsize ]; then break; fi
-    dlsize=$newsize
-    echo "Mod $modid not fully downloaded - retrying"
+    result=$?
+    if [ $result -eq 0 ]; then
+      break
+    else
+      echo
+      echo "Checking mod $modid"
+      if [ ! -d "$moddldir" ]; then break; fi
+      local newsize="`du -s "$moddldir/.." | cut -f1`"
+      if [ $newsize -eq $dlsize ]; then 
+        echo "Mod $modid update not progressing - aborting"
+        return 1
+      fi
+      dlsize=$newsize
+      echo "Mod $modid not fully downloaded - retrying"
+    fi
   done
 
   if [ -f "$modsrcdir/mod.info" ]; then
