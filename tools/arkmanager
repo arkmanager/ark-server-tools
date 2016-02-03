@@ -352,7 +352,28 @@ doBroadcastWithEcho(){
 #
 function runSteamCMD(){
   "$steamcmdroot/$steamcmdexec" +@NoPromptForPassword 1 +login ${steamlogin:-anonymous} "$@" +quit
-  return $?
+}
+
+function runSteamCMDspinner(){
+  if [ -n "$verbose" ]; then
+    echo
+    runSteamCMD "$@"
+    return $?
+  else
+    runSteamCMD "$@" >/dev/null 2>&1 &
+    local scpid=$!
+    local pos=0
+    local spinner=( '-' '/' '|' '\' )
+    echo -n ' ...  '
+    while kill -0 $scpid 2>/dev/null; do
+      printf "\b%c" "${spinner[$pos]}"
+      (( pos = (pos + 1) % 4 ))
+      sleep 0.5
+    done
+    echo -ne '\b \b'
+    wait $scpid
+    return $?
+  fi
 }
 
 #
@@ -769,7 +790,7 @@ doStopAll(){
 # install / update / download update
 #
 runSteamCMDAppUpdate(){
-  runSteamCMD +force_install_dir "$1" +app_update $appid $2
+  runSteamCMDspinner +force_install_dir "$1" +app_update $appid $2
 }
 
 #
@@ -946,13 +967,13 @@ doUpdate() {
     fi
   done
 
-  echo "$$" >"${arkserverroot}/.ark-update.lock.$$"
+  echo "$$" >"${arkserverroot}/.ark-update.lock.$$" 2>/dev/null
   while true; do
-    if ! ln "${arkserverroot}/.ark-update.lock.$$" "${arkserverroot}/.ark-update.lock"; then
+    if ! ln "${arkserverroot}/.ark-update.lock.$$" "${arkserverroot}/.ark-update.lock" 2>/dev/null; then
       local lockpid="$(<"${arkserverroot}/.ark-update.lock")"
-      if [ -n "$lockpid" ] && [ "$lockpid" != "$$" ] && kill -0 "$lockpid"; then
+      if [ -n "$lockpid" ] && [ "$lockpid" != "$$" ] && kill -0 "$lockpid" 2>/dev/null; then
         echo "Update already in progress (PID: $lockpid)"
-	rm -f "${arkserverroot}/.ark-update.lock.$$"
+	rm -f "${arkserverroot}/.ark-update.lock.$$" 2>/dev/null
         return 1
       fi
       rm -f "${arkserverroot}/.ark-update.lock"
@@ -994,7 +1015,7 @@ doUpdate() {
         rm -rf "$arkStagingDir/ShooterGame/Saved/"*
       fi
 
-      echo "Downloading ARK update"
+      echo -n "Downloading ARK update"
       cd "$steamcmdroot"
       runSteamCMDAppUpdate "$arkStagingDir" $validate
       if [ -d "${arkStagingDir}/steamapps/downloading/${appid}" ]; then
@@ -1078,7 +1099,7 @@ doUpdate() {
             fi
           done
       else
-        echo "Performing ARK update"
+        echo -n "Performing ARK update"
         cd "$steamcmdroot"
 	runSteamCMDAppUpdate "$arkserverroot" $validate
       fi
@@ -1133,8 +1154,8 @@ doDownloadMod(){
   rm "$steamcmdroot/workshop/appworkshop_${mod_appid}.acf" 2>/dev/null
 
   while true; do
-    echo "Downloading mod $modid"
-    runSteamCMD +workshop_download_item $mod_appid $modid
+    echo -n "Downloading mod $modid"
+    runSteamCMDspinner +workshop_download_item $mod_appid $modid
     result=$?
     if [ $result -eq 0 ]; then
       break
@@ -1663,6 +1684,9 @@ while true; do
       ;;
       --args)
         nrarg=$#
+      ;;
+      --verbose)
+        verbose=1
       ;;
       --*)
         options+=( "$1" )
