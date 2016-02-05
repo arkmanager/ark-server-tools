@@ -1156,7 +1156,7 @@ doDownloadMod(){
   local moddldir="$steamcmdroot/steamapps/workshop/downloads/$mod_appid/$modid"
   local dlsize=0
   cd "$steamcmdroot"
-  rm "$steamcmdroot/workshop/appworkshop_${mod_appid}.acf" 2>/dev/null
+  rm "$steamcmdroot/steamapps/workshop/appworkshop_${mod_appid}.acf" 2>/dev/null
 
   while true; do
     echo -n "Downloading mod $modid"
