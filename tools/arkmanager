@@ -1153,10 +1153,9 @@ getModIds(){
 doDownloadMod(){
   local modid=$1
   local modsrcdir="$steamcmdroot/steamapps/workshop/content/$mod_appid/$modid"
-  local moddldir="$steamcmdroot/steamapps/workshop/downloads/$mod_appid/$modid"
-  local dlsize=0
+  local moddldir="$steamcmdroot/steamapps/workshop/downloads/$mod_appid"
   cd "$steamcmdroot"
-  rm "$steamcmdroot/steamapps/workshop/appworkshop_${mod_appid}.acf" 2>/dev/null
+  retries=10
 
   while true; do
     echo -n "Downloading mod $modid"
@@ -1166,14 +1165,14 @@ doDownloadMod(){
       break
     else
       echo
-      echo "Checking mod $modid"
-      if [ ! -d "$moddldir" ]; then break; fi
-      local newsize="`du -s "$moddldir/.." | cut -f1`"
-      if [ $newsize -eq $dlsize ]; then 
-        echo "Mod $modid update not progressing - aborting"
-        return 1
+      if [ ! -d "$moddldir" ]; then
+        echo "Mod $modid download failed"
+        break
       fi
-      dlsize=$newsize
+      (( retries = retries - 1 ))
+      if (( retries <= 0 )); then
+        echo "Retries exhausted"
+      fi
       echo "Mod $modid not fully downloaded - retrying"
     fi
   done
