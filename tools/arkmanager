@@ -146,7 +146,6 @@ export TERM=${TERM:-dumb}
 arkmanagerLog="arkmanager.log"  # here are logged the actions performed by arkmanager
 arkserverLog="arkserver.log"    # here is logged the output of ShooterGameServer
 
-progressDisplayType="${progressDisplayType:-spinner}"
 appid="${appid:-376030}"
 mod_appid="${mod_appid:-346110}"
 arkautorestartfile="${arkautorestartfile:-ShooterGame/Saved/.autorestart}"
@@ -158,6 +157,7 @@ if [ "$steamcmd_user" == "--me" ]; then
 else
   install_datadir="${install_datadir:-${install_bindir%/*}/share/arkmanager}"
 fi
+
 
 #---------------------
 # functions
@@ -366,6 +366,13 @@ function runSteamCMDspinner(){
     runSteamCMD "$@"
     return $?
   else
+    if [ -z "$progressDisplayType" ]; then
+      if stty <&1 >/dev/null 2>&1; then
+        progressDisplayType=spinner
+      else
+        progressDisplayType=dots
+      fi
+    fi
     runSteamCMD "$@" >/dev/null 2>&1 &
     local scpid=$!
     local pos=0
