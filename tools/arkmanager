@@ -146,6 +146,7 @@ export TERM=${TERM:-dumb}
 arkmanagerLog="arkmanager.log"  # here are logged the actions performed by arkmanager
 arkserverLog="arkserver.log"    # here is logged the output of ShooterGameServer
 
+progressDisplayType="${progressDisplayType:-spinner}"
 appid="${appid:-376030}"
 mod_appid="${mod_appid:-346110}"
 arkautorestartfile="${arkautorestartfile:-ShooterGame/Saved/.autorestart}"
@@ -368,11 +369,14 @@ function runSteamCMDspinner(){
     runSteamCMD "$@" >/dev/null 2>&1 &
     local scpid=$!
     local pos=0
-    local spinner=( '-' '/' '|' '\' )
+    local spinner=( '\b-' '\b/' '\b|' '\b\\' )
+    if [ "$progressDisplayType" == "dots" ]; then
+      spinner=( '.' )
+    fi
     echo -n ' ...  '
     while kill -0 $scpid 2>/dev/null; do
-      printf "\b%c" "${spinner[$pos]}"
-      (( pos = (pos + 1) % 4 ))
+      echo -ne "${spinner[$pos]}"
+      (( pos = (pos + 1) % ${#spinner[*]} ))
       sleep 0.5
     done
     echo -ne '\b \b'
@@ -1703,6 +1707,12 @@ while true; do
       ;;
       --verbose)
         verbose=1
+      ;;
+      --dots)
+        progressDisplayType=dots
+      ;;
+      --spinner)
+        progressDisplayType=spinner
       ;;
       --*)
         options+=( "$1" )
