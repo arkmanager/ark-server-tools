@@ -13,27 +13,25 @@ depend(){
 }
 
 start(){
+    INSTANCE="${RC_SVCNAME#*.}"
     ebegin "Starting ARK manager daemon"
     ulimit -n 100000
-    su -s /bin/sh -c "$DAEMON start --all" $steamcmd_user
-    sleep 5
-    PID=`ps -ef | grep $NAME | grep -v grep | awk '{print $2}'`
-    if  [ -n "$PID" ];  then
-        eend 0
+    if [ "$INSTANCE" != "$RC_SVCNAME" ]; then
+        "$DAEMON" start "@${INSTANCE}"
     else
-        eend 1
+        "$DAEMON" start "@all"
     fi
+    eend $?
 }
 
 stop(){
+    INSTANCE="${RC_SVCNAME#*.}"
     ebegin "Stopping ARK manager daemon"
-    su -s /bin/sh -c "$DAEMON stop --all" $steamcmd_user
-    sleep 5
-    PID=`ps -ef | grep $NAME | grep -v grep | awk '{print $2}'`
-    if  [ -n "$PID" ];  then
-        eend 0
+    if [ "$INSTANCE" != "$RC_SVCNAME" ]; then
+        "$DAEMON" stop "@${INSTANCE}"
     else
-        eend 1
+        "$DAEMON" stop "@all"
     fi
+    eend $?
 }
 
