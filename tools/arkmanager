@@ -1383,6 +1383,17 @@ doInstallMod(){
 }
 
 #
+# Removes mod from mods directory
+#
+doUninstallMod(){
+  local modid=$1
+  local moddir="$arkserverroot/ShooterGame/Content/Mods/$modid"
+  if [ -d "${moddir}" ]; then
+    rm -rf "${moddir}"
+  fi
+}
+
+#
 # Copies server state to a backup directory
 #
 doBackup(){
@@ -1659,6 +1670,8 @@ showUsage() {
   echo "checkupdate           Check for a new ARK server version"
   echo "install               Install the ARK server files from steamcmd"
   echo "installmod <modid>    Installs a mod from the Steam workshop"
+  echo "uninstallmod <modid>  Removes the mod from the Mods directory"
+  echo "reinstallmod <modid>  Removes and re-installs a mod in the Mods directory"
   echo "restart               Stops the server and then starts it"
   echo "run                   Runs the server without daemonizing"
   echo "start                 Starts the server"
@@ -1697,6 +1710,8 @@ while true; do
   # get the number of arguments for commands that take arguments
   case "$command" in
     installmod) nrarg=1; ;;
+    uninstallmod) nrarg=1; ;;
+    reinstallmod) nrarg=1; ;;
     broadcast) nrarg=1; ;;
     rconcmd) nrarg=1; ;;
     useconfig) nrarg=1; ;;
@@ -1831,6 +1846,13 @@ while true; do
         checkForUpdate
       ;;
       installmod)
+        doInstallMod "${args[@]}"
+      ;;
+      uninstallmod)
+        doUninstallMod "${args[@]}"
+      ;;
+      reinstallmod)
+        doUninstallMod "${args[@]}"
         doInstallMod "${args[@]}"
       ;;
       backup)
