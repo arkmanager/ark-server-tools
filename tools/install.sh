@@ -105,7 +105,7 @@ else
   PREFIX="${PREFIX:-/usr/local}"
   EXECPREFIX="${EXECPREFIX:-${PREFIX}}"
   DATAPREFIX="${DATAPREFIX:-${PREFIX}/share}"
-  CONFIGFILE="/etc/arkmanager/.arkmanager.cfg"
+  CONFIGFILE="/etc/arkmanager/arkmanager.cfg"
   INSTANCEDIR="/etc/arkmanager/instances"
 fi
 
@@ -318,7 +318,7 @@ else
       echo "A copy of the new configuration file was included in /etc/arkmanager. Make sure to review any changes and update your config accordingly!"
       exit 2
     else
-      mv -n "${INSTALL_ROOT}${CONFIGFILE}.NEW" "${INSTALL_ROOT}${CONFIGFILE}.cfg"
+      mv -n "${INSTALL_ROOT}${CONFIGFILE}.NEW" "${INSTALL_ROOT}${CONFIGFILE}"
       cp -n "${INSTALL_ROOT}/${INSTANCEDIR}/instance.cfg.example" "${INSTALL_ROOT}/${INSTANCEDIR}/main.cfg"
     fi
 fi
