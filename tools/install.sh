@@ -189,6 +189,7 @@ if [ "$userinstall" == "yes" ]; then
       exit 2
     else
       mv -n "${INSTALL_ROOT}${CONFIGFILE}.NEW" "${INSTALL_ROOT}${CONFIGFILE}"
+      cp -n "${INSTALL_ROOT}/${INSTANCEDIR}/instance.cfg.example" "${INSTALL_ROOT}/${INSTANCEDIR}/main.cfg"
     fi
 else
     # Copy arkmanager to /usr/bin and set permissions
@@ -318,6 +319,7 @@ else
       exit 2
     else
       mv -n "${INSTALL_ROOT}${CONFIGFILE}.NEW" "${INSTALL_ROOT}${CONFIGFILE}.cfg"
+      cp -n "${INSTALL_ROOT}/${INSTANCEDIR}/instance.cfg.example" "${INSTALL_ROOT}/${INSTANCEDIR}/main.cfg"
     fi
 fi
 
