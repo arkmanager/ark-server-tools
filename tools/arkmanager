@@ -825,6 +825,7 @@ doInstall() {
   fi
 
   cd "$steamcmdroot"
+  echo -n "Installing ARK server"
   # install the server
   runSteamCMDAppUpdate "$arkserverroot" validate
   # the current version should be the last version. We set our version
