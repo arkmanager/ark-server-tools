@@ -320,7 +320,11 @@ rconcmd() {
     auth($socket, $password);
     sendpkt($socket, 2, 2, $command);
     my ($resid, $restype, $rcvbody) = recvpkt($socket);
-    print $rcvbody, "\n";
+    if ($rcvbody == "Server received, But no response!!") {
+      print "Command processed\n";
+    } else {
+      print $rcvbody, "\n";
+    }
     ' "$(getRconPort)" "${ark_MultiHome:-127.0.0.1}" "$adminpass" "$1"
 }
 
@@ -342,7 +346,7 @@ doExitServer() {
 # Broadcast message
 #
 doBroadcast(){
-  rconcmd "broadcast $1" >/dev/null
+  rconcmd "broadcast $1"
 }
 
 #
