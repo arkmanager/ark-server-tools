@@ -1626,25 +1626,31 @@ doListAllInstances(){
       (
         echo -n "  @${n}: "
         useConfig "$n"
-        echo "${arkserverroot}"
+        echo "${configfile} => ${arkserverroot}"
       )
     done
   fi
 }
 
 useConfig() {
+  configfile=
   if [ -f "/etc/arkmanager/instances/${1}.cfg" ]; then
-    source "/etc/arkmanager/instances/${1}.cfg"
+    configfile="/etc/arkmanager/instances/${1}.cfg"
   fi
   if [ -f "${HOME}/.config/arkmanager/instances/${1}.cfg" ]; then
-    source "${HOME}/.config/arkmanager/instances/${1}.cfg"
+    configfile="${HOME}/.config/arkmanager/instances/${1}.cfg"
   fi
   for varname in "${!configfile_@}"; do
     if [ "configfile_$1" == "$varname" ]; then
-      source "${!varname}"
+      configfile="${!varname}"
       break
     fi
   done
+  if [ -a "$configfile" ]; then
+    echo "Error: config file ${configfile} does not exist"
+    exit 1
+  fi
+  source "$configfile"
   if [ -z "$arkserverroot" ]; then
     echo "Error: arkserverroot not set"
     exit 1
