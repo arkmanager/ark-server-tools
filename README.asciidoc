@@ -1,0 +1,446 @@
+= ARK: Survival Evolved Linux Server Tools
+
+This tool allows you to manage any ARK: Survival Evolved linux server without having to remember long commands.
+It provides a lot of features, to get the full list check the <<Usage>> section.
+
+Installation
+------------
+
+Prerequisites
+~~~~~~~~~~~~~
+
+To install ARK Server Tools you must have already installed **SteamCMD** following this guide:
+
+https://developer.valvesoftware.com/wiki/SteamCMD#Linux
+
+We assume you have created the `steam` user to store steamcmd and your ARK server.
+
+Requirements
+~~~~~~~~~~~~
+
+To allow your ARK server to communicate with the outside you have to open some ports in your firewall:
+
+```sh
+iptables -I INPUT -p udp --dport 27016 -j ACCEPT
+iptables -I INPUT -p tcp --dport 27016 -j ACCEPT
+iptables -I INPUT -p udp --dport 7778 -j ACCEPT
+iptables -I INPUT -p tcp --dport 7778 -j ACCEPT
+iptables -I INPUT -p tcp --dport 32330 -j ACCEPT
+```
+
+NB: Change the ports according to the ones set in your `arkmanager.cfg` file.
+
+Install ARK Server Tools
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+To install ARK Server Tools run this command:
+
+[source,sh]
+curl -sL http://git.io/vtf5N | sudo bash -s steam
+
+NB: You may want to change the `bash -s` parameter to fit your steam user if different from `steam`.
+
+This will copy the `arkmanager` script and its daemon to the proper directories and will create an empty log directory in `/var/log` for ARK Server Tools.
+
+To instead perform a user-install of ARK Server Tools as an unprivileged user, run this command:
+
+[source,sh]
+curl -sL http://git.io/vtf5N | bash -s -- --me
+
+Configuration
+~~~~~~~~~~~~~
+
+Stored in `/etc/arkmanager/arkmanager.cfg` and `/etc/arkmanager/instances/<instancename>.cfg` you can find the variables needed to start the server, like the port numbers, the system environment variables and so on.
+
+Also, in this file, you can specify any parameter you want to add to the startup command of ARK server.
+These parameters must be prefixed by the `ark_` string, some example could be:
+
+[source,sh]
+ark_SessionName="My ARK server"
+ark_MaxPlayers=50
+ark_ServerPVE=False
+ark_DifficultyOffset=1
+
+Your session name may not contain special characters (eg. `!![EU]!! Aw&some ARK`) as it could break the startup command.
+In this case you may want to comment out the `ark_SessionName` variable and define it inside your **GameUserSettings.ini** file instead.
+
+To specify an option without an argument (e.g. `bRawSockets`), specify an empty argument (e.g. `ark_bRawSockets=""`).
+
+To specify a dash-option without an argument (e.g. `-log`), add the option="" prefixed with `arkflag_` (e.g. `arkflag_log=""`).
+
+To specify a dash-option with an argument (e.g. `-StructureDestructionTag=DestroySwampSnowStructures`), add the option=value prefixed with `arkopt_` (e.g. `arkopt_StructureDestructionTag=DestroySwampSnowStructures`).
+
+You can override or add variables for a specific system user creating a file called `.arkmanager.cfg` in the home directory of the system user.
+
+See <<Configuration files>> for more options.
+
+Install ARK Server
+~~~~~~~~~~~~~~~~~~
+
+To install ARK Server just run this command as normal user:
+
+[source,sh]
+arkmanager install
+
+Usage
+-----
+
+`arkmanager [Global Options] <command> [Command Options] [Command Args] [Instances]`
+
+Global Options
+~~~~~~~~~~~~~~
+
+[horizontal]
+`--help`::
+    Prints some help on using the command
+
+`--version`::
+    Prints the arkmanager version
+
+Common Options
+~~~~~~~~~~~~~~
+
+[horizontal]
+`--verbose`::
+    Exposes the output of SteamCMD
+
+`--dots`::
+    Prints dots for progress
+
+`--spinner`::
+    Uses a spinner for progress
+
+Instanceless commands
+~~~~~~~~~~~~~~~~~~~~~
+
+[horizontal]
+`upgrade-tools`::
+    Upgrades the ARK server tools to the latest version
+
+`uninstall-tools`::
+    Uninstalls the ARK server tools
+
+`list-instances`::
+    Lists the available instances
+
+    `--brief`;;
+        prints a single line with just the instance names
+
+`useconfig`::
+    Legacy command for specifying an instance for the following command(s)
+
+Commands acting on instances
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+All of the following commands take `@instancename` arguments to specify
+one or more instances, with the special `@all` instance selecting all
+instances.
+
+[horizontal]
+`run`::
+    Runs the server without putting it into the background
+
+`start`::
+    Runs the server and puts it into the background
+
+    `--noautoupdate`;;
+        Disables automatic updating on startup if it is enabled
+
+`stop`::
+    Stops the server if it is running
+
+    `--warn`;;
+        Warns any connected players that the server is going down
+
+    `--saveworld`;;
+        Saves the world using `saveworld` - usually not
+        necessary, as server usually saves the world on a graceful
+        shutdown
+
+`restart`::
+    Runs the `stop` command followed by the `restart` command.
+    Accepts and passes the options for those commands
+
+`install`::
+    Downloads and installs (or validates an existing install) of
+    the ARK server
+
+`update`::
+    Updates an install of the ARK server (or installs it if it's
+    not already installed)
+
+    `--force`;;
+        Bypasses the check for if an update is available
+
+    `--safe`;;
+        Only shuts down the server when the server has saved in
+        the past minute
+
+    `--warn`;;
+        Warns any connected players that the server is going down for
+        an update
+
+    `--ifempty`;;
+        Only updates the server when nobody is connected
+
+    `--validate`;;
+        Re-validates the ARK server install
+
+    `--saveworld`;;
+        Saves the world using `saveworld` - usually not
+        necessary, as server usually saves the world on a graceful
+        shutdown
+
+    `--update-mods`;;
+        Updates any installed mods
+
+    `--backup`;;
+        Backs up the saved world and game config before updating
+
+    `--stagingdir=<dir>`;;
+        Sets the staging directory in order to download the update
+        before shutting down the server
+
+    `--downloadonly`;;
+        Downloads the update but does not apply it.  Only has effect
+        if a staging directory is set.
+
+`checkupdate`::
+    Checks if an ARK server update is available
+
+`installmod <modnum>`::
+    Installs the specified mod into the `ShooterGame/Content/Mods`
+    directory
+
+`uninstallmod <modnum>`::
+    Deletes the specified mod from the `ShooterGame/Content/Mods`
+    directory
+
+`reinstallmod <modnum>`::
+    Runs the `uninstallmod` command followed by the `installmod`
+    command
+
+`backup`::
+    Backs up the saved world and game config files to a compressed
+    tar file in the backups directory specified in the config
+
+`broadcast "message"`::
+    Broadcasts a message to players connected to the server using
+    the RCON `broadcast` command
+
+`saveworld`::
+    Saves the world using the RCON `saveworld` command
+
+`rconcmd "command"`::
+    Sends the specified RCON command to the server and prints its
+    response
+
+`status`::
+    Prints the status of the ARK server
+
+Configuration files
+-------------------
+
+Global configuration
+~~~~~~~~~~~~~~~~~~~~
+
+Global configuration is stored in `/etc/arkmanager/arkmanager.cfg`
+and/or `~/.arkmanager.cfg`.
+
+The following options cannot be overridden in the instance config
+files:
+
+[horizontal]
+`arkstChannel`::
+    Specifies the release channel (git branch) to use when
+    upgrading the ARK server tools
+
+`install_bindir`::
+`install_libexecdir`::
+`install_datadir`::
+    Set by the installer to specify where to install the executable
+    and data files
+
+`configfile_<name>`::
+    Paths to the specified instance config files
+
+`defaultinstance`::
+    The default instance to use if no instance is specified
+
+`steamcmd_user`::
+    The user under which the tools should be run.  Set to `--me`
+    in `~/.arkmanager.cfg` in the case of a user-install
+
+The following options can be overridden on a per-instance basis:
+
+[horizontal]
+`steamcmdroot`::
+    The directory in which `SteamCMD` is installed
+
+`steamcmdexec`::
+    The `steamcmd.sh` executable
+
+`steamcmd_appinfocache`::
+    The appinfo cache directory used by SteamCMD
+
+`arkserverexec`::
+    The relative path within an ARK server install where the
+    ARK server executable can be found.
+
+`arkbackupdir`::
+    The directory in which to store backups.  Can be overridden in
+    the instance config.
+
+`arkwarnminutes`::
+    The number of minutes over which the shutdown and update warnings
+    should be run
+
+`arkautorestartfile`::
+    The relative path within an ARK server install to place the
+    autorestart lock file
+
+`arkAutoUpdateOnStart`::
+    Set to `true` to enable updating before server startup
+
+`arkBackupPreUpdate`::
+    Set to `true` to enable automatic backups before updating
+
+`arkStagingDir`::
+    Sets the staging directory in order to download updates
+    before shutting down the server
+
+`arkMaxBackupSizeMB`::
+    Limits the size of the stored backups
+
+`msgWarnUpdateMinutes`::
+`msgWarnUpdateSeconds`::
+`msgWarnRestartMinutes`::
+`msgWarnRestartSeconds`::
+`msgWarnShutdownMinutes`::
+`msgWarnShutdownSeconds`::
+    Templated messages for warnings, where `%d` is replaced with the
+    number of minutes / seconds before the update / restart / shutdown
+
+`logdir`::
+    Specifies where to store log files
+
+`appid`::
+    The Steam AppID of the ARK server
+
+`mod_appid`::
+    The Steam AppID of the ARK client (used for downloading mods)
+
+`mod_branch`::
+    The Mod branch (`Windows` or `Linux`) to use.  Virtually all mods
+    use the `Windows` branch for the ARK server, and the `Linux`
+    branch almost always crashes the server
+
+ARK server options:
+
+[horizontal]
+`serverMap`::
+    The map the server should use
+
+`serverMapModId`::
+    Uses the `-MapModID=<modid>?...` option to specify the server map
+    mod ID
+
+`ark_<optname>="<optval>"`::
+    Specifies the options to use in the `Map?Option=Val?...` option
+    string passed to the server
+
+`ark_<optname>=""`::
+    Specifies an option without a value - `Map?Option?...`
+
+`arkflag_<optname>=<anything>`::
+    Specifies a dash-option without a value (i.e. flag) - e.g.
+    `arkflag_DisableDeathSpectator=true` adds the
+    `-DisableDeathSpectator` flag
+
+`arkopt_<optname>="<optval>"`::
+    Specifies a dash-option with a value - e.g.
+    `arkopt_StructureDestructionTag=DestroySwampSnowStructures` adds
+    the `-StructureDestructionTag=DestroySwampSnowStructures`
+    option.
+
+Instance config files
+~~~~~~~~~~~~~~~~~~~~~
+
+Instance config files are stored under
+`/etc/arkmanager/instances/<instancename>.cfg`,
+`~/.local/config/arkmanager/instances/<instancename>.cfg`
+or as specified in the `configfile_<instancename>` options in
+the global config.
+
+[horizontal]
+`arkserverroot`::
+    The directory under which the ARK server is installed
+
+`serverMap`::
+    The map the server should use
+
+`serverMapModId`::
+    Uses the `-MapModID=<modid>?...` option to specify the server map
+    mod ID
+
+`ark_<optname>="<optval>"`::
+    Specifies the options to use in the `Map?Option=Val?...` option
+    string passed to the server
+
+`ark_<optname>=""`::
+    Specifies an option without a value - `Map?Option?...`
+
+`arkflag_<optname>=<anything>`::
+    Specifies a dash-option without a value (i.e. flag) - e.g.
+    `arkflag_DisableDeathSpectator=true` adds the
+    `-DisableDeathSpectator` flag
+
+`arkopt_<optname>="<optval>"`::
+    Specifies a dash-option with a value - e.g.
+    `arkopt_StructureDestructionTag=DestroySwampSnowStructures` adds
+    the `-StructureDestructionTag=DestroySwampSnowStructures`
+    option.
+
+Common ARK options
+~~~~~~~~~~~~~~~~~~
+
+[horizontal]
+`ark_TotalConversionId=<modid>`::
+    Specifies the Total Conversion to use
+
+`ark_GameModIds=<modid>,<modid>,...`::
+    Specifies the Mod IDs to use
+
+`ark_SessionName="<sessionname>"`::
+    The name under which the server should announce itself
+
+`ark_RCONEnabled="True"`::
+    Enabled RCON
+
+`ark_RCONPort=<portnum>`::
+    The port on which the server listens for RCON commands
+
+`ark_Port=<portnum>`::
+    The port on which the server listens for client connections
+
+`ark_QueryPort=<portnum>`::
+    The port on which the server listens for queries
+
+`ark_ServerPassword="<password>"`::
+    Specifies the password needed to connect to the server
+
+`ark_ServerAdminPassword="<password>"`::
+    Specifies the server admin password, which is also the RCON
+    password
+
+`ark_MaxPlayers=<numplayers>`::
+    The maximum number of players allowed to connect to the server
+
+`ark_AltSaveDirectoryName="<dirname>"`::
+    Alternative directory under `ShooterGame/Saved` under which to
+    save the world files
+
+`arkflag_UseBattlEye=true`::
+    Enables BattlEye
+
+
