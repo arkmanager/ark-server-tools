@@ -1348,23 +1348,31 @@ doExtractMod(){
       fi
     done
 
+    modname="$(curl -s "http://steamcommunity.com/sharedfiles/filedetails/?id=${modid}" | sed -n 's|^.*<div class="workshopItemTitle">\([^<]*\)</div>.*|\1|p')"
+
+    rm "${moddestdir}/.mod"
+
     perl -e '
       my $data;
       { local $/; $data = <STDIN>; }
       my $mapnamelen = unpack("@0 L<", $data);
       my $mapname = substr($data, 4, $mapnamelen - 1);
-      $mapnamelen += 4;
-      my $mapfilelen = unpack("@" . ($mapnamelen + 4) . " L<", $data);
-      my $mapfile = substr($data, $mapnamelen + 8, $mapfilelen);
-      print pack("L< L< L< Z8 L< C L< L<", $ARGV[0], 0, 8, "ModName", 1, 0, 1, $mapfilelen);
-      print $mapfile;
+      my $mapfilelen = unpack("@" . ($mapnamelen + 8) . " L<", $data);
+      my $mapfile = substr($data, $mapnamelen + 12, $mapfilelen);
+      my $modname = $ARGV[1] . "\x00";
+      my $modnamelen = length($modname);
+      my $modpath = "../../../ShooterGame/Content/Mods/" . $ARGV[0] . "\x00";
+      my $modpathlen = length($modpath);
+      print pack("L< L< L< Z$modnamelen L< Z$modpathlen L< L< Z$mapfilelen",
+        $ARGV[0], 0, $modnamelen, $modname, $modpathlen, $modpath,
+	1, $mapfilelen, $mapfile);
       print "\x33\xFF\x22\xFF\x02\x00\x00\x00\x01";
-    ' $modid <"$moddestdir/mod.info" >"$moddestdir/.mod"
+    ' $modid "$modname" <"$moddestdir/mod.info" >"${moddestdir}.mod"
 
     if [ -f "$moddestdir/modmeta.info" ]; then
-      cat "$moddestdir/modmeta.info" >>"$moddestdir/.mod"
+      cat "$moddestdir/modmeta.info" >>"${moddestdir}.mod"
     else
-      echo -ne '\x01\x00\x00\x00\x08\x00\x00\x00ModType\x00\x02\x00\x00\x001\x00' >>"$moddestdir/.mod"
+      echo -ne '\x01\x00\x00\x00\x08\x00\x00\x00ModType\x00\x02\x00\x00\x001\x00' >>"${moddestdir}.mod"
     fi
 
     echo "$modbranch" >"$moddestdir/.modbranch"
