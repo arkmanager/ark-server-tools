@@ -1646,8 +1646,12 @@ useConfig() {
       break
     fi
   done
-  if [ -a "$configfile" ]; then
-    echo "Error: config file ${configfile} does not exist"
+  if [ -z "$configfile" ]; then
+    echo "Error: no config files for instance $1"
+    exit 1
+  fi
+  if [ ! -f "$configfile" ]; then
+    echo "Error: config file $configfile does not exist"
     exit 1
   fi
   source "$configfile"
