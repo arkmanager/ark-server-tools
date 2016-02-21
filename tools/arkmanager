@@ -1350,7 +1350,9 @@ doExtractMod(){
 
     modname="$(curl -s "http://steamcommunity.com/sharedfiles/filedetails/?id=${modid}" | sed -n 's|^.*<div class="workshopItemTitle">\([^<]*\)</div>.*|\1|p')"
 
-    rm "${moddestdir}/.mod"
+    if [ -f "${moddestdir}/.mod" ]; then
+      rm "${moddestdir}/.mod"
+    fi
 
     perl -e '
       my $data;
