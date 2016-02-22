@@ -1806,6 +1806,7 @@ while true; do
       if [ -n "${arkstCommit}" ]; then
         echo "Commit: ${arkstCommit:0:7}"
       fi
+      echo "Blob SHA: $( (echo -ne "blob $(stat -c "%s" "$0")\0"; sed "s@^arkstCommit=.*@arkstCommit=''@" "$0") | sha1sum | cut -d' ' -f1)"
       exit 1
     ;;
     -h|--help)
