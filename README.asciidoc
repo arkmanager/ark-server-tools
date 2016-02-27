@@ -238,6 +238,37 @@ instances.
 `status`::
     Prints the status of the ARK server
 
+`install-cronjob <command>`::
+    Installs a cron job that executes the specified command.
+    This accepts any of the options the specified command accepts,
+    as well as the following options.  In order to specify an
+    argument to the command (e.g. to the `broadcast` command),
+    use the `--arg=<arg>` option.
+
+    `--daily`;;
+        The command should be executed daily
+
+    `--hourly`;;
+        The command should be executed hourly
+
+    `--hour=<hour>`;;
+        Specifies one or more hours when the command should execute.
+        This is the hour field of the cron job.
+
+    `--minute=<minute>`;;
+        Specifies one or more minutes of the hour when the command
+        should execute.  This is the minute field of the cron job.
+
+    `--enable-output`;;
+        Enables the output from the command - the cron daemon usually
+        emails this to the user specified in the cron configuration
+
+    `--arg=<arg>`;;
+        Specifies an argument to pass to the command
+
+`remove-cronjob <command>`::
+    Removes a cron job previously installed by `install-cronjob`
+
 Configuration files
 -------------------
 
