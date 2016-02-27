@@ -7,7 +7,7 @@
 # Contributors:         Sispheor, Atriusftw, klightspeed, lexat, puseidr
 
 # Script version
-arkstVersion="1.5"
+arkstVersion="1.6"
 arkstCommit=''
 
 doUpgradeTools() {
