@@ -602,6 +602,42 @@ doRun() {
 
   arkextraopts=( )
 
+  while read varname; do
+    val="${!varname}"
+    case "$varname" in
+      ark_*)
+        name="${varname#ark_}"
+
+        # Port is actually one higher than specified
+        # i.e. specifying port 7777 will have the server
+        # use port 7778
+        if [ "$name" == "Port" ]; then
+          (( val = val - 1 ))
+        fi
+
+        if [ -n "$val" ]; then
+          arkserveropts="${arkserveropts}?${name}=${val}"
+        else
+          arkserveropts="${arkserveropts}?${name}"
+        fi
+      ;;
+      arkopt_*)
+        name="${varname#arkopt_}"
+        val="${!varname}"
+
+        if [ -n "$val" ]; then
+          arkextraopts=( "${arkextraopts[@]}" "-${name}=${val}" )
+        fi
+      ;;
+      arkflag_*)
+        name="${varname#arkflag_}"
+
+        arkextraopts=( "${arkextraopts[@]}" "-${name}" )
+      ;;
+    esac
+    unset $varname
+  done < <(sed -n 's/^\(ark\(\|opt\|flag\)_[^= ]*\)=.*/\1/p' <"$configfile")
+
   # bring in ark_... options
   for varname in "${!ark_@}"; do
     name="${varname#ark_}"
