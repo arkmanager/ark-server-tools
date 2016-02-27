@@ -1732,6 +1732,22 @@ while true; do
   shift
   nrarg=0
 
+  # Handle global options
+  case "$command" in
+    --verbose)
+      verbose=1
+      continue
+    ;;
+    --dots)
+      progressDisplayType=dots
+      continue
+    ;;
+    --spinner)
+      progressDisplayType=spinner
+      continue
+    ;;
+  esac
+
   # get the number of arguments for commands that take arguments
   case "$command" in
     installmod) nrarg=1; ;;
