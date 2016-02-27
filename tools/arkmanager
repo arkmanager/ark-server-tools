@@ -1551,6 +1551,64 @@ doBackup(){
   fi
 }
 
+#
+# Install a cron job to execute a particular command
+#
+doInstallCronJob(){
+  hour='*'
+  minute='0'
+  cmdopts="${arkCronExtraOpts}"
+  cmdargs=""
+  output=">/dev/null 2>&1"
+  command="$1"
+  shift
+
+  for opt in "$@"; do
+    case "$opt" in
+      --daily)
+      ;;
+      --hourly)
+        hour='*'
+      ;;
+      --hour=*)
+        hour="${opt#--hour=}"
+      ;;
+      --minute=*)
+        minute="${opt#--minute=}"
+      ;;
+      --enable-output)
+        output=
+      ;;
+      --arg=*)
+        cmdargs="${cmdargs} $(printf "%q" "${opt#--opt=}")"
+      ;;
+      --*)
+        cmdopts="${cmdopts} $(printf "%q" "${opt}")"
+      ;;
+      *)
+        cmdargs="${args} $(printf "%q" "${opt}")"
+      ;;
+    esac
+  done
+
+  cronjob="${minute} ${hour} * * * arkmanager --cronjob ${command} @${instance} ${cmdopts} --args ${cmdargs} -- ${output}"
+
+  (crontab -l | \
+    sed -e "/ [*] [*] [*] arkmanager --cronjob ${command} @${instance} /d";
+    echo "${cronjob}" ) | \
+    crontab -
+}
+
+#
+# Removes an installed cron job
+#
+doRemoveCronJob(){
+  command="$1"
+
+  crontab -l | \
+    sed -e "/ [*] [*] [*] arkmanager --cronjob ${command} @${instance} /d" | \
+    crontab -
+}
 
 #
 # Print the status of the server (running? online? version?)
@@ -1687,6 +1745,8 @@ showUsage() {
   echo "installmod <modid>    Installs a mod from the Steam workshop"
   echo "uninstallmod <modid>  Removes the mod from the Mods directory"
   echo "reinstallmod <modid>  Removes and re-installs a mod in the Mods directory"
+  echo "install-cronjob <cmd> Adds a cron job using the specified command"
+  echo "remove-cronjob <cmd>  Removes a cron job that used the specified command"
   echo "restart               Stops the server and then starts it"
   echo "run                   Runs the server without daemonizing"
   echo "start                 Starts the server"
@@ -1736,6 +1796,10 @@ while true; do
       progressDisplayType=spinner
       continue
     ;;
+    --cronjob)
+      inCronJob=true
+      continue
+    ;;
   esac
 
   # get the number of arguments for commands that take arguments
@@ -1746,6 +1810,8 @@ while true; do
     broadcast) nrarg=1; ;;
     rconcmd) nrarg=1; ;;
     useconfig) nrarg=1; ;;
+    install-cronjob) nrarg=1; ;;
+    remove-cronjob) nrarg=1; ;;
   esac
 
   # Enumerate the options and arguments
@@ -1900,6 +1966,12 @@ while true; do
       ;;
       status)
         printStatus
+      ;;
+      install-cronjob)
+        doInstallCronJob "${args[@]}" "${options[@]}"
+      ;;
+      remove-cronjob)
+        doRemoveCronJob "${args[@]}"
       ;;
       *)
         echo -n "arkmanager v${arkstVersion}: unknown command '$command' specified"
