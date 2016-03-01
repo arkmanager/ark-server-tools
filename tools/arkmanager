@@ -593,7 +593,17 @@ doRun() {
   arkserveropts="$serverMap"
 
   if [ -n "$serverMapModId" ]; then
-    arkserveropts="-MapModID=$serverMapModId"
+    serverMap="$(perl -e '
+      my $data;
+      { local $/; $data = <>; }
+      my $mapnamelen = unpack("@0 L<", $data);
+      my $mapname = substr($data, 4, $mapnamelen - 1);
+      $mapnamelen += 4;
+      my $mapfilelen = unpack("@" . ($mapnamelen + 4) . " L<", $data);
+      my $mapfile = substr($data, $mapnamelen + 8, $mapfilelen - 1);
+      print $mapfile;
+    ' <"${arkserverroot}/ShooterGame/Content/Mods/${serverMapModId}/mod.info")"
+    arkserveropts="${serverMap}?MapModID=${serverMapModId}"
   fi
 
   if [ -z "$arkserveropts" ]; then
