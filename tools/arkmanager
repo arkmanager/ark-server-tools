@@ -577,7 +577,7 @@ function numPlayersConnected(){
     my $sockaddr = pack_sockaddr_in($port, inet_aton($ARGV[1]));
     send($socket, "\xff\xff\xff\xffTSource Engine Query\x00", 0, $sockaddr);
     my $data = "";
-    recv($socket, $data, 1400, 0) or (print "0" and exit(1));
+    recv($socket, $data, 1400, 0) or (print "-1" and exit(1));
     my ($servername, $mapname, $game, $fullname, $rest) = split(/\x00/, substr($data, 6), 5);
     my $players = ord(substr($rest, 2, 1));
     print "$players\n";
