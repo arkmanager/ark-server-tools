@@ -913,7 +913,7 @@ doWarn(){
         doBroadcastWithEcho "$warnmsg"
         for (( min = warnminutes - 1; min >= warninterval; min-- )); do
           numplayers=$(numPlayersConnected)
-          if (( numplayers + 0 == 0 )); then
+          if (( (numplayers + 0) == 0 )); then
             echo "Nobody is connected.  Shutting down immediately"
             return 0
           fi
@@ -940,7 +940,7 @@ doWarn(){
       doBroadcastWithEcho "$warnmsg"
       if (( warnseconds >= 20 )); then
         numplayers=$(numPlayersConnected)
-        if (( numplayers + 0 == 0 )); then
+        if (( (numplayers + 0) == 0 )); then
           echo "Nobody is connected.  Shutting down immediately"
           return 0
         fi
@@ -1078,7 +1078,7 @@ doUpdate() {
         fi
       elif [ "$updatetype" == "ifempty" ]; then
         numplayers=$(( $(numPlayersConnected) + 0 ))
-        if (( numplayers == 0 )); then
+        if (( numplayers != 0 )); then
           echo "${numplayers} players are still connected"
           return 1
         fi
