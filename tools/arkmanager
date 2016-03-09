@@ -581,7 +581,7 @@ function numPlayersConnected(){
     my ($servername, $mapname, $game, $fullname, $rest) = split(/\x00/, substr($data, 6), 5);
     my $players = ord(substr($rest, 2, 1));
     print "$players\n";
-    ' "${ark_QueryPort}" "${ark_MultiHome:-127.0.0.1}"
+    ' "$(getQueryPort)" "${ark_MultiHome:-127.0.0.1}"
 }
 
 #
@@ -949,6 +949,7 @@ doWarn(){
         doBroadcastWithEcho "$warnmsg"
         for (( min = warnminutes - 1; min >= warninterval; min-- )); do
           numplayers=$(numPlayersConnected)
+          echo "There are ${numplayers} players connected"
           if (( (numplayers + 0) == 0 )); then
             echo "Nobody is connected.  Shutting down immediately"
             return 0
@@ -976,6 +977,7 @@ doWarn(){
       doBroadcastWithEcho "$warnmsg"
       if (( warnseconds >= 20 )); then
         numplayers=$(numPlayersConnected)
+        echo "There are ${numplayers} players connected"
         if (( (numplayers + 0) == 0 )); then
           echo "Nobody is connected.  Shutting down immediately"
           return 0
