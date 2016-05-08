@@ -1407,15 +1407,21 @@ doExtractMod(){
       { local $/; $data = <STDIN>; }
       my $mapnamelen = unpack("@0 L<", $data);
       my $mapname = substr($data, 4, $mapnamelen - 1);
-      my $mapfilelen = unpack("@" . ($mapnamelen + 8) . " L<", $data);
-      my $mapfile = substr($data, $mapnamelen + 12, $mapfilelen);
+      my $nummaps = unpack("@" . ($mapnamelen + 4) . " L<", $data);
+      my $pos = $mapnamelen + 8;
       my $modname = ($ARGV[1] || $mapname) . "\x00";
       my $modnamelen = length($modname);
       my $modpath = "../../../ShooterGame/Content/Mods/" . $ARGV[0] . "\x00";
       my $modpathlen = length($modpath);
-      print pack("L< L< L< Z$modnamelen L< Z$modpathlen L< L< Z$mapfilelen",
+      print pack("L< L< L< Z$modnamelen L< Z$modpathlen L<",
         $ARGV[0], 0, $modnamelen, $modname, $modpathlen, $modpath,
-	1, $mapfilelen, $mapfile);
+        $nummaps);
+      for (my $mapnum = 0; $mapnum < $nummaps; $mapnum++){
+        my $mapfilelen = unpack("@" . ($pos) . " L<", $data);
+        my $mapfile = substr($data, $mapnamelen + 12, $mapfilelen);
+        print pack("L< Z$mapfilelen", $mapfilelen, $mapfile);
+        $pos = $pos + 4 + $mapfilelen;
+      }
       print "\x33\xFF\x22\xFF\x02\x00\x00\x00\x01";
     ' $modid "$modname" <"$moddestdir/mod.info" >"${moddestdir}.mod"
 
