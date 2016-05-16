@@ -1660,7 +1660,7 @@ doBackup(){
 
   saverootdir="${arkserverroot}/ShooterGame/Saved"
   savedcfgdir="${saverootdir}/Config/LinuxServer"
-  savedir="${savedrootdir}/${savedir}"
+  savedir="${saverootdir}/${savedir}"
 
   # Check for the (unlikely) case that the case of the
   # saved ark directory is screwed up
