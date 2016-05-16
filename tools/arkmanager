@@ -1397,7 +1397,11 @@ isModUpdateNeeded(){
     fi
   done
 
-  if [ \( ! -f "$moddestdir/.modbranch" \) ] || [ "$(<"$moddestdir/.modbranch")" != "$modbranch" ]; then
+  if [ -f "$moddestdir/.modbranch" ]; then
+    mv "$moddestdir/.modbranch" "$moddestdir/__arkmanager_modbranch__.info"
+  fi
+
+  if [ \( ! -f "$moddestdir/__arkmanager_modbranch__.info" \) ] || [ "$(<"$moddestdir/__arkmanager_modbranch__.info")" != "$modbranch" ]; then
     return 0
   fi
 
@@ -1480,7 +1484,11 @@ doExtractMod(){
     fi
   done
 
-  if [ \( ! -f "$moddestdir/.modbranch" \) ] || [ "$(<"$moddestdir/.modbranch")" != "$modbranch" ]; then
+  if [ -f "$moddestdir/.modbranch" ]; then
+    mv "$moddestdir/.modbranch" "$moddestdir/__arkmanager_modbranch__.info"
+  fi
+
+  if [ \( ! -f "$moddestdir/__arkmanager_modbranch__.info" \) ] || [ "$(<"$moddestdir/__arkmanager_modbranch__.info")" != "$modbranch" ]; then
     rm -rf "$moddestdir"
   fi
 
@@ -1590,7 +1598,7 @@ doExtractMod(){
       echo -ne '\x01\x00\x00\x00\x08\x00\x00\x00ModType\x00\x02\x00\x00\x001\x00' >>"${moddestdir}.mod"
     fi
 
-    echo "$modbranch" >"$moddestdir/.modbranch"
+    echo "$modbranch" >"$moddestdir/__arkmanager_modbranch__.info"
   fi
 }
 
