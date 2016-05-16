@@ -126,6 +126,8 @@ if [ -f "${HOME}/.arkmanager.cfg" ]; then
     source "${HOME}/.arkmanager.cfg"
 fi
 
+cd "$HOME"
+
 lsof=lsof
 if [ -x /usr/sbin/lsof ]; then
   lsof=/usr/sbin/lsof
