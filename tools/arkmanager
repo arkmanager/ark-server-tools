@@ -816,10 +816,24 @@ doStartAll(){
 #
 doStop() {
   if isTheServerRunning; then
-    if [[ " $* " =~ " --warn " ]]; then
-      doWarn "$1"
+    local stopreason="$1"
+    local dowarn=
+    local warnreason=
+    local dosave=
+    shift
+
+    for arg in "$@"; do
+      case "$arg" in
+        --warn) dowarn=1; ;;
+        --warnreason=*) warnreason="${arg#*=}"; ;;
+        --saveworld) dosave=1; ;;
+      esac
+    done
+
+    if [[ -n "$dowarn" ]]; then
+      doWarn "$1" "$warnreason"
     fi
-    if [[ " $* " =~ " --saveworld " ]]; then
+    if [[ -n "$dosave" ]]; then
       doSaveWorld
     fi
     tput sc
@@ -1237,7 +1251,7 @@ doUpdate() {
       doSaveWorld
     fi
 
-    doStop
+    doStop update
 
     # If user wants to back-up, we do it here.
 
