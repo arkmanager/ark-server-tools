@@ -158,6 +158,7 @@ else
   install_datadir="${install_datadir:-${install_bindir%/*}/share/arkmanager}"
 fi
 
+declare -A modsrcdirs
 
 #---------------------
 # functions
@@ -366,8 +367,11 @@ function runSteamCMD(){
 
 function runSteamCMDspinner(){
   if [ -n "$verbose" ]; then
-    echo
-    runSteamCMD "$@"
+    if command >&3; then
+      runSteamCMD "$@" | tee /dev/fd/3
+    else
+      runSteamCMD "$@"
+    fi
     return $?
   else
     if [ -z "$progressDisplayType" ]; then
@@ -377,7 +381,11 @@ function runSteamCMDspinner(){
         progressDisplayType=dots
       fi
     fi
-    runSteamCMD "$@" >/dev/null 2>&1 &
+    if command >&3; then
+      runSteamCMD "$@" >&3 &
+    else
+      runSteamCMD "$@" >/dev/null &
+    fi
     local scpid=$!
     local pos=0
     local spinner=( '\b-' '\b/' '\b|' '\b\\' )
@@ -394,6 +402,12 @@ function runSteamCMDspinner(){
     wait $scpid
     return $?
   fi
+}
+
+function runSteamCMDspinnerSubst(){
+  local fd="$1"
+  shift
+  runSteamCMDspinner "$@" 3>&1 >/dev/fd/${fd}
 }
 
 #
@@ -1223,9 +1237,10 @@ doDownloadMod(){
 
   while true; do
     echo -n "Downloading mod $modid"
-    runSteamCMDspinner +workshop_download_item $mod_appid $modid
+    local output=$(runSteamCMDspinnerSubst 5 +workshop_download_item $mod_appid $modid) 5>&1
     result=$?
     if [ $result -eq 0 ]; then
+      modsrcdir="$(echo "$output" | sed -n 's@^Success. Downloaded item [0-9][0-9]* to "\([^"]*\)" .*@\1@p')"
       break
     else
       echo
@@ -1243,6 +1258,7 @@ doDownloadMod(){
 
   if [ -f "$modsrcdir/mod.info" ]; then
     echo "Mod $modid downloaded"
+    modsrcdirs[$modid]="$modsrcdir"
     return 0
   else
     echo "Mod $modid was not successfully downloaded"
@@ -1267,6 +1283,10 @@ isModUpdateNeeded(){
   local modsrcdir="$steamcmdroot/steamapps/workshop/content/$mod_appid/$modid"
   local moddestdir="$arkserverroot/ShooterGame/Content/Mods/$modid"
   local modbranch="${mod_branch:-Windows}"
+
+  if [ -n "${modsrcdirs[$modid]}" ]; then
+    modsrcdir="${modsrcdirs[$modid]}"
+  fi
 
   for varname in "${!mod_branch_@}"; do
     if [ "mod_branch_$modid" == "$varname" ]; then
@@ -1314,6 +1334,10 @@ doExtractMod(){
   local modsrcdir="$steamcmdroot/steamapps/workshop/content/$mod_appid/$modid"
   local moddestdir="$arkserverroot/ShooterGame/Content/Mods/$modid"
   local modbranch="${mod_branch:-Windows}"
+
+  if [ -n "${modsrcdirs[$modid]}" ]; then
+    modsrcdir="${modsrcdirs[$modid]}"
+  fi
 
   for varname in "${!mod_branch_@}"; do
     if [ "mod_branch_$modid" == "$varname" ]; then
