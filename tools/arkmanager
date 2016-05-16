@@ -701,8 +701,6 @@ doRun() {
   arkserveropts="${arkserveropts}?listen"
   # run the server in background
   echo "`timestamp`: start"
-  # set max open files limit before we start the server
-  ulimit -n $maxOpenFiles
 
   serverpid=0
   restartserver=1
