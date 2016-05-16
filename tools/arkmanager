@@ -1493,18 +1493,57 @@ doBackup(){
     savedir="${ark_AltSaveDirectoryName}"
   fi
 
+  saverootdir="${arkserverroot}/ShooterGame/Saved"
+  savedcfgdir="${saverootdir}/Config/LinuxServer"
+  savedir="${savedrootdir}/${savedir}"
+
+  # Check for the (unlikely) case that the case of the
+  # saved ark directory is screwed up
+  if [ ! -d "${savedir}" ]; then
+    cisavedir="$(find "${arkserverroot}" -ipath "${savedir}" | head -n1)"
+
+    if [ -n "$cisavedir" ]; then
+      echo -e "  ${NORMAL}[  ${YELLOW}WARN${NORMAL}  ] Saved arks directory capitalization is inconsistent"
+      savedir="${cisavedir}"
+    else
+      echo -e "  ${NORMAL}[ ${RED}ERROR${NORMAL}  ] Saved arks directory does not exist"
+      return 1
+    fi
+  fi
+
   # ARK server uses Write-Unlink-Rename
   echo -ne "${NORMAL} Copying ARK world file "
-  cp -p "${arkserverroot}/ShooterGame/Saved/${savedir}/${serverMap##*/}.ark" "${backupdir}/${serverMap##*/}.ark"
-  if [ ! -f "${backupdir}/${serverMap##*/}.ark" ]; then
+
+  # Take into account screwed up casing of saved ark files
+  # in some environments
+  mapfile="$(find "${savedir}" -iname "${serverMap##*/}.ark" | head -n1)"
+
+  if [ -z "$mapfile" ]; then
     sleep 2
-    cp -p "${arkserverroot}/ShooterGame/Saved/${savedir}/${serverMap##*/}.ark" "${backupdir}/${serverMap##*/}.ark"
+    mapfile="$(find "${savedir}" -iname "${serverMap##*/}.ark" | head -n1)"
   fi
+
   # If both attempts fail, server may have
   # crashed between unlink and rename
-  if [ ! -f "${backupdir}/${serverMap##*/}.ark" ]; then
-    cp -p "${arkserverroot}/ShooterGame/Saved/${savedir}/${serverMap##*/}.tmp" "${backupdir##*/}/${serverMap##*/}.ark"
+  if [ -z "$mapfile" ]; then
+    mapfile="$(find "${savedir}" -iname "${serverMap##*/}.tmp" | head -n1)"
   fi
+
+  # If neither the ark nor the tmp file exists, then the
+  # map name may be incorrect.  Try to get any ark or tmp
+  # file in the saved arks directory
+  if [ -z "$mapfile" ]; then
+    mapfile="$(find "${savedir}" -iname "*.ark" | head -n1)"
+
+    if [ -z "$mapfile" ]; then
+      mapfile="$(find "${savedir}" -iname "*.tmp" | head -n1)"
+    fi
+  fi
+
+  if [ -f "${mapfile}" ]; then
+    cp -p "${mapfile}" "${backupdir}/${serverMap##*/}.ark"
+  fi
+
   if [ -f "${backupdir}/${serverMap##*/}.ark" ]; then
     echo -e "${NORMAL}\e[68G[   ${GREEN}OK${NORMAL}   ]"
   else
@@ -1516,7 +1555,7 @@ doBackup(){
   # ARK server uses a non-blocking lock and will
   # fail to update the file if the lock fails.
   echo -e "${NORMAL} Copying ARK profile files"
-  for f in "${arkserverroot}/ShooterGame/Saved/${savedir}/"*.arkprofile; do
+  for f in "${savedir}/"*.arkprofile; do
     echo -ne "${NORMAL}   ${f##*/} "
     cp -p "${f}" "${backupdir}/${f##*/}"
     if [ ! -s "${backupdir}/${f##*/}" ]; then
@@ -1537,7 +1576,7 @@ doBackup(){
 
   # ARK server uses Lock-Truncate-Write-Unlock
   echo -e "${NORMAL} Copying ARK tribe files "
-  for f in "${arkserverroot}/ShooterGame/Saved/${savedir}/"*.arktribe; do
+  for f in "${savedir}/"*.arktribe; do
     echo -ne "${NORMAL}   ${f##*/} "
     cp -p "${f}" "${backupdir}/${f##*/}"
     if [ ! -s "${backupdir}/${f##*/}" ]; then
@@ -1558,7 +1597,7 @@ doBackup(){
 
   # ARK server uses Lock-Truncate-Write-Unlock
   echo -ne "${NORMAL} Copying GameUserSettings.ini "
-  cp -p "${arkserverroot}/ShooterGame/Saved/Config/LinuxServer/GameUserSettings.ini" "${backupdir}/GameUserSettings.ini"
+  cp -p "${savedcfgdir}/GameUserSettings.ini" "${backupdir}/GameUserSettings.ini"
   if [ ! -s "${backupdir}/GameUserSettings.ini" ]; then
     sleep 2
     cp -p "${f}" "${backupdir}/${f##*/}"
@@ -1572,7 +1611,7 @@ doBackup(){
    
    echo -ne "${NORMAL} Copying Game.ini "
   
-  cp -p "${arkserverroot}/ShooterGame/Saved/Config/LinuxServer/Game.ini" "${backupdir}/Game.ini"
+  cp -p "${savedcfgdir}/Game.ini" "${backupdir}/Game.ini"
   if [ ! -s "${backupdir}/Game.ini" ]; then
     sleep 2
     cp -p "${f}" "${backupdir}/${f##*/}"
