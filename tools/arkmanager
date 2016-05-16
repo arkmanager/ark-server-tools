@@ -897,117 +897,206 @@ doInstall() {
 }
 
 #
+# Formats a warning message based on replacement strings
+#
+printWarnMessage(){
+  local msg
+  if [ -n "$msgWarnReason" ]; then
+    local reason
+    local msgtime
+    if [ "$3" == "minutes" ]; then
+      if [ -n "$msgTimeMinutes" ]; then
+        msgtime="${msgTimeMinutes//\{minutes\}/$4}"
+      else
+        msgtime="$4 minutes"
+      fi
+    else
+      if [ -n "$msgTimeSeconds" ]; then
+        msgtime="${msgTimeSeconds//\{seconds\}/$4}"
+      else
+        msgtime="$4 seconds"
+      fi
+    fi
+    msg="${msgWarnReason//\{time\}/$msgtime}"
+    if [ "$1" == "update" ]; then
+      if [ -n "$appupdate" ]; then
+        if [ -n "$modupdate" ]; then
+          if [ -n "$msgReasonUpdateAppMod" ]; then
+            reason="$msgReasonUpdateMod"
+          else
+            reason="an update to the game and an update to mod(s) {modnamesupdated}"
+          fi
+        else
+          if [ -n "$msgReasonUpdateApp" ]; then
+            reason="$msgReasonUpdateApp"
+          else
+            reason="an update to the game"
+          fi
+        fi
+      elif [ -n "$modupdate" ]; then
+        if [ -n "$msgReasonUpdateMod" ]; then
+          reason="$msgReasonUpdateMod"
+        else
+          reason="an update to mod(s) {modnamesupdated}"
+        fi
+      fi
+    elif [ -n "$shutdownreason" ]; then
+      reason="$shutdownreason"
+    elif [ "$1" == "restart" ]; then
+      if [ -n "$msgReasonRestart" ]; then
+        reason="$msgReasonRestart"
+      else
+        reason="a restart"
+      fi
+    else
+      if [ -n "$msgReasonShutdown" ]; then
+        reason="$msgReasonShutdown"
+      else
+        reason="maintenance"
+      fi
+    fi
+    reason="${reason//\{modnamesupdated\}/${modnamesupdated}}"
+    msg="${msg//\{reason\}/${reason}}"
+    printf "%s\n" "$msg"
+  else
+    if [ "$1" == "update" ]; then
+      if [ "$3" == "minutes" ]; then
+        if [ -n "$msgWarnUpdateMinutes" ]; then
+          msg="${msgWarnUpdateMinutes//%d/$4}"
+        else
+          msg="This ARK server will shutdown for an update in $4 minutes"
+        fi
+      else
+        if [ -n "$msgWarnUpdateSeconds" ]; then
+          msg="${msgWarnUpdateSeconds//%d/$4}"
+        else
+          msg="This ARK server will shutdown for an update in $4 seconds"
+        fi
+      fi
+    elif [ "$1" == "restart" ]; then
+      if [ "$3" == "minutes" ]; then
+        if [ -n "$msgWarnRestartMinutes" ]; then
+          msg="${msgWarnRestartMinutes//%d/$4}"
+        else
+          msg="This ARK server will shutdown for a restart in $4 minutes"
+        fi
+      else
+        if [ -n "$msgWarnRestartSeconds" ]; then
+          msg="${msgWarnRestartSeconds//%d/$4}"
+        else
+          msg="This ARK server will shutdown for a restart in $4 seconds"
+        fi
+      fi
+    else
+      if [ "$3" == "minutes" ]; then
+        if [ -n "$msgWarnShutdownMinutes" ]; then
+          msg="${msgWarnShutdownMinutes//%d/$4}"
+        else
+          msg="This ARK server will shutdown in $4 minutes"
+        fi
+      else
+        if [ -n "$msgWarnShutdownSeconds" ]; then
+          msg="${msgWarnShutdownSeconds//%d/$4}"
+        else
+          msg="This ARK server will shutdown in $4 seconds"
+        fi
+      fi
+    fi
+  fi
+
+  doBroadcastWithEcho "$msg"
+}
+
+#
 # Waits for a configurable number of minutes before updating the server
 #
 doWarn(){
   cd "$arkserverroot"
 
-  local warnmsgmin
-  local warnmsgsec
-
-  if [ "$1" == "update" ]; then
-    if [ -n "$msgWarnUpdateMinutes" ]; then
-      warnmsgmin="$msgWarnUpdateMinutes"
-    else
-      warnmsgmin="This ARK server will shutdown for an update in %d minutes"
-    fi
-    if [ -n "$msgWarnUpdateSeconds" ]; then
-      warnmsgsec="$msgWarnUpdateSeconds"
-    else
-      warnmsgsec="This ARK server will shutdown for an update in %d seconds"
-    fi
-  elif [ "$1" == "restart" ]; then
-    if [ -n "$msgWarnRestartMinutes" ]; then
-      warnmsgmin="$msgWarnRestartMinutes"
-    else
-      warnmsgmin="This ARK server will shutdown for a restart in %d minutes"
-    fi
-    if [ -n "$msgWarnRestartSeconds" ]; then
-      warnmsgsec="$msgWarnRestartSeconds"
-    else
-      warnmsgsec="This ARK server will shutdown for a restart in %d seconds"
-    fi
-  else
-    if [ -n "$msgWarnShutdownMinutes" ]; then
-      warnmsgmin="$msgWarnShutdownMinutes"
-    else
-      warnmsgmin="This ARK server will shutdown in %d minutes"
-    fi
-    if [ -n "$msgWarnShutdownSeconds" ]; then
-      warnmsgsec="$msgWarnShutdownSeconds"
-    else
-      warnmsgsec="This ARK server will shutdown in %d seconds"
-    fi
-  fi
-
-  local pid=`getServerPID`
-  local sleeppid
-  if [ -n "$pid" ]; then
-    local warnmsg
-    local warnminutes=$(( arkwarnminutes ))
-    if (( warnminutes == 0 )); then
-      warnminutes=60
-    fi
-
-    local warnintervals=( 90 60 45 30 20 15 10 5 4 3 2 )
-
-    for warninterval in "${warnintervals[@]}"; do
-      if [ "`getServerPID`" != "$pid" ]; then
-        echo "Server has stopped.  Aborting $1"
-        return 1
+  (
+    update_cancelled(){
+      if [ -n "$msgUpdateCancelled" ]; then
+        msg="${msgUpdateCancelled//%s/$1}"
+      else
+        msg="Update cancelled by operator ($1)"
       fi
-      if (( warnminutes > warninterval )); then
-        sleep 1m &
+      doBroadcastWithEcho "${msg}"
+    }
+
+    trap "update_cancelled 'Ctrl+C'" SIGINT
+    trap "update_cancelled 'Terminated'" SIGTERM
+    trap "update_cancelled 'Connection Closed'" SIGHUP
+    trap "update_cancelled 'Quit'" SIGQUIT
+
+    local pid=`getServerPID`
+    local sleeppid
+    if [ -n "$pid" ]; then
+      local warnmsg
+      local warnminutes=$(( arkwarnminutes ))
+      if (( warnminutes == 0 )); then
+        warnminutes=60
+      fi
+
+      local warnintervals=( 90 60 45 30 20 15 10 5 4 3 2 )
+
+      for warninterval in "${warnintervals[@]}"; do
+        if [ "`getServerPID`" != "$pid" ]; then
+          echo "Server has stopped.  Aborting $1"
+          return 1
+        fi
+        if (( warnminutes >= warninterval )); then
+          sleep 1m &
+          sleeppid=$!
+          printWarnMessage "$1" "$2" "minutes" "$warnminutes"
+          for (( min = warnminutes - 1; min >= warninterval; min-- )); do
+            numplayers=$(numPlayersConnected)
+            echo "There are ${numplayers} players connected"
+            if (( (numplayers + 0) == 0 )); then
+              doBroadcastWithEcho "Nobody is connected.  Shutting down immediately"
+              return 0
+            fi
+            wait $sleeppid
+            if (( $min > $warninterval )); then
+              sleep 1m &
+              sleeppid=$!
+            fi
+          done
+          warnminutes=$warninterval
+        fi
+      done
+
+      local warnseconds=120
+      warnintervals=( 90 60 45 30 20 15 10 5 0 )
+      for warninterval in "${warnintervals[@]}"; do
+        sleep $(( warnseconds - warninterval ))s &
         sleeppid=$!
-        warnmsg="$(printf "$warnmsgmin" "$warnminutes")"
-        doBroadcastWithEcho "$warnmsg"
-        for (( min = warnminutes - 1; min >= warninterval; min-- )); do
+        if [ "`getServerPID`" != "$pid" ]; then
+          echo "Server has stopped.  Aborting update"
+          return 1
+        fi
+        printWarnMessage "$1" "$2" "seconds" "$warnseconds"
+        if (( warnseconds >= 20 )); then
           numplayers=$(numPlayersConnected)
           echo "There are ${numplayers} players connected"
           if (( (numplayers + 0) == 0 )); then
-            echo "Nobody is connected.  Shutting down immediately"
+            doBroadcastWithEcho "Nobody is connected.  Shutting down immediately"
             return 0
           fi
-          wait $sleeppid
-          if (( $min > $warninterval )); then
-            sleep 1m &
-            sleeppid=$!
-          fi
-        done
-        warnminutes=$warninterval
-      fi
-    done
-
-    local warnseconds=120
-    warnintervals=( 90 60 45 30 20 15 10 5 0 )
-    for warninterval in "${warnintervals[@]}"; do
-      sleep $(( warnseconds - warninterval ))s &
-      sleeppid=$!
-      if [ "`getServerPID`" != "$pid" ]; then
-        echo "Server has stopped.  Aborting update"
-        return 1
-      fi
-      warnmsg="$(printf "$warnmsgsec" "$warnseconds")"
-      doBroadcastWithEcho "$warnmsg"
-      if (( warnseconds >= 20 )); then
-        numplayers=$(numPlayersConnected)
-        echo "There are ${numplayers} players connected"
-        if (( (numplayers + 0) == 0 )); then
-          echo "Nobody is connected.  Shutting down immediately"
-          return 0
         fi
-      fi
-      wait $sleeppid
-      warnseconds=$warninterval
-    done
-  fi
+        wait $sleeppid
+        warnseconds=$warninterval
+      done
+    fi
 
-  if [ "`getServerPID`" != "$pid" ]; then
-    echo "Server has stopped.  Aborting $1"
-    return 1
-  fi
+    if [ "`getServerPID`" != "$pid" ]; then
+      echo "Server has stopped.  Aborting $1"
+      return 1
+    fi
 
-  return 0
+    return 0
+  )
+
+  return $?
 }
 
 #
@@ -1314,16 +1403,48 @@ isModUpdateNeeded(){
 }
 
 #
+# Get the name of the specified mod
+#
+getModName(){
+  local modid=$1
+  local modsrcdir="$steamcmdroot/steamapps/workshop/content/$mod_appid/$modid"
+
+  if [ -n "${modsrcdirs[$modid]}" ]; then
+    modsrcdir="${modsrcdirs[$modid]}"
+  fi
+
+  modname="$(curl -s "http://steamcommunity.com/sharedfiles/filedetails/?id=${modid}" | sed -n 's|^.*<div class="workshopItemTitle">\([^<]*\)</div>.*|\1|p')"
+
+  if [ -n "$modname" ]; then
+    echo "$modname"
+  else
+    perl -e '
+      my $data;
+      { local $/; $data = <STDIN>; }
+      my $mapnamelen = unpack("@0 L<", $data);
+      my $mapname = substr($data, 4, $mapnamelen - 1);
+      print $mapname
+    ' <"${modsrcdir}/mod.info"
+  fi
+}
+
+#
 # Checks if any installed or requested mods need to be updated
 #
 isAnyModUpdateNeeded(){
+  modnamesupdated=""
+  local ismodupdateneeded=1
   for modid in $(getModIds); do
     if isModUpdateNeeded $modid; then
-      return 0
+      ismodupdateneeded=0
+      if [ -n "$modnamesupdated" ]; then
+        modnamesupdated="${modnamesupdated}, "
+      fi
+      modnamesupdated="${modnamesupdated}$(getModName "$modid")"
     fi
   done
 
-  return 1
+  return $ismodupdateneeded
 }
 
 #
