@@ -152,6 +152,9 @@ instances.
     `--warn`;;
         Warns any connected players that the server is going down
 
+    `--warnreason`;;
+        Gives a reason for the shutdown.  Defaults to `maintenance`
+
     `--saveworld`;;
         Saves the world using `saveworld` - usually not
         necessary, as server usually saves the world on a graceful
@@ -160,6 +163,9 @@ instances.
 `restart`::
     Runs the `stop` command followed by the `restart` command.
     Accepts and passes the options for those commands
+
+    `--warnreason`;;
+        Gives a reason for the restart.  Defaults to `a restart`
 
 `install`::
     Downloads and installs (or validates an existing install) of
@@ -351,6 +357,32 @@ The following options can be overridden on a per-instance basis:
 `msgWarnShutdownSeconds`::
     Templated messages for warnings, where `%d` is replaced with the
     number of minutes / seconds before the update / restart / shutdown
+
+`msgWarnReason`::
+`msgTimeMinutes`::
+`msgTimeSeconds`::
+`msgReasonUpdateApp`::
+`msgReasonUpdateMod`::
+`msgReasonUpdateAppMod`::
+`msgReasonRestart`::
+`msgReasonShutdown`::
+    Alternative templated messages for warnings with the following
+    replacement parameters:
+
+    `{reason}`;;
+        Valid in `msgWarnReason`, replaced at runtime with the appropriate `msgReason*` template
+
+    `{time}`;;
+        Valid in `msgWarnReason`, replaced at runtime with the appropriate `msgTime*` template
+
+    `{modnamesupdate}`;;
+        Valid in `msgReason*Mod`, replaced at runtime with a comma-delimited list of updated mod names
+
+    `{minutes}`;;
+        Valid in `msgTimeMinutes`, replaced at runtime with minutes remaining until shutdown
+
+    `{seconds}`;;
+        Valid in `msgTimeSeconds`, replaced at runtime with seconds remaining until shutdown
 
 `logdir`::
     Specifies where to store log files
