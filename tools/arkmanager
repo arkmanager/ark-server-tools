@@ -831,7 +831,9 @@ doStop() {
     done
 
     if [[ -n "$dowarn" ]]; then
-      doWarn "$1" "$warnreason"
+      if ! doWarn "$1" "$warnreason"; then
+        return 1
+      fi
     fi
     if [[ -n "$dosave" ]]; then
       doSaveWorld
@@ -908,6 +910,20 @@ doInstall() {
   runSteamCMDAppUpdate "$arkserverroot" validate
   # the current version should be the last version. We set our version
   getCurrentVersion
+}
+
+
+#
+# Cancels a pending shutdown
+#
+doCancelShutdown(){
+  if [ -f "${arkserverroot}/.ark-warn.lock" ]; then
+    local lockpid="$(<"${arkserverroot}/.ark-warn.lock")"
+    if [ -n "$lockpid" ]; then
+      kill "$lockpid"
+      rm -f "${arkserverroot}/.ark-warn.lock"
+    fi
+  fi
 }
 
 #
@@ -1028,11 +1044,27 @@ doWarn(){
   cd "$arkserverroot"
 
   (
+    echo "$$" >"${arkserverroot}/.ark-warn.lock.$$" 2>/dev/null
+    while true; do
+      if ! ln "${arkserverroot}/.ark-warn.lock.$$" "${arkserverroot}/.ark-warn.lock" 2>/dev/null; then
+        local lockpid="$(<"${arkserverroot}/.ark-warn.lock")"
+        if [ -n "$lockpid" ] && [ "$lockpid" != "$$" ] && kill -0 "$lockpid" 2>/dev/null; then
+          echo "Shutdown warning already in progress (PID: $lockpid)"
+          rm -f "${arkserverroot}/.ark-warn.lock.$$" 2>/dev/null
+          exit 1
+        fi
+        rm -f "${arkserverroot}/.ark-warn.lock"
+      else
+        break
+      fi
+    done
+    rm -f "${arkserverroot}/.ark-warn.lock.$$"
+
     update_cancelled(){
       if [ -n "$msgUpdateCancelled" ]; then
         msg="${msgUpdateCancelled//%s/$1}"
       else
-        msg="Update cancelled by operator ($1)"
+        msg="Shutdown cancelled by operator ($1)"
       fi
       doBroadcastWithEcho "${msg}"
     }
@@ -1056,6 +1088,7 @@ doWarn(){
       for warninterval in "${warnintervals[@]}"; do
         if [ "`getServerPID`" != "$pid" ]; then
           echo "Server has stopped.  Aborting $1"
+          rm -f "${arkserverroot}/.ark-warn.lock"
           return 1
         fi
         if (( warnminutes >= warninterval )); then
@@ -1067,6 +1100,7 @@ doWarn(){
             echo "There are ${numplayers} players connected"
             if (( (numplayers + 0) == 0 )); then
               doBroadcastWithEcho "Nobody is connected.  Shutting down immediately"
+              rm -f "${arkserverroot}/.ark-warn.lock"
               return 0
             fi
             wait $sleeppid
@@ -1086,6 +1120,7 @@ doWarn(){
         sleeppid=$!
         if [ "`getServerPID`" != "$pid" ]; then
           echo "Server has stopped.  Aborting update"
+          rm -f "${arkserverroot}/.ark-warn.lock"
           return 1
         fi
         printWarnMessage "$1" "$2" "seconds" "$warnseconds"
@@ -1094,6 +1129,7 @@ doWarn(){
           echo "There are ${numplayers} players connected"
           if (( (numplayers + 0) == 0 )); then
             doBroadcastWithEcho "Nobody is connected.  Shutting down immediately"
+            rm -f "${arkserverroot}/.ark-warn.lock"
             return 0
           fi
         fi
@@ -1101,6 +1137,8 @@ doWarn(){
         warnseconds=$warninterval
       done
     fi
+
+    rm -f "${arkserverroot}/.ark-warn.lock"
 
     if [ "`getServerPID`" != "$pid" ]; then
       echo "Server has stopped.  Aborting $1"
@@ -2203,6 +2241,9 @@ while true; do
       restart)
         doStop restart "${options[@]}"
         echo "`timestamp`: stop" >> "$logdir/$arkmanagerLog"
+      ;;
+      cancelshutdown)
+        doCancelShutdown "${options[@]}"
       ;;
       install)
         doInstall

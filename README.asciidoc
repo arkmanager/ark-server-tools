@@ -211,6 +211,10 @@ instances.
         Downloads the update but does not apply it.  Only has effect
         if a staging directory is set.
 
+`cancelshutdown`::
+    Cancels a pending update / shutdown / restart that was run with
+    the `--warn` option
+
 `checkupdate`::
     Checks if an ARK server update is available
 
