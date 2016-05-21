@@ -369,6 +369,9 @@ function runSteamCMD(){
 
 function runSteamCMDspinner(){
   if [ -n "$verbose" ]; then
+    printf "Executing"
+    printf " %q" "$steamcmdroot/$steamcmdexec" +@NoPromptForPassword 1 +login ${steamlogin:-anonymous} "$@" +quit
+    printf "\n"
     if command >&3; then
       runSteamCMD "$@" | tee /dev/fd/3
     else
