@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DAEMON=/usr/bin/arkmanager
+DAEMON="/usr/bin/arkmanager"
 
 for service in $(${DAEMON} list-instances --brief); do
   case "$1" in
