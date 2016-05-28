@@ -988,6 +988,7 @@ printWarnMessage(){
         reason="maintenance"
       fi
     fi
+    reason="${reason//\{time\}/${msgtime}}"
     reason="${reason//\{modnamesupdated\}/${modnamesupdated}}"
     msg="${msg//\{reason\}/${reason}}"
     printf "%s\n" "$msg"
