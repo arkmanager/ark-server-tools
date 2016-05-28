@@ -379,7 +379,7 @@ The following options can be overridden on a per-instance basis:
     `{time}`;;
         Valid in `msgWarnReason` and `msgReason*`, replaced at runtime with the appropriate `msgTime*` template
 
-    `{modnamesupdate}`;;
+    `{modnamesupdated}`;;
         Valid in `msgReason*Mod`, replaced at runtime with a comma-delimited list of updated mod names
 
     `{minutes}`;;
