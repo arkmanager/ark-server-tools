@@ -386,7 +386,7 @@ function runSteamCMDspinner(){
         progressDisplayType=dots
       fi
     fi
-    if command >&3; then
+    if (command >&3) 2>/dev/null; then
       runSteamCMD "$@" >&3 &
     else
       runSteamCMD "$@" >/dev/null &
