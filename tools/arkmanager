@@ -834,7 +834,7 @@ doStop() {
     done
 
     if [[ -n "$dowarn" ]]; then
-      if ! doWarn "$1" "$warnreason"; then
+      if ! doWarn "$stopreason" "$warnreason"; then
         return 1
       fi
     fi
