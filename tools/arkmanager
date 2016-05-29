@@ -1071,6 +1071,7 @@ doWarn(){
         msg="Shutdown cancelled by operator ($1)"
       fi
       doBroadcastWithEcho "${msg}"
+      exit 1
     }
 
     trap "update_cancelled 'Ctrl+C'" SIGINT
