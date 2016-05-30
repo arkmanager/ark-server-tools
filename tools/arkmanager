@@ -2204,7 +2204,11 @@ while true; do
     ;;
     remove-mods)
       doRemoveMods "${args[0]}"
-      continue
+      if [ $# -eq 0 ]; then
+        exit 0
+      else
+        continue
+      fi
     ;;
     list-instances)
       doListAllInstances "${options[@]}"
