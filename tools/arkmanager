@@ -7,7 +7,7 @@
 # Contributors:         Sispheor, Atriusftw, klightspeed, lexat, puseidr
 
 # Script version
-arkstVersion="1.6"
+arkstVersion='1.6'
 arkstCommit=''
 
 doUpgradeTools() {
@@ -2191,7 +2191,8 @@ while true; do
       if [ -n "${arkstCommit}" ]; then
         echo "Commit: ${arkstCommit:0:7}"
       fi
-      echo "Blob SHA: $( (echo -ne "blob $(stat -c "%s" "$0")\0"; sed "s@^arkstCommit=.*@arkstCommit=''@" "$0") | sha1sum | cut -d' ' -f1)"
+      blobsize="$(sed "s@^arkstCommit=.*@arkstCommit=''@" "$0" | wc -c)"
+      echo "Blob SHA: $( (echo -ne "blob ${blobsize}\0"; sed "s@^arkstCommit=.*@arkstCommit=''@" "$0") | sha1sum | cut -d' ' -f1)"
       exit 1
     ;;
     -h|--help)
