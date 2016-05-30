@@ -1383,7 +1383,7 @@ doDownloadMod(){
 
   while true; do
     echo -n "Downloading mod $modid"
-    local output=$(runSteamCMDspinnerSubst 5 +workshop_download_item $mod_appid $modid) 5>&1
+    local output=$(runSteamCMDspinnerSubst 5 +workshop_download_item $mod_appid $modid)
     result=$?
     if [ $result -eq 0 ]; then
       modsrcdir="$(echo "$output" | sed -n 's@^Success. Downloaded item [0-9][0-9]* to "\([^"]*\)" .*@\1@p')"
@@ -1400,7 +1400,7 @@ doDownloadMod(){
       fi
       echo "Mod $modid not fully downloaded - retrying"
     fi
-  done
+  done 5>&1
 
   if [ -f "$modsrcdir/mod.info" ]; then
     echo "Mod $modid downloaded"
