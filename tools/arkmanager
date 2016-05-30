@@ -1400,7 +1400,7 @@ doDownloadMod(){
       fi
       echo "Mod $modid not fully downloaded - retrying"
     fi
-  done 5>&1
+  done 5> >(cat)
 
   if [ -f "$modsrcdir/mod.info" ]; then
     echo "Mod $modid downloaded"
