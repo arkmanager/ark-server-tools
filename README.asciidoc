@@ -129,6 +129,9 @@ Instanceless commands
 `useconfig`::
     Legacy command for specifying an instance for the following command(s)
 
+`remove-mods`::
+    Remove the specified mods from the `steamcmd` workshop directory
+
 Commands acting on instances
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
