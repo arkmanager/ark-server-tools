@@ -1673,6 +1673,26 @@ doUninstallMod(){
 }
 
 #
+# Removes mod from steamcmd workshop directory
+#
+doRemoveMods(){
+  local modid
+  for modid in ${1//,/ }; do
+    if [ -f "$steamcmdroot/steamapps/workshop/appworkshop_${mod_appid}.acf" ]; then
+      sed -i "/^\\t\\t\"${modid}\"/,/^\\t\\t}/d" "$steamcmdroot/steamapps/workshop/appworkshop_${mod_appid}.acf"
+    fi
+
+    if [ -d "$steamcmdroot/steamapps/workshop/content/${mod_appid}/${modid}" ]; then
+      rm -rf "$steamcmdroot/steamapps/workshop/content/${mod_appid}/${modid}"
+    fi
+
+    if [ -d "$steamcmdroot/steamapps/workshop/downloads/${mod_appid}/${modid}" ]; then
+      rm -rf "$steamcmdroot/steamapps/workshop/downloads/${mod_appid}/${modid}"
+    fi
+  done
+}
+
+#
 # Copies server state to a backup directory
 #
 doBackup(){
@@ -2125,6 +2145,7 @@ while true; do
     useconfig) nrarg=1; ;;
     install-cronjob) nrarg=1; ;;
     remove-cronjob) nrarg=1; ;;
+    remove-mods) nrarg=1; ;;
   esac
 
   # Enumerate the options and arguments
@@ -2179,6 +2200,10 @@ while true; do
     ;;
     useconfig)
       defaultinstance="${args[0]}"
+      continue
+    ;;
+    remove-mods)
+      doRemoveMods "${args[0]}"
       continue
     ;;
     list-instances)
