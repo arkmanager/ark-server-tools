@@ -380,7 +380,7 @@ function runSteamCMDspinner(){
     return $?
   else
     if [ -z "$progressDisplayType" ]; then
-      if stty <&1 >/dev/null 2>&1; then
+      if stty <&2 >/dev/null 2>&1; then
         progressDisplayType=spinner
       else
         progressDisplayType=dots
