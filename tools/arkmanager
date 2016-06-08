@@ -1252,8 +1252,11 @@ doUpdate() {
       if [ -z "$nodownload" ]; then
         echo -n "Downloading ARK update"
         cd "$steamcmdroot"
-        runSteamCMDAppUpdate "$arkStagingDir" $validate
-        if [ -d "${arkStagingDir}/steamapps/downloading/${appid}" ]; then
+        if runSteamCMDAppUpdate "$arkStagingDir" $validate; then
+	  rm -rf "${arkStagingDir}/steamapps/downloading/${appid}"
+	fi
+
+	if [ -d "${arkStagingDir}/steamapps/downloading/${appid}" ]; then
           echo "Update download interrupted"
           return 1
         fi
