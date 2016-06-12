@@ -1228,7 +1228,7 @@ doUpdate() {
 
   cd "$arkserverroot"
 
-  if isUpdateNeeded; then
+  if [ -n "$appupdate" ] || isUpdateNeeded; then
     appupdate=1
 
     if [ -n "${arkStagingDir}" -a "${arkStagingDir}" != "${arkserverroot}" ]; then
