@@ -129,6 +129,9 @@ Instanceless commands
 `useconfig`::
     Legacy command for specifying an instance for the following command(s)
 
+`remove-mods`::
+    Remove the specified mods from the `steamcmd` workshop directory
+
 Commands acting on instances
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -152,6 +155,9 @@ instances.
     `--warn`;;
         Warns any connected players that the server is going down
 
+    `--warnreason`;;
+        Gives a reason for the shutdown.  Defaults to `maintenance`
+
     `--saveworld`;;
         Saves the world using `saveworld` - usually not
         necessary, as server usually saves the world on a graceful
@@ -160,6 +166,9 @@ instances.
 `restart`::
     Runs the `stop` command followed by the `restart` command.
     Accepts and passes the options for those commands
+
+    `--warnreason`;;
+        Gives a reason for the restart.  Defaults to `a restart`
 
 `install`::
     Downloads and installs (or validates an existing install) of
@@ -205,6 +214,10 @@ instances.
         Downloads the update but does not apply it.  Only has effect
         if a staging directory is set.
 
+`cancelshutdown`::
+    Cancels a pending update / shutdown / restart that was run with
+    the `--warn` option
+
 `checkupdate`::
     Checks if an ARK server update is available
 
@@ -237,6 +250,37 @@ instances.
 
 `status`::
     Prints the status of the ARK server
+
+`install-cronjob <command>`::
+    Installs a cron job that executes the specified command.
+    This accepts any of the options the specified command accepts,
+    as well as the following options.  In order to specify an
+    argument to the command (e.g. to the `broadcast` command),
+    use the `--arg=<arg>` option.
+
+    `--daily`;;
+        The command should be executed daily
+
+    `--hourly`;;
+        The command should be executed hourly
+
+    `--hour=<hour>`;;
+        Specifies one or more hours when the command should execute.
+        This is the hour field of the cron job.
+
+    `--minute=<minute>`;;
+        Specifies one or more minutes of the hour when the command
+        should execute.  This is the minute field of the cron job.
+
+    `--enable-output`;;
+        Enables the output from the command - the cron daemon usually
+        emails this to the user specified in the cron configuration
+
+    `--arg=<arg>`;;
+        Specifies an argument to pass to the command
+
+`remove-cronjob <command>`::
+    Removes a cron job previously installed by `install-cronjob`
 
 Configuration files
 -------------------
@@ -320,6 +364,32 @@ The following options can be overridden on a per-instance basis:
 `msgWarnShutdownSeconds`::
     Templated messages for warnings, where `%d` is replaced with the
     number of minutes / seconds before the update / restart / shutdown
+
+`msgWarnReason`::
+`msgTimeMinutes`::
+`msgTimeSeconds`::
+`msgReasonUpdateApp`::
+`msgReasonUpdateMod`::
+`msgReasonUpdateAppMod`::
+`msgReasonRestart`::
+`msgReasonShutdown`::
+    Alternative templated messages for warnings with the following
+    replacement parameters:
+
+    `{reason}`;;
+        Valid in `msgWarnReason`, replaced at runtime with the appropriate `msgReason*` template
+
+    `{time}`;;
+        Valid in `msgWarnReason` and `msgReason*`, replaced at runtime with the appropriate `msgTime*` template
+
+    `{modnamesupdated}`;;
+        Valid in `msgReason*Mod`, replaced at runtime with a comma-delimited list of updated mod names
+
+    `{minutes}`;;
+        Valid in `msgTimeMinutes`, replaced at runtime with minutes remaining until shutdown
+
+    `{seconds}`;;
+        Valid in `msgTimeSeconds`, replaced at runtime with seconds remaining until shutdown
 
 `logdir`::
     Specifies where to store log files
