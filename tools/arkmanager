@@ -7,7 +7,7 @@
 # Contributors:         Sispheor, Atriusftw, klightspeed, lexat, puseidr
 
 # Script version
-arkstVersion="1.6"
+arkstVersion='1.6'
 arkstCommit=''
 
 doUpgradeTools() {
@@ -323,10 +323,10 @@ rconcmd() {
     auth($socket, $password);
     sendpkt($socket, 2, 2, $command);
     my ($resid, $restype, $rcvbody) = recvpkt($socket);
-    if ($rcvbody eq "Server received, But no response!!") {
+    if ($rcvbody eq "Server received, But no response!! \n ") {
       print "Command processed\n";
     } else {
-      print $rcvbody, "\n";
+      print "\"", $rcvbody, "\"\n";
     }
     ' "$(getRconPort)" "${ark_MultiHome:-127.0.0.1}" "$adminpass" "$1"
 }
@@ -372,21 +372,21 @@ function runSteamCMDspinner(){
     printf "Executing"
     printf " %q" "$steamcmdroot/$steamcmdexec" +@NoPromptForPassword 1 +login ${steamlogin:-anonymous} "$@" +quit
     printf "\n"
-    if command >&3; then
-      runSteamCMD "$@" | tee /dev/fd/3
+    if (command >&3) 2>/dev/null; then
+      runSteamCMD "$@" > >(tee /dev/fd/3)
     else
       runSteamCMD "$@"
     fi
     return $?
   else
     if [ -z "$progressDisplayType" ]; then
-      if stty <&1 >/dev/null 2>&1; then
+      if stty <&2 >/dev/null 2>&1; then
         progressDisplayType=spinner
       else
         progressDisplayType=dots
       fi
     fi
-    if command >&3; then
+    if (command >&3) 2>/dev/null; then
       runSteamCMD "$@" >&3 &
     else
       runSteamCMD "$@" >/dev/null &
@@ -834,7 +834,7 @@ doStop() {
     done
 
     if [[ -n "$dowarn" ]]; then
-      if ! doWarn "$1" "$warnreason"; then
+      if ! doWarn "$stopreason" "$warnreason"; then
         return 1
       fi
     fi
@@ -988,6 +988,7 @@ printWarnMessage(){
         reason="maintenance"
       fi
     fi
+    reason="${reason//\{time\}/${msgtime}}"
     reason="${reason//\{modnamesupdated\}/${modnamesupdated}}"
     msg="${msg//\{reason\}/${reason}}"
     printf "%s\n" "$msg"
@@ -1070,6 +1071,7 @@ doWarn(){
         msg="Shutdown cancelled by operator ($1)"
       fi
       doBroadcastWithEcho "${msg}"
+      exit 1
     }
 
     trap "update_cancelled 'Ctrl+C'" SIGINT
@@ -1098,7 +1100,7 @@ doWarn(){
           sleep 1m &
           sleeppid=$!
           printWarnMessage "$1" "$2" "minutes" "$warnminutes"
-          for (( min = warnminutes - 1; min >= warninterval; min-- )); do
+          for (( min = warnminutes; min >= warninterval; min-- )); do
             numplayers=$(numPlayersConnected)
             echo "There are ${numplayers} players connected"
             if (( (numplayers + 0) == 0 )); then
@@ -1112,7 +1114,7 @@ doWarn(){
               sleeppid=$!
             fi
           done
-          warnminutes=$warninterval
+          warnminutes=$(( warninterval - 1 ))
         fi
       done
 
@@ -1164,6 +1166,7 @@ doUpdate() {
   local modupdate=
   local saveworld=
   local downloadonly=
+  local nodownload=
 
   for arg in "$@"; do
     if [ "$arg" == "--force" ]; then
@@ -1187,6 +1190,8 @@ doUpdate() {
       arkStagingDir="${ark#--stagingdir=}"
     elif [ "$arg" == "--downloadonly" ]; then
       downloadonly=1
+    elif [ "$arg" == "--no-download" ]; then
+      nodownload=1
     else
       echo "Unrecognized option $arg"
       echo "Try 'arkmanager -h' or 'arkmanager --help' for more information."
@@ -1211,8 +1216,10 @@ doUpdate() {
   rm -f "${arkserverroot}/.ark-update.lock.$$"
 
   if [ -n "$modupdate" ]; then
-    if ! doDownloadAllMods; then
-      modupdate=
+    if [ -z "$nodownload" ]; then
+      if ! doDownloadAllMods; then
+        modupdate=
+      fi
     fi
     if ! isAnyModUpdateNeeded; then
       modupdate=
@@ -1221,7 +1228,7 @@ doUpdate() {
 
   cd "$arkserverroot"
 
-  if isUpdateNeeded; then
+  if [ -n "$appupdate" ] || isUpdateNeeded; then
     appupdate=1
 
     if [ -n "${arkStagingDir}" -a "${arkStagingDir}" != "${arkserverroot}" ]; then
@@ -1242,12 +1249,17 @@ doUpdate() {
         rm -rf "$arkStagingDir/ShooterGame/Saved/"*
       fi
 
-      echo -n "Downloading ARK update"
-      cd "$steamcmdroot"
-      runSteamCMDAppUpdate "$arkStagingDir" $validate
-      if [ -d "${arkStagingDir}/steamapps/downloading/${appid}" ]; then
-        echo "Update download interrupted"
-        return 1
+      if [ -z "$nodownload" ]; then
+        echo -n "Downloading ARK update"
+        cd "$steamcmdroot"
+        if runSteamCMDAppUpdate "$arkStagingDir" $validate; then
+	  rm -rf "${arkStagingDir}/steamapps/downloading/${appid}"
+	fi
+
+	if [ -d "${arkStagingDir}/steamapps/downloading/${appid}" ]; then
+          echo "Update download interrupted"
+          return 1
+        fi
       fi
     fi
   fi
@@ -1381,7 +1393,8 @@ doDownloadMod(){
 
   while true; do
     echo -n "Downloading mod $modid"
-    local output=$(runSteamCMDspinnerSubst 5 +workshop_download_item $mod_appid $modid) 5>&1
+    local output
+    output=$(runSteamCMDspinnerSubst 5 +workshop_download_item $mod_appid $modid)
     result=$?
     if [ $result -eq 0 ]; then
       modsrcdir="$(echo "$output" | sed -n 's@^Success. Downloaded item [0-9][0-9]* to "\([^"]*\)" .*@\1@p')"
@@ -1398,7 +1411,7 @@ doDownloadMod(){
       fi
       echo "Mod $modid not fully downloaded - retrying"
     fi
-  done
+  done 5> >(cat)
 
   if [ -f "$modsrcdir/mod.info" ]; then
     echo "Mod $modid downloaded"
@@ -1668,6 +1681,26 @@ doUninstallMod(){
   if [ -d "${moddir}" ]; then
     rm -rf "${moddir}"
   fi
+}
+
+#
+# Removes mod from steamcmd workshop directory
+#
+doRemoveMods(){
+  local modid
+  for modid in ${1//,/ }; do
+    if [ -f "$steamcmdroot/steamapps/workshop/appworkshop_${mod_appid}.acf" ]; then
+      sed -i "/^\\t\\t\"${modid}\"/,/^\\t\\t}/d" "$steamcmdroot/steamapps/workshop/appworkshop_${mod_appid}.acf"
+    fi
+
+    if [ -d "$steamcmdroot/steamapps/workshop/content/${mod_appid}/${modid}" ]; then
+      rm -rf "$steamcmdroot/steamapps/workshop/content/${mod_appid}/${modid}"
+    fi
+
+    if [ -d "$steamcmdroot/steamapps/workshop/downloads/${mod_appid}/${modid}" ]; then
+      rm -rf "$steamcmdroot/steamapps/workshop/downloads/${mod_appid}/${modid}"
+    fi
+  done
 }
 
 #
@@ -2081,244 +2114,263 @@ showUsage() {
 # Main program
 #---------------------
 
-# check the configuration and throw errors or warnings if needed
-checkConfig
+main(){
+  # check the configuration and throw errors or warnings if needed
+  checkConfig
 
-while true; do
-  options=( )
-  allinstances=no
-  instances=( )
-  args=( )
-  command="$1"
-  shift
-  nrarg=0
+  while true; do
+    options=( )
+    allinstances=no
+    instances=( )
+    args=( )
+    command="$1"
+    shift
+    nrarg=0
 
-  # Handle global options
-  case "$command" in
-    --verbose)
-      verbose=1
-      continue
-    ;;
-    --dots)
-      progressDisplayType=dots
-      continue
-    ;;
-    --spinner)
-      progressDisplayType=spinner
-      continue
-    ;;
-    --cronjob)
-      inCronJob=true
-      continue
-    ;;
-  esac
-
-  # get the number of arguments for commands that take arguments
-  case "$command" in
-    installmod) nrarg=1; ;;
-    uninstallmod) nrarg=1; ;;
-    reinstallmod) nrarg=1; ;;
-    broadcast) nrarg=1; ;;
-    rconcmd) nrarg=1; ;;
-    useconfig) nrarg=1; ;;
-    install-cronjob) nrarg=1; ;;
-    remove-cronjob) nrarg=1; ;;
-  esac
-
-  # Enumerate the options and arguments
-  while [ $# -ne 0 ]; do
-    case "$1" in
-      --)
-        shift
-        break
-      ;;
-      --args)
-        nrarg=$#
-      ;;
+    # Handle global options
+    case "$command" in
       --verbose)
         verbose=1
+        continue
       ;;
       --dots)
         progressDisplayType=dots
+        continue
       ;;
       --spinner)
         progressDisplayType=spinner
+        continue
       ;;
-      --*)
-        options+=( "$1" )
+      --cronjob)
+        inCronJob=true
+        continue
       ;;
-      @all)
-        allinstances=yes
-      ;;
-      @*)
-        instances+=( "${1#@}" )
-      ;;
-      *)
-        if [ $nrarg -gt 0 ]; then
-          args+=( "$1" )
-	  (( nrarg-- ))
-        else
+    esac
+
+    # get the number of arguments for commands that take arguments
+    case "$command" in
+      installmod) nrarg=1; ;;
+      uninstallmod) nrarg=1; ;;
+      reinstallmod) nrarg=1; ;;
+      broadcast) nrarg=1; ;;
+      rconcmd) nrarg=1; ;;
+      useconfig) nrarg=1; ;;
+      install-cronjob) nrarg=1; ;;
+      remove-cronjob) nrarg=1; ;;
+      remove-mods) nrarg=1; ;;
+    esac
+
+    # Enumerate the options and arguments
+    while [ $# -ne 0 ]; do
+      case "$1" in
+        --)
+          shift
           break
+        ;;
+        --args)
+          nrarg=$#
+        ;;
+        --verbose)
+          verbose=1
+        ;;
+        --dots)
+          progressDisplayType=dots
+        ;;
+        --spinner)
+          progressDisplayType=spinner
+        ;;
+        --*)
+          options+=( "$1" )
+        ;;
+        @all)
+          allinstances=yes
+        ;;
+        @*)
+          instances+=( "${1#@}" )
+        ;;
+        *)
+          if [ $nrarg -gt 0 ]; then
+            args+=( "$1" )
+            (( nrarg-- ))
+          else
+            break
+          fi
+        ;;
+      esac
+      shift
+    done
+
+    # handle non-instance separately
+    case "$command" in
+      upgrade-tools)
+        doUpgradeTools
+        exit
+      ;;
+      uninstall-tools)
+        doUninstallTools
+        exit
+      ;;
+      useconfig)
+        defaultinstance="${args[0]}"
+        continue
+      ;;
+      remove-mods)
+        doRemoveMods "${args[0]}"
+        if [ $# -eq 0 ]; then
+          exit 0
+        else
+          continue
         fi
       ;;
-    esac
-    shift
-  done
-
-  # handle non-instance separately
-  case "$command" in
-    upgrade-tools)
-      doUpgradeTools
-      exit
-    ;;
-    uninstall-tools)
-      doUninstallTools
-      exit
-    ;;
-    useconfig)
-      defaultinstance="${args[0]}"
-      continue
-    ;;
-    list-instances)
-      doListAllInstances "${options[@]}"
-      exit
-    ;;
-    --version)
-      echo "Version: ${arkstVersion}"
-      echo "Channel: ${arkstChannel}"
-      if [ -n "${arkstCommit}" ]; then
-        echo "Commit: ${arkstCommit:0:7}"
-      fi
-      echo "Blob SHA: $( (echo -ne "blob $(stat -c "%s" "$0")\0"; sed "s@^arkstCommit=.*@arkstCommit=''@" "$0") | sha1sum | cut -d' ' -f1)"
-      exit 1
-    ;;
-    -h|--help)
-      showUsage
-      exit 1
-    ;;
-    "")
-      echo "arkmanager v${arkstVersion}: no command specified"
-      showUsage
-      exit 1
-    ;;
-  esac
-
-  # Handle no instances being specified
-  if [[ "${#instances[@]}" == 0 && "$allinstances" == "no" ]]; then
-    if [ -n "$defaultinstance" ]; then
-      instances=( "$defaultinstance" )
-    else
-      echo "No instances supplied for command ${command} ${options[*]} ${args[*]}"
-      read -p "Do you wish to run this command for all instances?" -n 1 -r
-      echo
-      if [[ "$REPLY" =~ ^[Yy]$ ]]; then
-        allinstances=yes
-      else
+      list-instances)
+        doListAllInstances "${options[@]}"
+        exit
+      ;;
+      --version)
+        echo "Version: ${arkstVersion}"
+        echo "Channel: ${arkstChannel}"
+        if [ -n "${arkstCommit}" ]; then
+          echo "Commit: ${arkstCommit:0:7}"
+        fi
+        blobsize="$(sed "s@^arkstCommit=.*@arkstCommit=''@" "$0" | wc -c)"
+        echo "Blob SHA: $( (echo -ne "blob ${blobsize}\0"; sed "s@^arkstCommit=.*@arkstCommit=''@" "$0") | sha1sum | cut -d' ' -f1)"
         exit 1
+      ;;
+      -h|--help)
+        showUsage
+        exit 1
+      ;;
+      "")
+        echo "arkmanager v${arkstVersion}: no command specified"
+        showUsage
+        exit 1
+      ;;
+    esac
+
+    # Handle no instances being specified
+    if [[ "${#instances[@]}" == 0 && "$allinstances" == "no" ]]; then
+      if [ -n "$defaultinstance" ]; then
+        instances=( "$defaultinstance" )
+      else
+        echo "No instances supplied for command ${command} ${options[*]} ${args[*]}"
+        read -p "Do you wish to run this command for all instances?" -n 1 -r
+        echo
+        if [[ "$REPLY" =~ ^[Yy]$ ]]; then
+          allinstances=yes
+        else
+          exit 1
+        fi
       fi
     fi
-  fi
 
-  # Handle all instances being requested
-  if [[ "$allinstances" == "yes" ]]; then
-    instances=( $(getAllInstanceNames) )
-  fi
+    # Handle all instances being requested
+    if [[ "$allinstances" == "yes" ]]; then
+      instances=( $(getAllInstanceNames) )
+    fi
 
-  # Run the command for each instance requested
-  for instance in "${instances[@]}"; do
-  (
-    echo "Running command '${command}' for instance '${instance}'"
-    useConfig "$instance"
-    checkConfig
-
-    case "$command" in
-      run)
-        doRun
-      ;;
-      start)
-        doStart "${options[@]}"
-      ;;
-      stop)
-        doStop shutdown "${options[@]}"
-      ;;
-      restart)
-        doStop restart "${options[@]}"
-        echo "`timestamp`: stop" >> "$logdir/$arkmanagerLog"
-      ;;
-      cancelshutdown)
-        doCancelShutdown "${options[@]}"
-      ;;
-      install)
-        doInstall
-      ;;
-      update)
-        doUpdate "${options[@]}"
-      ;;
-      checkupdate)
-        checkForUpdate
-      ;;
-      installmod)
-        doInstallMod "${args[@]}"
-      ;;
-      uninstallmod)
-        doUninstallMod "${args[@]}"
-      ;;
-      reinstallmod)
-        doUninstallMod "${args[@]}"
-        doInstallMod "${args[@]}"
-      ;;
-      backup)
-        doBackup
-      ;;
-      broadcast)
-        doBroadcast "${args[@]}"
-      ;;
-      saveworld)
-        doSaveWorld
-      ;;
-      rconcmd)
-        rconcmd "${args[@]}"
-      ;;
-      status)
-        printStatus
-      ;;
-      install-cronjob)
-        doInstallCronJob "${args[@]}" "${options[@]}"
-      ;;
-      remove-cronjob)
-        doRemoveCronJob "${args[@]}"
-      ;;
-      *)
-        echo -n "arkmanager v${arkstVersion}: unknown command '$command' specified"
-        showUsage
-        exit 255
-      ;;
-    esac
-  )
-  laststatus=$?
-  if [ $laststatus -eq 255 ]; then
-    exit 1
-  elif [ $laststatus -ne 0 ]; then
-    status=$laststatus
-  fi
-  done
-
-  # Perform the restart portion of the restart command
-  if [[ "$command" == "restart" ]]; then
-    sleep 1
+    # Run the command for each instance requested
     for instance in "${instances[@]}"; do
     (
+      echo "Running command '${command}' for instance '${instance}'"
       useConfig "$instance"
-      doStart "${options[@]}"
-      echo "`timestamp`: start" >> "$logdir/$arkmanagerLog"
-      echo "`timestamp`: restart" >> "$logdir/$arkmanagerLog"
+      checkConfig
+
+      case "$command" in
+        run)
+          doRun
+        ;;
+        start)
+          doStart "${options[@]}"
+        ;;
+        stop)
+          doStop shutdown "${options[@]}"
+        ;;
+        restart)
+          doStop restart "${options[@]}"
+          echo "`timestamp`: stop" >> "$logdir/$arkmanagerLog"
+        ;;
+        cancelshutdown)
+          doCancelShutdown "${options[@]}"
+        ;;
+        install)
+          doInstall
+        ;;
+        update)
+          doUpdate "${options[@]}"
+        ;;
+        checkupdate)
+          checkForUpdate
+        ;;
+        installmod)
+          doInstallMod "${args[@]}"
+        ;;
+        uninstallmod)
+          doUninstallMod "${args[@]}"
+        ;;
+        reinstallmod)
+          doUninstallMod "${args[@]}"
+          doInstallMod "${args[@]}"
+        ;;
+        backup)
+          doBackup
+        ;;
+        broadcast)
+          doBroadcast "${args[@]}"
+        ;;
+        saveworld)
+          doSaveWorld
+        ;;
+        rconcmd)
+          rconcmd "${args[@]}"
+        ;;
+        status)
+          printStatus
+        ;;
+        install-cronjob)
+          doInstallCronJob "${args[@]}" "${options[@]}"
+        ;;
+        remove-cronjob)
+          doRemoveCronJob "${args[@]}"
+        ;;
+        *)
+          echo -n "arkmanager v${arkstVersion}: unknown command '$command' specified"
+          showUsage
+          exit 255
+        ;;
+      esac
     )
+    laststatus=$?
+    if [ $laststatus -eq 255 ]; then
+      exit 1
+    elif [ $laststatus -ne 0 ]; then
+      status=$laststatus
+    fi
     done
-  fi
 
-  if [ $# -eq 0 ]; then
-    break
-  fi
-done
+    # Perform the restart portion of the restart command
+    if [[ "$command" == "restart" ]]; then
+      sleep 1
+      for instance in "${instances[@]}"; do
+      (
+        useConfig "$instance"
+        doStart "${options[@]}"
+        echo "`timestamp`: start" >> "$logdir/$arkmanagerLog"
+        echo "`timestamp`: restart" >> "$logdir/$arkmanagerLog"
+      )
+      done
+    fi
 
-exit $status
+    if [ $# -eq 0 ]; then
+      break
+    fi
+  done
+
+  exit $status
+}
+
+# Only execute main function if script is not being sourced
+# by another script
+if [[ "$(caller)" =~ ^0 ]]; then
+  main "$@"
+fi
+

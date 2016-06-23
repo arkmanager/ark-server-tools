@@ -129,6 +129,9 @@ Instanceless commands
 `useconfig`::
     Legacy command for specifying an instance for the following command(s)
 
+`remove-mods`::
+    Remove the specified mods from the `steamcmd` workshop directory
+
 Commands acting on instances
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -377,9 +380,9 @@ The following options can be overridden on a per-instance basis:
         Valid in `msgWarnReason`, replaced at runtime with the appropriate `msgReason*` template
 
     `{time}`;;
-        Valid in `msgWarnReason`, replaced at runtime with the appropriate `msgTime*` template
+        Valid in `msgWarnReason` and `msgReason*`, replaced at runtime with the appropriate `msgTime*` template
 
-    `{modnamesupdate}`;;
+    `{modnamesupdated}`;;
         Valid in `msgReason*Mod`, replaced at runtime with a comma-delimited list of updated mod names
 
     `{minutes}`;;
