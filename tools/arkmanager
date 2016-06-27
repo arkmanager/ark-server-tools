@@ -991,7 +991,6 @@ printWarnMessage(){
     reason="${reason//\{time\}/${msgtime}}"
     reason="${reason//\{modnamesupdated\}/${modnamesupdated}}"
     msg="${msg//\{reason\}/${reason}}"
-    printf "%s\n" "$msg"
   else
     if [ "$1" == "update" ]; then
       if [ "$3" == "minutes" ]; then
