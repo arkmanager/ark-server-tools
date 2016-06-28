@@ -987,7 +987,7 @@ doUpdate() {
       modupdate=1
     elif [ "$arg" == "--backup" ]; then
       arkBackupPreUpdate=true
-    elif [[ "$arg" =~ "^--stagingdir=" ]]; then
+    elif [[ "$arg" =~ ^--stagingdir= ]]; then
       arkStagingDir="${ark#--stagingdir=}"
     elif [ "$arg" == "--downloadonly" ]; then
       downloadonly=1
