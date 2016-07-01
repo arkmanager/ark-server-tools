@@ -1041,6 +1041,28 @@ printWarnMessage(){
 }
 
 #
+# Checks if a player has requested an update cancel in the last 5 minutes
+#
+isUpdateCancelRequested(){
+  if [ -n "$chatCommandRestartCancel" ]; then
+    local canceltime="$(
+      find ~/ARK/server1/ShooterGame/Saved/Logs -name 'ServerGame.*.log' -mmin -5 -print0 | 
+        xargs -0 grep -F -e "${chatCommandRestartCancel}" | 
+        sed 's@^[[]\(....\)\.\(..\)\.\(..\)-\(..\)\.\(..\)\.\(..\):.*@\1-\2-\3 \4:\5:\6 UTC@' | 
+        head -n1)"
+    if [ -n canceltime ]; then
+      canceltime="$(date +%s --date="${canceltime}")"
+      local timenow="$(date +%s --date="now - 5 minutes")"
+      if (( canceltime > timenow )); then
+        return 0
+      fi
+    fi
+  fi
+
+  return 1
+}
+
+#
 # Waits for a configurable number of minutes before updating the server
 #
 doWarn(){
@@ -1107,6 +1129,10 @@ doWarn(){
               rm -f "${arkserverroot}/.ark-warn.lock"
               return 0
             fi
+            if isUpdateCancelRequested; then
+              doBroadcastWithEcho "Restart cancelled by player request"
+              return 1
+            fi
             wait $sleeppid
             if (( $min > $warninterval )); then
               sleep 1m &
@@ -1135,6 +1161,10 @@ doWarn(){
             doBroadcastWithEcho "Nobody is connected.  Shutting down immediately"
             rm -f "${arkserverroot}/.ark-warn.lock"
             return 0
+          fi
+          if isUpdateCancelRequested; then
+            doBroadcastWithEcho "Restart cancelled by player request"
+            return 1
           fi
         fi
         wait $sleeppid
