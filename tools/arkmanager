@@ -607,7 +607,7 @@ function numPlayersConnected(){
 # run function
 #
 doRun() {
-  cd "$arkserverroot"
+  cd "${arkserverroot}/${arkserverexec%/*}"
 
   arkserveropts="$serverMap"
 
@@ -702,6 +702,14 @@ doRun() {
       arkextraopts=( "${arkextraopts[@]}" "-${name}=${val}" )
     fi
   done
+
+  if [[ " ${arkextraopts[*]} " =~ " -automanagedmods " ]]; then
+    if [ ! -f "${arkserverroot}/Engine/Binaries/ThirdParty/SteamCMD/Linux/steamcmd.sh" ]; then
+      mkdir -p "${arkserverroot}/Engine/Binaries/ThirdParty/SteamCMD/Linux"
+      curl -s "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz" -o "${arkserverroot}/Engine/Binaries/ThirdParty/SteamCMD/Linux/steamcmd_linux.tar.gz"
+      tar -xzf "${arkserverroot}/Engine/Binaries/ThirdParty/SteamCMD/Linux/steamcmd_linux.tar.gz" -C "${arkserverroot}/Engine/Binaries/ThirdParty/SteamCMD/Linux"
+    fi
+  fi
 
   arkserveropts="${arkserveropts}?listen"
   # run the server in background
