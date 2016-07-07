@@ -1284,6 +1284,7 @@ doUpdate() {
         fi
         rm -rf "$arkStagingDir/ShooterGame/Content/Mods/"*
         rm -rf "$arkStagingDir/ShooterGame/Saved/"*
+        rm -rf "$arkStagingDir/Engine/Binaries/ThirdParty/SteamCMD/Linux/steamapps"
       fi
 
       if [ -z "$nodownload" ]; then
@@ -1384,7 +1385,7 @@ doUpdate() {
       echo "`timestamp`: update to $instver complete" >> "$logdir/update.log"
     fi
 
-    if [ -n "$modupdate" ]; then
+    if [ -n "$modupdate" ] && [ -z "$arkflag_automanagedmods" ]; then
       for modid in $(getModIds); do
         if isModUpdateNeeded $modid; then
           echo "Updating mod $modid"
@@ -1423,6 +1424,10 @@ getModIds(){
 #
 doDownloadMod(){
   local modid=$1
+  local steamcmdroot="$steamcmdroot"
+  if [ -n "$arkflag_automanagedmods" ]; then
+    steamcmdroot="$arkserverroot/Engine/Binaries/ThirdParty/SteamCMD/Linux"
+  fi
   local modsrcdir="$steamcmdroot/steamapps/workshop/content/$mod_appid/$modid"
   local moddldir="$steamcmdroot/steamapps/workshop/downloads/$mod_appid"
   cd "$steamcmdroot"
