@@ -742,6 +742,9 @@ doRun() {
     # Disable auto-restart so we don't get caught in a restart loop
     rm -f "$arkserverroot/$arkautorestartfile"
     restartserver=0
+    if [ -n "$arkAlwaysRestartOnCrash" ]; then
+      restartserver=1
+    fi
 
     sleep 5
 
@@ -762,6 +765,8 @@ doRun() {
         echo "`timestamp`: Bad PID '$pid'; expected '$serverpid'"
         if [ "$pid" != "" ]; then
 	  # Another instance must be running - disable autorestart
+	  echo "Error: another server instance is running from the same directory"
+	  echo "Aborting - two servers MUST NOT run from the same directory"
 	  restartserver=0
 	fi
 	break
@@ -796,6 +801,10 @@ doStart() {
         echo "Updating server"
         doUpdate --update-mods
       fi
+    fi
+
+    if [[ " $* " =~ " --alwaysrestart " ]]; then
+      arkAlwaysRestartOnCrash=true
     fi
     tput sc
     echo "The server is starting..."
