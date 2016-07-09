@@ -149,6 +149,11 @@ instances.
     `--noautoupdate`;;
         Disables automatic updating on startup if it is enabled
 
+    `--alwaysrestart`;;
+        Enable automatically restarting the server even if it crashes
+        without becoming ready for player connections.
+
+
 `stop`::
     Stops the server if it is running
 
@@ -342,6 +347,12 @@ The following options can be overridden on a per-instance basis:
 `arkautorestartfile`::
     The relative path within an ARK server install to place the
     autorestart lock file
+
+`arkAlwaysRestartOnCrash`::
+    Set to `true` to enable automatically restarting even when the
+    server has not become ready for player connections.
+    Be aware that this may cause the server to enter an endless
+    crash-restart loop if the cause of the crash is not resolved.
 
 `arkAutoUpdateOnStart`::
     Set to `true` to enable updating before server startup
