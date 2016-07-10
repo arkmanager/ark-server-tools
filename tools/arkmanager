@@ -199,6 +199,7 @@ checkConfig() {
   # SavedArks directory
   if [ -n "$arkserverroot" ]; then
     local savedarksdir="${arkserverroot}/ShooterGame/Saved/${ark_AltSaveDirectoryName:-SavedArks}"
+    mkdir -p "${savedarksdir}"
     if [ ! -w "${savedarksdir}" ]; then
       echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tThe ARK SavedArks directory is not writable, and saveworld will fail"
     fi
@@ -320,10 +321,10 @@ rconcmd() {
     auth($socket, $password);
     sendpkt($socket, 2, 2, $command);
     my ($resid, $restype, $rcvbody) = recvpkt($socket);
-    if ($rcvbody eq "Server received, But no response!!") {
+    if ($rcvbody eq "Server received, But no response!! \n ") {
       print "Command processed\n";
     } else {
-      print $rcvbody, "\n";
+      print "\"", $rcvbody, "\"\n";
     }
     ' "$(getRconPort)" "${ark_MultiHome:-127.0.0.1}" "$adminpass" "$1"
 }
@@ -577,7 +578,7 @@ function numPlayersConnected(){
     my $sockaddr = pack_sockaddr_in($port, inet_aton($ARGV[1]));
     send($socket, "\xff\xff\xff\xffTSource Engine Query\x00", 0, $sockaddr);
     my $data = "";
-    recv($socket, $data, 1400, 0) or (print "0" and exit(1));
+    recv($socket, $data, 1400, 0) or (print "-1" and exit(1));
     my ($servername, $mapname, $game, $fullname, $rest) = split(/\x00/, substr($data, 6), 5);
     my $players = ord(substr($rest, 2, 1));
     print "$players\n";
@@ -593,7 +594,17 @@ doRun() {
   arkserveropts="$serverMap"
 
   if [ -n "$serverMapModId" ]; then
-    arkserveropts="-MapModID=$serverMapModId"
+    serverMap="$(perl -e '
+      my $data;
+      { local $/; $data = <>; }
+      my $mapnamelen = unpack("@0 L<", $data);
+      my $mapname = substr($data, 4, $mapnamelen - 1);
+      $mapnamelen += 4;
+      my $mapfilelen = unpack("@" . ($mapnamelen + 4) . " L<", $data);
+      my $mapfile = substr($data, $mapnamelen + 8, $mapfilelen - 1);
+      print $mapfile;
+    ' <"${arkserverroot}/ShooterGame/Content/Mods/${serverMapModId}/mod.info")"
+    arkserveropts="${serverMap}?MapModID=${serverMapModId}"
   fi
 
   if [ -z "$arkserveropts" ]; then
@@ -903,7 +914,7 @@ doWarn(){
         doBroadcastWithEcho "$warnmsg"
         for (( min = warnminutes - 1; min >= warninterval; min-- )); do
           numplayers=$(numPlayersConnected)
-          if (( numplayers + 0 == 0 )); then
+          if (( (numplayers + 0) == 0 )); then
             echo "Nobody is connected.  Shutting down immediately"
             return 0
           fi
@@ -930,7 +941,7 @@ doWarn(){
       doBroadcastWithEcho "$warnmsg"
       if (( warnseconds >= 20 )); then
         numplayers=$(numPlayersConnected)
-        if (( numplayers + 0 == 0 )); then
+        if (( (numplayers + 0) == 0 )); then
           echo "Nobody is connected.  Shutting down immediately"
           return 0
         fi
@@ -977,7 +988,7 @@ doUpdate() {
       modupdate=1
     elif [ "$arg" == "--backup" ]; then
       arkBackupPreUpdate=true
-    elif [[ "$arg" =~ "^--stagingdir=" ]]; then
+    elif [[ "$arg" =~ ^--stagingdir= ]]; then
       arkStagingDir="${ark#--stagingdir=}"
     elif [ "$arg" == "--downloadonly" ]; then
       downloadonly=1
@@ -1015,7 +1026,7 @@ doUpdate() {
 
   cd "$arkserverroot"
 
-  if isUpdateNeeded; then
+  if [ -n "$appupdate" ] || isUpdateNeeded; then
     appupdate=1
 
     if [ -n "${arkStagingDir}" -a "${arkStagingDir}" != "${arkserverroot}" ]; then
@@ -1068,7 +1079,7 @@ doUpdate() {
         fi
       elif [ "$updatetype" == "ifempty" ]; then
         numplayers=$(( $(numPlayersConnected) + 0 ))
-        if (( numplayers == 0 )); then
+        if (( numplayers != 0 )); then
           echo "${numplayers} players are still connected"
           return 1
         fi
