@@ -199,6 +199,7 @@ checkConfig() {
   # SavedArks directory
   if [ -n "$arkserverroot" ]; then
     local savedarksdir="${arkserverroot}/ShooterGame/Saved/${ark_AltSaveDirectoryName:-SavedArks}"
+    mkdir -p "${savedarksdir}"
     if [ ! -w "${savedarksdir}" ]; then
       echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tThe ARK SavedArks directory is not writable, and saveworld will fail"
     fi
