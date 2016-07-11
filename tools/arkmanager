@@ -2088,6 +2088,23 @@ doListAllInstances(){
   fi
 }
 
+doPrintConfig(){
+  declare -A vars
+  declare -A vals
+  for v in $(eval echo \$\{\!{a..z}\*\} \$\{\!{A..Z}\*\} \$\{\!_\*\}); do
+    vals["$v"]="${!v}"
+  done
+  for cfgfile in "$configfile" "$HOME/.arkmanager.cfg" "/etc/arkmanager/arkmanager.cfg"; do
+    while read v; do
+      val="$(source "$cfgfile"; echo "${!v}")"
+      if [[ "$val" = "${vals[$v]}" && -z "${vars[$v]}" ]]; then
+        vars["$v"]="$cfgfile"
+	echo "${cfgfile} => ${v}"
+      fi
+    done < <(sed -n 's/^[[:space:]]*\([A-Za-z_][A-Za-z0-9_]*\)=.*/\1/p' <"$cfgfile")
+  done
+}
+
 useConfig() {
   configfile=
   if [ -f "/etc/arkmanager/instances/${1}.cfg" ]; then
@@ -2376,6 +2393,9 @@ main(){
         ;;
         rconcmd)
           rconcmd "${args[@]}"
+        ;;
+        printconfig)
+          doPrintConfig
         ;;
         status)
           printStatus
