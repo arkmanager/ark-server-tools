@@ -745,6 +745,7 @@ doRun() {
     restartserver=0
     if [ -n "$arkAlwaysRestartOnCrash" ]; then
       restartserver=1
+      touch "$arkserverroot/$arkautorestartfile"
     fi
 
     sleep 5
@@ -782,6 +783,7 @@ doRun() {
     # doStop will remove the autorestart file
     if [ ! -f "$arkserverroot/$arkautorestartfile" ]; then
       restartserver=0
+
     fi
 
     if [ "$restartserver" -ne 0 ]; then
