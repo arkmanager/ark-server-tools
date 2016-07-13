@@ -151,6 +151,8 @@ arkserverLog="arkserver.log"    # here is logged the output of ShooterGameServer
 appid="${appid:-376030}"
 mod_appid="${mod_appid:-346110}"
 arkautorestartfile="${arkautorestartfile:-ShooterGame/Saved/.autorestart}"
+arkserverpidfile="${arkserverpidfile:-ShooterGame/Saved/.arkserver.pid}"
+arkmanagerpidfile="${arkmanagerpidfile:-ShooterGame/Saved/.arkmanager.pid}"
 install_bindir="${install_bindir:-${0%/*}}"
 install_libexecdir="${install_libexecdir:-${install_bindir%/*}/libexec/arkmanager}"
 
@@ -507,6 +509,13 @@ function getAvailableVersion(){
 # Get the PID of the server process
 #
 function getServerPID(){
+  if [ -f "${arkserverroot}/${arkserverpidfile}" ]; then
+    serverpid="$(<"${arkserverroot}/${arkserverpidfile}")"
+    if kill -0 "$serverpid" >/dev/null 2>&1; then
+      echo $serverpid
+      return
+    fi
+  fi
   ps -ef | grep "$arkserverroot/$arkserverexec" | grep -v grep | awk '{print $2}'
 }
 
@@ -609,6 +618,14 @@ function numPlayersConnected(){
 #
 doRun() {
   cd "${arkserverroot}/${arkserverexec%/*}"
+
+  if isTheServerRunning; then
+    echo "Error: another server instance is running from the same directory"
+    echo "Aborting - two servers MUST NOT run from the same directory"
+    exit 1
+  fi
+  
+  echo "$$" >"${arkserverroot}/${arkmanagerpidfile}"
 
   arkserveropts="$serverMap"
 
@@ -722,10 +739,11 @@ doRun() {
   # Shutdown the server when we are terminated
   shutdown_server(){
     restartserver=0
-    rm "$arkserverroot/$arkautorestartfile"
+    rm -f "$arkserverroot/$arkautorestartfile"
     if [ "$serverpid" -ne 0 ]; then
-      kill -INT $serverpid
+      kill -INT $serverpid >/dev/null 2>&1
     fi
+    exit 0
   }
 
   trap shutdown_server INT TERM
@@ -739,6 +757,7 @@ doRun() {
     "$arkserverroot/$arkserverexec" "$arkserveropts" "${arkextraopts[@]}" &
     # Grab the server PID
     serverpid=$!
+    echo "$serverpid" >"${arkserverroot}/${arkserverpidfile}"
     echo "`timestamp`: Server PID: $serverpid"
     # Disable auto-restart so we don't get caught in a restart loop
     rm -f "$arkserverroot/$arkautorestartfile"
@@ -767,8 +786,6 @@ doRun() {
         echo "`timestamp`: Bad PID '$pid'; expected '$serverpid'"
         if [ "$pid" != "" ]; then
 	  # Another instance must be running - disable autorestart
-	  echo "Error: another server instance is running from the same directory"
-	  echo "Aborting - two servers MUST NOT run from the same directory"
 	  restartserver=0
 	fi
 	break
@@ -880,6 +897,13 @@ doStop() {
       tput rc
       echo "Killing server..."
       kill -KILL $PID
+    fi
+
+    if [ -f "${arkserverroot}/${arkmanagerpidfile}" ]; then
+      PID="$(<"${arkserverroot}/${arkmanagerpidfile}")"
+      if [ -n "$PID" ]; then
+        kill $PID
+      fi
     fi
 
     tput rc; tput ed;
