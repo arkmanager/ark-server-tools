@@ -2017,7 +2017,7 @@ doInstallCronJob(){
   cronjob="${minute} ${hour} * * * ${arkmanagerpath} --cronjob ${command} @${instance} ${cmdopts} --args ${cmdargs} -- ${output}"
 
   (crontab -l | \
-    sed -e "/ [*] [*] [*] ${arkmanagerpath} --cronjob ${command} @${instance} /d";
+    sed -e "\\# [*] [*] [*] ${arkmanagerpath} --cronjob ${command} @${instance} #d";
     echo "${cronjob}" ) | \
     crontab -
 }
@@ -2030,7 +2030,7 @@ doRemoveCronJob(){
   command="$1"
 
   crontab -l | \
-    sed -e "/ [*] [*] [*] ${arkmanagerpath} --cronjob ${command} @${instance} /d" | \
+    sed -e "\\# [*] [*] [*] ${arkmanagerpath} --cronjob ${command} @${instance} #d" | \
     crontab -
 }
 
