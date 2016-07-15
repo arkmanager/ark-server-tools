@@ -262,6 +262,9 @@ instances.
     as well as the following options.  In order to specify an
     argument to the command (e.g. to the `broadcast` command),
     use the `--arg=<arg>` option.
+    Please read your `man 5 crontab` manpage to determine what
+    minute and hour values are valid, as some implementations
+    may not accept e.g. the `*/n` minute / hour specification.
 
     `--daily`;;
         The command should be executed daily
