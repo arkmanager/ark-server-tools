@@ -1982,6 +1982,7 @@ doInstallCronJob(){
   cmdopts="${arkCronExtraOpts}"
   cmdargs=""
   output=">/dev/null 2>&1"
+  arkmanagerpath="${0}"
   command="$1"
   shift
 
@@ -2013,10 +2014,10 @@ doInstallCronJob(){
     esac
   done
 
-  cronjob="${minute} ${hour} * * * arkmanager --cronjob ${command} @${instance} ${cmdopts} --args ${cmdargs} -- ${output}"
+  cronjob="${minute} ${hour} * * * ${arkmanagerpath} --cronjob ${command} @${instance} ${cmdopts} --args ${cmdargs} -- ${output}"
 
   (crontab -l | \
-    sed -e "/ [*] [*] [*] arkmanager --cronjob ${command} @${instance} /d";
+    sed -e "/ [*] [*] [*] ${arkmanagerpath} --cronjob ${command} @${instance} /d";
     echo "${cronjob}" ) | \
     crontab -
 }
@@ -2025,10 +2026,11 @@ doInstallCronJob(){
 # Removes an installed cron job
 #
 doRemoveCronJob(){
+  arkmanagerpath="${0}"
   command="$1"
 
   crontab -l | \
-    sed -e "/ [*] [*] [*] arkmanager --cronjob ${command} @${instance} /d" | \
+    sed -e "/ [*] [*] [*] ${arkmanagerpath} --cronjob ${command} @${instance} /d" | \
     crontab -
 }
 
