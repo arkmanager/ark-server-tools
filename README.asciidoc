@@ -272,10 +272,16 @@ instances.
     `--hour=<hour>`;;
         Specifies one or more hours when the command should execute.
         This is the hour field of the cron job.
+	If you want to have the command execute every n hours, then
+	use `--hour='*/n'`
+	Default: `*` (i.e. all hours)
 
     `--minute=<minute>`;;
         Specifies one or more minutes of the hour when the command
         should execute.  This is the minute field of the cron job.
+	If you want to have the command execute every n minutes,
+	then use `--minute='*/n'`
+	Default: `0` (i.e. the first minute of the hour)
 
     `--enable-output`;;
         Enables the output from the command - the cron daemon usually
