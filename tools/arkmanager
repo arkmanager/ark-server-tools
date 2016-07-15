@@ -2002,7 +2002,7 @@ doInstallCronJob(){
         output=
       ;;
       --arg=*)
-        cmdargs="${cmdargs} $(printf "%q" "${opt#--opt=}")"
+        cmdargs="${cmdargs} $(printf "%q" "${opt#--arg=}")"
       ;;
       --*)
         cmdopts="${cmdopts} $(printf "%q" "${opt}")"
