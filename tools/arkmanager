@@ -865,7 +865,7 @@ doStop() {
     for arg in "$@"; do
       case "$arg" in
         --warn) dowarn=1; ;;
-        --warnreason=*) warnreason="${arg#*=}"; ;;
+        --warnreason=*) warnreason="${arg#--warnreason=}"; ;;
         --saveworld) dosave=1; ;;
       esac
     done
@@ -995,6 +995,12 @@ printWarnMessage(){
       fi
     fi
     msg="${msgWarnReason//\{time\}/$msgtime}"
+    if [ -n "$warnreason" ]; then
+      local v="warnreason_$warnreason"
+      reason="${!v}"
+      if [ -z "$reason" ]; then
+        reason="$warnreason"
+      fi
     if [ "$1" == "update" ]; then
       if [ -n "$appupdate" ]; then
         if [ -n "$modupdate" ]; then
@@ -1242,34 +1248,24 @@ doUpdate() {
   local nodownload=
 
   for arg in "$@"; do
-    if [ "$arg" == "--force" ]; then
-      appupdate=1
-    elif [ "$arg" == "--safe" ]; then
-      updatetype=safe
-    elif [ "$arg" == "--warn" ]; then
-      updatetype=warn
-    elif [ "$arg" == "--ifempty" ]; then
-      updatetype=ifempty
-    elif [ "$arg" == "--validate" ]; then
-      validate=validate
-      appupdate=1
-    elif [ "$arg" == "--saveworld" ]; then
-      saveworld=1
-    elif [ "$arg" == "--update-mods" ]; then
-      modupdate=1
-    elif [ "$arg" == "--backup" ]; then
-      arkBackupPreUpdate=true
-    elif [[ "$arg" =~ ^--stagingdir= ]]; then
-      arkStagingDir="${ark#--stagingdir=}"
-    elif [ "$arg" == "--downloadonly" ]; then
-      downloadonly=1
-    elif [ "$arg" == "--no-download" ]; then
-      nodownload=1
-    else
-      echo "Unrecognized option $arg"
-      echo "Try 'arkmanager -h' or 'arkmanager --help' for more information."
-      exit 1
-    fi
+    case "$arg" in
+      --force) appupdate=1; ;;
+      --safe) updatetype=safe; ;;
+      --warn) updatetype=warn; ;;
+      --ifempty) updatetype=ifempty; ;;
+      --warnreason=*) warnreason="${arg#--warnreason=}"; ;;
+      --validate) validate=validate; appupdate=1; ;;
+      --saveworld) saveworld=1; ;;
+      --update-mods) modupdate=1; ;;
+      --backup) arkBackupPreUpdate=true; ;;
+      --stagingdir=*) arkStagingDir="${arg#--stagingdir=}"; ;;
+      --downloadonly) downloadonly=1; ;;
+      --no-download) nodownload=1; ;;
+      *)
+        echo "Unrecognized option $arg"
+        echo "Try 'arkmanager -h' or 'arkmanager --help' for more information."
+        exit 1
+    esac
   done
 
   echo "$$" >"${arkserverroot}/.ark-update.lock.$$" 2>/dev/null
