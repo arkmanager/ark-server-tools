@@ -1001,7 +1001,7 @@ printWarnMessage(){
       if [ -z "$reason" ]; then
         reason="$warnreason"
       fi
-    if [ "$1" == "update" ]; then
+    elif [ "$1" == "update" ]; then
       if [ -n "$appupdate" ]; then
         if [ -n "$modupdate" ]; then
           if [ -n "$msgReasonUpdateAppMod" ]; then
