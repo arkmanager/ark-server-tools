@@ -599,18 +599,39 @@ function isTheServerOnline(){
 # Check if anybody is connected to the server
 #
 function numPlayersConnected(){
-  perl -MSocket -e '
-    my $port = int($ARGV[0]);
-    socket(my $socket, PF_INET, SOCK_DGRAM, 0);
-    setsockopt($socket, SOL_SOCKET, SO_RCVTIMEO, pack("i4", 1, 0, 0, 0));
-    my $sockaddr = pack_sockaddr_in($port, inet_aton($ARGV[1]));
-    send($socket, "\xff\xff\xff\xffTSource Engine Query\x00", 0, $sockaddr);
-    my $data = "";
-    recv($socket, $data, 1400, 0) or (print "-1" and exit(1));
-    my ($servername, $mapname, $game, $fullname, $rest) = split(/\x00/, substr($data, 6), 5);
-    my $players = ord(substr($rest, 2, 1));
-    print "$players\n";
-    ' "$(getQueryPort)" "${ark_MultiHome:-127.0.0.1}"
+  if [ -n "$arkUsePlayerList" ]; then
+    perl -MSocket -e '
+      my $port = int($ARGV[0]);
+      socket(my $socket, PF_INET, SOCK_DGRAM, 0);
+      setsockopt($socket, SOL_SOCKET, SO_RCVTIMEO, pack("i4", 1, 0, 0, 0));
+      my $sockaddr = pack_sockaddr_in($port, inet_aton($ARGV[1]));
+      send($socket, "\xff\xff\xff\xff\x55\xff\xff\xff\xff", 0, $sockaddr);
+      my $data = "";
+      recv($socket, $data, 1400, 0) or (print "-1" and exit(1));
+      if (ord(substr($data, 4, 1)) == 0x41) {
+        my $chal = substr($data, 5);
+        send($socket, "\xff\xff\xff\xff\x55" . $chal, 0, $sockaddr);
+        $data = "";
+        recv($socket, $data, 1400, 0) or (print "-1" and exit(1));
+      }
+      ord(substr($data, 4, 1)) != 0x44 and (print "-1" and exit(1));
+      my $players = ord(substr($data, 5, 1));
+      print "$players\n";
+      ' "$(getQueryPort)" "${ark_MultiHome:-127.0.0.1}"
+  else
+    perl -MSocket -e '
+      my $port = int($ARGV[0]);
+      socket(my $socket, PF_INET, SOCK_DGRAM, 0);
+      setsockopt($socket, SOL_SOCKET, SO_RCVTIMEO, pack("i4", 1, 0, 0, 0));
+      my $sockaddr = pack_sockaddr_in($port, inet_aton($ARGV[1]));
+      send($socket, "\xff\xff\xff\xffTSource Engine Query\x00", 0, $sockaddr);
+      my $data = "";
+      recv($socket, $data, 1400, 0) or (print "-1" and exit(1));
+      my ($servername, $mapname, $game, $fullname, $rest) = split(/\x00/, substr($data, 6), 5);
+      my $players = ord(substr($rest, 2, 1));
+      print "$players\n";
+      ' "$(getQueryPort)" "${ark_MultiHome:-127.0.0.1}"
+  fi
 }
 
 #
@@ -2063,6 +2084,18 @@ printStatus(){
       my $maxplayers = ord(substr($rest, 3, 1));
       print "Server Name: $servername\n";
       print "Players: $players / $maxplayers\n";
+      send($socket, "\xff\xff\xff\xff\x55\xff\xff\xff\xff", 0, $sockaddr);
+      $data = "";
+      recv($socket, $data, 1400, 0) or (print "Challenge request failed" and exit(1));
+      if (ord(substr($data, 4, 1)) == 0x41) {
+        my $chal = substr($data, 5);
+        send($socket, "\xff\xff\xff\xff\x55" . $chal, 0, $sockaddr);
+        $data = "";
+        recv($socket, $data, 1400, 0) or (print "A2S_PLAYERS request failed" and exit(1));
+      }
+      ord(substr($data, 4, 1)) != 0x44 and (print ("A2S_PLAYERS Response: : " . unpack("H*", $data)) and exit(1));
+      my $players = ord(substr($data, 5, 1));
+      print "Active Players: $players\n";
       ' "$(getQueryPort)" "${ark_MultiHome:-127.0.0.1}"
 
     if isTheServerOnline; then
