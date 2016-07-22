@@ -886,7 +886,7 @@ doStop() {
     for arg in "$@"; do
       case "$arg" in
         --warn) dowarn=1; ;;
-        --warnreason=*) warnreason="${arg#--warnreason=}"; ;;
+        --warnreason=*) warnreason="${arg#--warnreason=}"; dowarn=1; ;;
         --saveworld) dosave=1; ;;
       esac
     done
@@ -1280,7 +1280,7 @@ doUpdate() {
       --safe) updatetype=safe; ;;
       --warn) updatetype=warn; ;;
       --ifempty) updatetype=ifempty; ;;
-      --warnreason=*) warnreason="${arg#--warnreason=}"; ;;
+      --warnreason=*) warnreason="${arg#--warnreason=}"; updatetype=warn; ;;
       --validate) validate=validate; appupdate=1; ;;
       --saveworld) saveworld=1; ;;
       --update-mods) modupdate=1; ;;
