@@ -149,6 +149,11 @@ instances.
     `--noautoupdate`;;
         Disables automatic updating on startup if it is enabled
 
+    `--alwaysrestart`;;
+        Enable automatically restarting the server even if it crashes
+        without becoming ready for player connections.
+
+
 `stop`::
     Stops the server if it is running
 
@@ -257,6 +262,9 @@ instances.
     as well as the following options.  In order to specify an
     argument to the command (e.g. to the `broadcast` command),
     use the `--arg=<arg>` option.
+    Please read your `man 5 crontab` manpage to determine what
+    minute and hour values are valid, as some implementations
+    may not accept e.g. the `*/n` minute / hour specification.
 
     `--daily`;;
         The command should be executed daily
@@ -267,10 +275,16 @@ instances.
     `--hour=<hour>`;;
         Specifies one or more hours when the command should execute.
         This is the hour field of the cron job.
+	If you want to have the command execute every n hours, then
+	use `--hour='*/n'`
+	Default: `*` (i.e. all hours)
 
     `--minute=<minute>`;;
         Specifies one or more minutes of the hour when the command
         should execute.  This is the minute field of the cron job.
+	If you want to have the command execute every n minutes,
+	then use `--minute='*/n'`
+	Default: `0` (i.e. the first minute of the hour)
 
     `--enable-output`;;
         Enables the output from the command - the cron daemon usually
@@ -342,6 +356,12 @@ The following options can be overridden on a per-instance basis:
 `arkautorestartfile`::
     The relative path within an ARK server install to place the
     autorestart lock file
+
+`arkAlwaysRestartOnCrash`::
+    Set to `true` to enable automatically restarting even when the
+    server has not become ready for player connections.
+    Be aware that this may cause the server to enter an endless
+    crash-restart loop if the cause of the crash is not resolved.
 
 `arkAutoUpdateOnStart`::
     Set to `true` to enable updating before server startup
