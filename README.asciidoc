@@ -458,7 +458,7 @@ Instance config files
 
 Instance config files are stored under
 `/etc/arkmanager/instances/<instancename>.cfg`,
-`~/.local/config/arkmanager/instances/<instancename>.cfg`
+`~/.config/arkmanager/instances/<instancename>.cfg`
 or as specified in the `configfile_<instancename>` options in
 the global config.
 

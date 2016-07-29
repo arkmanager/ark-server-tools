@@ -1533,6 +1533,10 @@ doDownloadMod(){
 #
 doDownloadAllMods(){
   for modid in $(getModIds); do
+    # Bypass the 111111111 modid used by Primitive+
+    if [ "$modid" = "111111111" ]; then
+      continue
+    fi
     doDownloadMod $modid || return 1
   done
 }
