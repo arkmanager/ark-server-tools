@@ -1061,6 +1061,7 @@ printWarnMessage(){
     fi
     reason="${reason//\{time\}/${msgtime}}"
     reason="${reason//\{modnamesupdated\}/${modnamesupdated}}"
+    reason="${reason//\{version\}/${arkversion}}"
     msg="${msg//\{reason\}/${reason}}"
   else
     if [ "$1" == "update" ]; then
@@ -1337,6 +1338,7 @@ doUpdate() {
           cp -al "$arkserverroot/linux64/." "$arkStagingDir/linux64"
           cp -al "$arkserverroot/PackageInfo.bin" "$arkStagingDir/PackageInfo.bin"
           cp -al "$arkserverroot/steamclient.so" "$arkStagingDir/steamclient.so"
+          cp -al "$arkserverroot/version.txt" "$arkStagingDir/version.txt"
           cp -a "$arkserverroot/steamapps/." "$arkStagingDir/steamapps"
         else
           rsync -a "$arkserverroot/." "$arkStagingDir/."
@@ -1370,6 +1372,7 @@ doUpdate() {
     fi
     echo "Not applying update - download-only enabled"
   elif [ -n "$appupdate" -o -n "$modupdate" ]; then
+    arkversion="$(<"$arkserverroot/version.txt")"
     if isTheServerRunning; then
       if [ "$updatetype" == "safe" ]; then
         while [ ! `find $arkserverroot/ShooterGame/Saved/SavedArks -mmin -1 -name ${serverMap##*/}.ark` ]; do
@@ -1418,6 +1421,7 @@ doUpdate() {
           cp -alu --remove-destination "$arkStagingDir/linux64/." "$arkserverroot/linux64"
           cp -alu --remove-destination "$arkStagingDir/PackageInfo.bin" "$arkserverroot/PackageInfo.bin"
           cp -alu --remove-destination "$arkStagingDir/steamclient.so" "$arkserverroot/steamclient.so"
+          cp -alu --remove-destination "$arkStagingDir/version.txt" "$arkserverroot/version.txt"
           cp -au --remove-destination "$arkStagingDir/steamapps/." "$arkserverroot/steamapps"
         else
           rsync -a "$arkStagingDir/." "$arkserverroot"
@@ -2107,7 +2111,8 @@ printStatus(){
   fi
 
   getCurrentVersion
-  echo -e "$NORMAL" "Server version: " "$GREEN" $instver "$NORMAL"
+  echo -e "$NORMAL" "Server build ID: " "$GREEN" $instver "$NORMAL"
+  echo -e "$NORMAL" "Server version: " "$GREEN" "$(<"$arkserverroot/version.txt")" "$NORMAL"
 }
 
 getAllInstanceNames(){
