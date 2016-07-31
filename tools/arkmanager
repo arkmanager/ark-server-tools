@@ -1496,6 +1496,11 @@ doDownloadMod(){
   cd "$steamcmdroot"
   retries=10
 
+  # Bypass the 111111111 modid used by Primitive+
+  if [ "$modid" = "111111111" ]; then
+    return 0
+  fi
+
   while true; do
     echo -n "Downloading mod $modid"
     local output
@@ -1533,10 +1538,6 @@ doDownloadMod(){
 #
 doDownloadAllMods(){
   for modid in $(getModIds); do
-    # Bypass the 111111111 modid used by Primitive+
-    if [ "$modid" = "111111111" ]; then
-      continue
-    fi
     doDownloadMod $modid || return 1
   done
 }
@@ -1549,6 +1550,11 @@ isModUpdateNeeded(){
   local modsrcdir="$steamcmdroot/steamapps/workshop/content/$mod_appid/$modid"
   local moddestdir="$arkserverroot/ShooterGame/Content/Mods/$modid"
   local modbranch="${mod_branch:-Windows}"
+
+  # Bypass the 111111111 modid used by Primitive+
+  if [ "$modid" = "111111111" ]; then
+    return 1
+  fi
 
   if [ -n "${modsrcdirs[$modid]}" ]; then
     modsrcdir="${modsrcdirs[$modid]}"
@@ -1636,6 +1642,11 @@ doExtractMod(){
   local modsrcdir="$steamcmdroot/steamapps/workshop/content/$mod_appid/$modid"
   local moddestdir="$arkserverroot/ShooterGame/Content/Mods/$modid"
   local modbranch="${mod_branch:-Windows}"
+
+  # Bypass the 111111111 modid used by Primitive+
+  if [ "$modid" = "111111111" ]; then
+    return 0
+  fi
 
   if [ -n "${modsrcdirs[$modid]}" ]; then
     modsrcdir="${modsrcdirs[$modid]}"
