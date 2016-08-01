@@ -616,7 +616,17 @@ function numPlayersConnected(){
       }
       ord(substr($data, 4, 1)) != 0x44 and (print "-1" and exit(1));
       my $players = ord(substr($data, 5, 1));
-      print "$players\n";
+      my $active = 0;
+      my $pdata = substr($data, 6);
+      for my $i (0 .. $players) {
+        my $idx = ord(substr($pdata, 0, 1));
+        my ($name, $rest) = split(/\x00/, substr($pdata, 1), 2);
+        $pdata = substr($rest, 8);
+        if ($name != "") {
+          $active = $active + 1;
+        }
+      }
+      print "$active\n";
       ' "$(getQueryPort)" "${ark_MultiHome:-127.0.0.1}"
   else
     perl -MSocket -e '
@@ -2114,7 +2124,17 @@ printStatus(){
       }
       ord(substr($data, 4, 1)) != 0x44 and (print ("A2S_PLAYERS Response: : " . unpack("H*", $data)) and exit(1));
       my $players = ord(substr($data, 5, 1));
-      print "Active Players: $players\n";
+      my $active = 0;
+      my $pdata = substr($data, 6);
+      for my $i (0 .. $players) {
+        my $idx = ord(substr($pdata, 0, 1));
+        my ($name, $rest) = split(/\x00/, substr($pdata, 1), 2);
+        $pdata = substr($rest, 8);
+        if ($name != "") {
+          $active = $active + 1;
+        }
+      }
+      print "Active Players: $active\n";
       ' "$(getQueryPort)" "${ark_MultiHome:-127.0.0.1}"
 
     if isTheServerOnline; then
