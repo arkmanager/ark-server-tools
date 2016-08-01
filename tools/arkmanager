@@ -622,7 +622,7 @@ function numPlayersConnected(){
         my $idx = ord(substr($pdata, 0, 1));
         my ($name, $rest) = split(/\x00/, substr($pdata, 1), 2);
         $pdata = substr($rest, 8);
-        if ($name != "") {
+        if ($name ne "") {
           $active = $active + 1;
         }
       }
@@ -2130,7 +2130,7 @@ printStatus(){
         my $idx = ord(substr($pdata, 0, 1));
         my ($name, $rest) = split(/\x00/, substr($pdata, 1), 2);
         $pdata = substr($rest, 8);
-        if ($name != "") {
+        if ($name ne "") {
           $active = $active + 1;
         }
       }
