@@ -1803,6 +1803,15 @@ doInstallMod(){
 }
 
 #
+# Downloads and installs all requested mods
+#
+doInstallAllMods(){
+  for modid in $(getModids); do
+    doInstallMod "$modid"
+  done
+}
+
+#
 # Removes mod from mods directory
 #
 doUninstallMod(){
@@ -2475,6 +2484,9 @@ main(){
         ;;
         installmod)
           doInstallMod "${args[@]}"
+        ;;
+        installmods)
+          doInstallAllMods
         ;;
         uninstallmod)
           doUninstallMod "${args[@]}"
