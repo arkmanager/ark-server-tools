@@ -226,6 +226,10 @@ instances.
 `checkupdate`::
     Checks if an ARK server update is available
 
+`installmods`::
+    Installs all mods specified in the instance config into the
+    `ShooterGame/Content/Mods` directory
+
 `installmod <modnum>`::
     Installs the specified mod into the `ShooterGame/Content/Mods`
     directory
