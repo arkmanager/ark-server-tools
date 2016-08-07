@@ -660,6 +660,22 @@ doRun() {
 
   arkserveropts="$serverMap"
 
+  while read varname; do
+    val="${!varname}"
+    modid="${varname#arkmod_}"
+    case "$val" in
+      game*|enabled)
+        ark_GameModIds="${ark_GameModIds}${ark_GameModIds:+,}${modid}"
+        ;;
+      map*)
+        serverMapModId="${modid}"
+        ;;
+      tc|total*)
+        ark_TotalConversionMod="${modid}"
+        ;;
+    esac
+  done < <(sed -n 's/^\(arkmod_[^= ]*\)=.*/\1/p' <"$configfile")
+
   if [ -n "$serverMapModId" ]; then
     serverMap="$(perl -e '
       my $data;
@@ -1488,6 +1504,11 @@ getModIds(){
     echo "${serverMapModId}"
     echo "${ark_TotalConversionMod}"
     echo "${ark_GameModIds}" | tr ',' '\n'
+    for v in "${!arkmod_@}"; do
+      if [ "${!v}" != "disabled" ]; then
+        echo "${v#arkmod_}"
+      fi
+    done
     find "${arkserverroot}/ShooterGame/Content/Mods" -maxdepth 1 -type d -printf "%P\n"
   ) | sort | uniq | grep '^[1-9][0-9]*$'
 }
