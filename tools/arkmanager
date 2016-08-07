@@ -1844,6 +1844,37 @@ doUninstallMod(){
 }
 
 #
+# Enables a mod in the config
+#
+doEnableMod(){
+  local modid="${1%=*}"
+  local modtype="${1#*=}"
+  if [ "$modtype" = "$1" ]; then
+    modtype=game
+  fi
+  local modvar="arkmod_${modid}"
+  if [ -n "${!modvar}" ]; then
+    sed -i "s|^\(${modvar}\)=[^ ]*|\1=${modtype}|" "$configfile"
+  else
+    echo "${modvar}=${modtype}" >>"$configfile"
+  fi
+}
+
+#
+# Disable a mod in the config
+#
+doDisableMod(){
+  local modid="$1"
+  local modvar="arkmod_$modid"
+  if [ "$ark_GameModIds" = *"$modid"* ]; then
+    sed -i "s|^\(ark_GameModIds=\(\|[\"']\)\(\|[^\"' ]*,\)\)${modid},*|\1|" "$configfile"
+  fi
+  if [ -n "$modvar" ]; then
+    sed -i "s|^\(arkmod_${modid}\)=[^ ]*|\1=disabled|" "$configfile"
+  fi
+}
+
+#
 # Removes mod from steamcmd workshop directory
 #
 doRemoveMods(){
@@ -2505,6 +2536,12 @@ main(){
         ;;
         installmod)
           doInstallMod "${args[@]}"
+        ;;
+        enablemod)
+          doEnableMod "${args[@]}"
+        ;;
+        disablemod)
+          doDisableMod "${args[@]}"
         ;;
         installmods)
           doInstallAllMods
