@@ -242,6 +242,22 @@ instances.
     Runs the `uninstallmod` command followed by the `installmod`
     command
 
+`enablemod <modnum>`::
+`enablemod <modnum>=<modtype>`::
+    Enables the `arkmod_<modnum>` setting in the instance config.
+    modtype defaults to `game`.
+    Mod types:
+
+    `game`;;
+        A mod in `GameModIds`
+
+    `map`;;
+        The `MapModId` mod
+
+    `tc`;;
+    `totalconversion`;;
+        The `TotalConversionMod` mod
+
 `backup`::
     Backs up the saved world and game config files to a compressed
     tar file in the backups directory specified in the config
@@ -494,6 +510,30 @@ the global config.
     `arkopt_StructureDestructionTag=DestroySwampSnowStructures` adds
     the `-StructureDestructionTag=DestroySwampSnowStructures`
     option.
+
+`arkmod_<modnum>=<modtype>`::
+    Specifies a mod that can be enabled or disabled using
+    `enablemod` and `disablemod`.  Note that mod ids specified
+    using these options are in addition to those specified directly
+    in the `ark_GameModIds` option, and override those specified in the
+    `ark_MapModId`, `serverMapMod` and `ark_TotalConversionMod`
+    options.  Options are processed in the order they are specified
+    in the instance config file, and `arkmod_*` options in the
+    common config file are not applied.
+    Mod types:
+
+    `game`;;
+        A mod to be specified in `GameModIds`
+
+    `map`;;
+        The mod to be specified in `MapModId`
+
+    `tc`;;
+    `totalconversion`;;
+        The mod to be specified in `TotalConversionMod`
+
+    `disabled`;;
+        A disabled mod
 
 Common ARK options
 ~~~~~~~~~~~~~~~~~~
