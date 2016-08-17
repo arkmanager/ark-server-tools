@@ -19,48 +19,83 @@ elif [[ "$1" =~ ^--output= ]]; then
   shift
 fi
 
-# Download and untar installation files
-cd /tmp
-COMMIT="`curl -L -k -s https://api.github.com/repos/FezVrasta/ark-server-tools/git/refs/heads/${channel} | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p'`"
+unstable=
+if [ "$1" = "--unstable" ]; then
+  unstable=1
+fi
 
-if [ -z "$COMMIT" ]; then
-  if [ "$channel" != "master" ]; then
-    echo "Channel ${channel} not found - trying master"
-    channel=master
-    COMMIT="`curl -L -k -s https://api.github.com/repos/FezVrasta/ark-server-tools/git/refs/heads/${channel} | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p'`"
+function doInstallFromCommit(){
+  local commit="$1"
+  tmpdir="$(mktemp -d "ark-server-tools-XXXXXXXX")"
+  if [ -z "$tmpdir" ]; then echo "Unable to create temporary directory"; exit 1; fi
+  cd "$tmpdir"
+  echo "Downloading installer"
+  curl -L "https://github.com/FezVrasta/ark-server-tools/archive/${commit}.tar.gz" | tar -xz
+  cd "ark-server-tools-${commit}/tools"
+  if [ ! -f "install.sh" ]; then echo "install.sh not found in $PWD"; exit 1; fi
+  sed -i -e "s|^arkstCommit='.*'|arkstCommit='${commit}'|" \
+         -e "s|^arkstTag='.*'|arkstTag='${tagname}'|" \
+         arkmanager
+  echo "Running install.sh"
+  bash install.sh "$steamcmd_user" "${reinstall_args[@]}"
+  result=$?
+  cd /
+  rm -rf "$tmpdir"
+
+  if [ "$result" = 0 ] || [ "$result" = 2 ]; then
+    "ARK Server Tools successfully installed"
+  else
+    "ARK Server Tools install failed"
   fi
+  return $result
+}
+
+function doInstallFromRelease(){
+  local tagname=
+  local desc=
+
+  echo "Getting latest release..."
+  # Read the variables from github
+  while IFS=$'\t' read n v; do
+    case "${n}" in
+      tag_name) tagname="${v}"; ;;
+      body) desc="${v}"
+    esac
+  done < <(curl -s "https://api.github.com/repos/FezVrasta/ark-server-tools/releases/latest" | sed -n 's/^  "\([^"]*\)": "*\([^"]*\)"*,*/\1\t\2/p')
+
+  if [ -n "$tagname" ]; then
+    echo "Latest release is ${tagname}"
+    echo "Getting commit for latest release..."
+    local commit="$(curl -s "https://api.github.com/repos/FezVrasta/ark-server-tools/git/refs/tags/${tagname}" | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p')"
+    doUpgradeToolsFromCommit "$commit"
+  else
+    echo "Unable to get latest release"
+    return 1
+  fi
+}
+
+function doInstallFromBranch(){
+  channel="$1"
+  commit="`curl -s "https://api.github.com/repos/FezVrasta/ark-server-tools/git/refs/heads/${channel}" | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p'`"
+  
+  if [ -z "$commit" ]; then
+    if [ -n "$unstable" ]; then
+      echo "Channel ${channel} not found - trying master"
+      doInstallFromBranch master
+    else
+      doInstallFromRelease
+    fi
+  else
+    doInstallFromCommit "$commit"
+  fi
+}
+
+# Download and untar installation files
+cd "$TEMP"
+
+if [ "$channel" = "master" ] && [ -z "$unstable" ]; then
+  doInstallFromRelease
+else
+  doInstallFromBranch "$channel"
 fi
 
-if [ -z "$COMMIT" ]; then
-  echo "Unable to retrieve latest commit"
-  exit 1
-fi
-
-mkdir ark-server-tools-${channel}
-cd ark-server-tools-${channel}
-curl -L -k -s https://github.com/FezVrasta/ark-server-tools/archive/${COMMIT}.tar.gz | tar xz
-
-# Install ARK Server Tools
-cd ark-server-tools-${COMMIT}/tools
-sed -i "s|^arkstCommit='.*'$|arkstCommit='${COMMIT}'|" arkmanager
-chmod +x install.sh
-bash install.sh "$steamcmd_user" "$@" >"$output" 2>&1
-
-status=$?
-
-rm -rf /tmp/ark-server-tools-${channel}
-
-# Print messages
-case "$status" in
-  "0")
-    echo "ARK Server Tools were correctly installed in your system inside the home directory of $steamcmd_user!"
-    ;;
-
-  "1")
-    echo "Something went wrong :( Make sure you meet the Prerequisites found in the readme."
-    ;;
-  "2")
-    echo "WARNING: A previous version of ARK Server Tools was detected in your system, your old configuration was not overwritten. You may need to manually update it."
-    echo "ARK Server Tools were correctly installed in your system inside the home directory of $steamcmd_user!"
-    ;;
-esac
