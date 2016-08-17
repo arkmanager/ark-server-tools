@@ -7,7 +7,8 @@
 # Contributors:         Sispheor, Atriusftw, klightspeed, lexat, puseidr
 
 # Script version
-arkstVersion='1.6'
+arkstVersion='1.6-pre1'
+arkstTag=''
 arkstCommit=''
 
 doUpgradeTools() {
@@ -15,9 +16,57 @@ doUpgradeTools() {
   if [ "$UID" == 0 -o "$steamcmd_user" == "--me" ]; then
     sudo=
   fi
+
+  local reinstall_args=()
+  if [ -n "$install_bindir" ]; then
+    reinstall_args=( "${reinstall_args[@]}" "--bindir" "$install_bindir" )
+  fi
+  if [ -n "$install_libexecdir" ]; then
+    reinstall_args=( "${reinstall_args[@]}" "--libexecdir" "$install_libexecdir" )
+  fi
+  if [ -n "$install_datadir" ]; then
+    reinstall_args=( "${reinstall_args[@]}" "--datadir" "$install_datadir" )
+  fi
+
   echo "arkmanager v${arkstVersion}: Checking for updates..."
-  arkstLatestVersion=`curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/.version`
-  arkstLatestCommit=`curl -s https://api.github.com/repos/FezVrasta/ark-server-tools/git/refs/heads/${arkstChannel} | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p'`
+
+  if [ -n "$arkstUnstable" ] || [ "$arkstChannel" != "master" ]; then
+    doUpgradeToolsFromBranch
+  else
+    doUpgradeToolsFromRelease
+  fi
+}
+
+doUpgradeToolsFromCommit(){
+  local commit="$1"
+  tmpdir="$(mktemp -d "ark-server-tools-XXXXXXXX")"
+  if [ -z "$tmpdir" ]; then echo "Unable to create temporary directory"; exit 1; fi
+  cd "$tmpdir"
+  echo "Downloading installer"
+  curl -L "https://github.com/FezVrasta/ark-server-tools/archive/${commit}.tar.gz" | tar -xz
+  cd "ark-server-tools-${commit}/tools"
+  if [ ! -f "install.sh" ]; then echo "install.sh not found in $PWD"; exit 1; fi
+  sed -i -e "s|^arkstCommit='.*'|arkstCommit='${commit}'|" \
+         -e "s|^arkstTag='.*'|arkstTag='${tagname}'|" \
+         arkmanager
+  echo "Running install.sh"
+  bash install.sh "$steamcmd_user" "${reinstall_args[@]}"
+  result=$?
+  cd /
+  rm -rf "$tmpdir"
+
+  if [ "$result" = 0 ] || [ "$result" = 2 ]; then
+    "ARK Server Tools successfully upgraded"
+    "$0" --version
+  else
+    "ARK Server Tools upgrade failed"
+  fi
+  exit $result
+}
+
+doUpgradeToolsFromBranch(){
+  arkstLatestVersion=`curl -s "https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/.version"`
+  arkstLatestCommit=`curl -s "https://api.github.com/repos/FezVrasta/ark-server-tools/git/refs/heads/${arkstChannel}" | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p'`
 
   if [ "$arkstLatestVersion" == "Not Found" ]; then
     echo "Channel ${arkstChannel} does not exist"
@@ -28,32 +77,52 @@ doUpgradeTools() {
     return
   fi
 
-  reinstall_args=()
-  if [ -n "$install_bindir" ]; then
-    reinstall_args=( "${reinstall_args[@]}" "--bindir" "$install_bindir" )
-  fi
-  if [ -n "$install_libexecdir" ]; then
-    reinstall_args=( "${reinstall_args[@]}" "--libexecdir" "$install_libexecdir" )
-  fi
-  if [ -n "$install_datadir" ]; then
-    reinstall_args=( "${reinstall_args[@]}" "--datadir" "$install_datadir" )
-  fi
+  REPLY=
+
   if [[ $arkstLatestVersion > $arkstVersion ]]; then
     read -p "A new version was found! Do you want to upgrade ARK Server Tools to v${arkstLatestVersion}?" -n 1 -r
-    echo -en "\n"
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/netinstall.sh | $sudo bash -s -- ${steamcmd_user} ${arkstChannel} "${reinstall_args[@]}"
-        exit 0
-    fi
+    echo
   elif [[ $arkstLatestVersion == $arkstVersion && "$arkstLatestCommit" != "$arkstCommit" ]]; then
     read -p "A hotfix is available for v${arkstLatestVersion}.  Do you wish to install it?" -n 1 -r
-    echo -en "\n"
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/netinstall.sh | $sudo bash -s -- ${steamcmd_user} ${arkstChannel} "${reinstall_args[@]}"
-        exit 0
-    fi
+    echo
   else
     echo "Your ARK server tools are already up to date"
+  fi
+
+  if [[ "$REPLY" =~ ^[Yy]$ ]]; then
+    doUpgradeToolsFromCommit "$arkstLatestCommit"
+  fi
+}
+
+doUpgradeToolsFromRelease(){
+  local tagname=
+  local desc=
+
+  echo "Getting latest release..."
+  # Read the variables from github
+  while IFS=$'\t' read n v; do
+    case "${n}" in
+      tag_name) tagname="${v}"; ;;
+      body) desc="${v}"
+    esac
+  done < <(curl -s "https://api.github.com/repos/FezVrasta/ark-server-tools/releases/latest" | sed -n 's/^  "\([^"]*\)": "*\([^"]*\)"*,*/\1\t\2/p')
+
+  if [ -n "$tagname" ]; then
+    if [ "$tagname" != "$arkstTag" ]; then
+      echo "A new version has been released: ${tagname}"
+      echo -e "$desc"
+      read -p "Do you want to upgrade to ${tagname}? [Y/N] " -n 1 -r
+      echo
+      if [[ "$REPLY" =~ ^[Yy]$ ]]; then
+        echo "Getting commit for latest release..."
+        local commit="$(curl -s "https://api.github.com/repos/FezVrasta/ark-server-tools/git/refs/tags/${tagname}" | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p')"
+        doUpgradeToolsFromCommit "$commit"
+      fi
+    else
+      echo "Your ARK server tools are already up to date"
+    fi
+  else
+    echo "Unable to get latest release"
   fi
 }
 
@@ -86,7 +155,10 @@ runAsRoot(){
     fi
   }
 
+  cd /
+
   arkstChannel="$(getConfigVar arkstChannel "master")"
+  arkstUnstable="$(getConfigVar arkstUnstable "")"
   install_bindir="$(getConfigVar install_bindir "${0%/*}")"
   install_libexecdir="$(getConfigVar install_libexecdir "${install_bindir%/*}/libexec/arkmanager")"
   install_datadir="$(getConfigVar install_datadir "${install_bindir%/*}/share/arkmanager")"
@@ -2465,8 +2537,11 @@ main(){
         if [ -n "${arkstCommit}" ]; then
           echo "Commit: ${arkstCommit:0:7}"
         fi
-        blobsize="$(sed "s@^arkstCommit=.*@arkstCommit=''@" "$0" | wc -c)"
-        echo "Blob SHA: $( (echo -ne "blob ${blobsize}\0"; sed "s@^arkstCommit=.*@arkstCommit=''@" "$0") | sha1sum | cut -d' ' -f1)"
+        if [ -n "${arkstTag}" ]; then
+          echo "Release Tag: ${arkstTag}"
+        fi
+        blobsize="$(sed "s@^arkst\\(Commit\\|Tag\\)=.*@\\1=''@" "$0" | wc -c)"
+        echo "Blob SHA: $( (echo -ne "blob ${blobsize}\0"; sed "s@^arkst\\(Commit\\|Tag\\)=.*@\\1=''@" "$0") | sha1sum | cut -d' ' -f1)"
         exit 1
       ;;
       -h|--help)
