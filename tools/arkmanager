@@ -666,6 +666,12 @@ doRun() {
     fi
   fi
 
+  if [ " $* " = *" --wait "* ]; then
+    # This requires bash 4+
+    # $$ returns the main process, $BASHPID returns the current process
+    kill -STOP $BASHPID # wait for caller to renice us
+  fi
+
   arkserveropts="$serverMap"
 
   while read varname; do
@@ -893,7 +899,20 @@ doStart() {
     tput sc
     echo "The server is starting..."
 
-    doRun </dev/null >>"$logdir/$arkserverLog" 2>&1 & # output of this command is logged
+    local pid=$!
+    if [ -n "$arkPriorityBoost" ]; then
+      doRun --wait </dev/null >>"$logdir/$arkserverLog" 2>&1 & # output of this command is logged
+      local pid="$!"
+
+      # Wait for monitor process to suspend itself
+      wait
+
+      echo "Boosting priority of ark server"
+      sudo renice -n "$arkPriorityBoost" "$pid"
+      kill -CONT "$pid"
+    else
+      doRun </dev/null >>"$logdir/$arkserverLog" 2>&1 & # output of this command is logged
+    fi
     echo "`timestamp`: start" >> "$logdir/$arkmanagerLog"
     tput rc; tput ed;
     echo "The server is now running, and should be up within 10 minutes"
