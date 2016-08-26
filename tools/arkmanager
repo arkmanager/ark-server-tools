@@ -658,6 +658,14 @@ doRun() {
   
   echo "$$" >"${arkserverroot}/${arkmanagerpidfile}"
 
+  if [ -f "${arkserverroot}/.ark-update.lock" ]; then
+    local updatepid="$(<"${arkserverroot}/.ark-update.lock")"
+    if kill -0 "$updatepid" >/dev/null 2>&1; then
+      echo "An update is currently in progress.  Start aborted"
+      return 1
+    fi
+  fi
+
   arkserveropts="$serverMap"
 
   while read varname; do
@@ -860,6 +868,15 @@ doRun() {
 # start function
 #
 doStart() {
+  if [ -f "${arkserverroot}/.ark-update.lock" ]; then
+    local updatepid="$(<"${arkserverroot}/.ark-update.lock")"
+    if kill -0 "$updatepid" >/dev/null 2>&1; then
+      touch "${arkserverroot}/.startAfterUpdate"
+      echo "An update is currently in progress.  Start aborted"
+      return 1
+    fi
+  fi
+
   if isTheServerRunning; then
     echo "The server is already running"
   else
@@ -902,6 +919,8 @@ doStartAll(){
 # stop the ARK server
 #
 doStop() {
+  rm -f "${arkserverroot}/.startAfterUpdate"
+
   if isTheServerRunning; then
     local stopreason="$1"
     local dowarn=
@@ -1485,7 +1504,9 @@ doUpdate() {
     fi
 
     # we restart the server only if it was started before the update
-    if [ $serverWasAlive -eq 1 ]; then
+    if [ $serverWasAlive -eq 1 ] || [ -f "${arkserverroot}/.startAfterUpdate" ]; then
+      rm -f "${arkserverroot}/.startAfterUpdate"
+      rm -f "${arkserverroot}/.ark-update.lock"
       doStart --noautoupdate
     fi
   else
