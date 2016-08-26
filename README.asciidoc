@@ -396,6 +396,11 @@ The following options can be overridden on a per-instance basis:
 `arkMaxBackupSizeMB`::
     Limits the size of the stored backups
 
+`arkPriorityBoost`::
+    Attempts to boost the priority of the ARK server.
+    Negative values give a higher priority, and positive values give a lower priority.
+    Requires `sudo` and `renice`
+
 `msgWarnUpdateMinutes`::
 `msgWarnUpdateSeconds`::
 `msgWarnRestartMinutes`::
