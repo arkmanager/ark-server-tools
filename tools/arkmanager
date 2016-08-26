@@ -656,7 +656,8 @@ doRun() {
     exit 1
   fi
   
-  echo "$$" >"${arkserverroot}/${arkmanagerpidfile}"
+  # $$ returns the main process, $BASHPID returns the current process
+  echo "$BASHPID" >"${arkserverroot}/${arkmanagerpidfile}"
 
   if [ -f "${arkserverroot}/.ark-update.lock" ]; then
     local updatepid="$(<"${arkserverroot}/.ark-update.lock")"
