@@ -658,7 +658,31 @@ doRun() {
   
   echo "$$" >"${arkserverroot}/${arkmanagerpidfile}"
 
+  if [ -f "${arkserverroot}/.ark-update.lock" ]; then
+    local updatepid="$(<"${arkserverroot}/.ark-update.lock")"
+    if kill -0 "$updatepid" >/dev/null 2>&1; then
+      echo "An update is currently in progress.  Start aborted"
+      return 1
+    fi
+  fi
+
   arkserveropts="$serverMap"
+
+  while read varname; do
+    val="${!varname}"
+    modid="${varname#arkmod_}"
+    case "$val" in
+      game*|enabled)
+        ark_GameModIds="${ark_GameModIds}${ark_GameModIds:+,}${modid}"
+        ;;
+      map*)
+        serverMapModId="${modid}"
+        ;;
+      tc|total*)
+        ark_TotalConversionMod="${modid}"
+        ;;
+    esac
+  done < <(sed -n 's/^\(arkmod_[^= ]*\)=.*/\1/p' <"$configfile")
 
   if [ -n "$serverMapModId" ]; then
     serverMap="$(perl -e '
@@ -844,6 +868,15 @@ doRun() {
 # start function
 #
 doStart() {
+  if [ -f "${arkserverroot}/.ark-update.lock" ]; then
+    local updatepid="$(<"${arkserverroot}/.ark-update.lock")"
+    if kill -0 "$updatepid" >/dev/null 2>&1; then
+      touch "${arkserverroot}/.startAfterUpdate"
+      echo "An update is currently in progress.  Start aborted"
+      return 1
+    fi
+  fi
+
   if isTheServerRunning; then
     echo "The server is already running"
   else
@@ -886,6 +919,8 @@ doStartAll(){
 # stop the ARK server
 #
 doStop() {
+  rm -f "${arkserverroot}/.startAfterUpdate"
+
   if isTheServerRunning; then
     local stopreason="$1"
     local dowarn=
@@ -1469,7 +1504,9 @@ doUpdate() {
     fi
 
     # we restart the server only if it was started before the update
-    if [ $serverWasAlive -eq 1 ]; then
+    if [ $serverWasAlive -eq 1 ] || [ -f "${arkserverroot}/.startAfterUpdate" ]; then
+      rm -f "${arkserverroot}/.startAfterUpdate"
+      rm -f "${arkserverroot}/.ark-update.lock"
       doStart --noautoupdate
     fi
   else
@@ -1488,6 +1525,11 @@ getModIds(){
     echo "${serverMapModId}"
     echo "${ark_TotalConversionMod}"
     echo "${ark_GameModIds}" | tr ',' '\n'
+    for v in "${!arkmod_@}"; do
+      if [ "${!v}" != "disabled" ]; then
+        echo "${v#arkmod_}"
+      fi
+    done
     find "${arkserverroot}/ShooterGame/Content/Mods" -maxdepth 1 -type d -printf "%P\n"
   ) | sort | uniq | grep '^[1-9][0-9]*$'
 }
@@ -1819,6 +1861,37 @@ doUninstallMod(){
   local moddir="$arkserverroot/ShooterGame/Content/Mods/$modid"
   if [ -d "${moddir}" ]; then
     rm -rf "${moddir}"
+  fi
+}
+
+#
+# Enables a mod in the config
+#
+doEnableMod(){
+  local modid="${1%=*}"
+  local modtype="${1#*=}"
+  if [ "$modtype" = "$1" ]; then
+    modtype=game
+  fi
+  local modvar="arkmod_${modid}"
+  if [ -n "${!modvar}" ]; then
+    sed -i "s|^\(${modvar}\)=[^ ]*|\1=${modtype}|" "$configfile"
+  else
+    echo "${modvar}=${modtype}" >>"$configfile"
+  fi
+}
+
+#
+# Disable a mod in the config
+#
+doDisableMod(){
+  local modid="$1"
+  local modvar="arkmod_$modid"
+  if [ "$ark_GameModIds" = *"$modid"* ]; then
+    sed -i "s|^\(ark_GameModIds=\(\|[\"']\)\(\|[^\"' ]*,\)\)${modid},*|\1|" "$configfile"
+  fi
+  if [ -n "$modvar" ]; then
+    sed -i "s|^\(arkmod_${modid}\)=[^ ]*|\1=disabled|" "$configfile"
   fi
 }
 
@@ -2484,6 +2557,12 @@ main(){
         ;;
         installmod)
           doInstallMod "${args[@]}"
+        ;;
+        enablemod)
+          doEnableMod "${args[@]}"
+        ;;
+        disablemod)
+          doDisableMod "${args[@]}"
         ;;
         installmods)
           doInstallAllMods
