@@ -736,10 +736,11 @@ doRun() {
 # start function
 #
 doStart() {
+  touch "${arkserverroot}/.startAfterUpdate"
+
   if [ -f "${arkserverroot}/.ark-update.lock" ]; then
     local updatepid="$(<"${arkserverroot}/.ark-update.lock")"
     if kill -0 "$updatepid" >/dev/null 2>&1; then
-      touch "${arkserverroot}/.startAfterUpdate"
       echo "An update is currently in progress.  Start aborted"
       return 1
     fi
@@ -783,7 +784,9 @@ doStartAll(){
 # stop the ARK server
 #
 doStop() {
-  rm -f "${arkserverroot}/.startAfterUpdate"
+  if [ "$1" != "update" ]; then
+    rm -f "${arkserverroot}/.startAfterUpdate"
+  fi
 
   if isTheServerRunning; then
     if [[ " $* " =~ " --warn " ]]; then
@@ -1116,7 +1119,7 @@ doUpdate() {
       doSaveWorld
     fi
 
-    doStop
+    doStop update
 
     # If user wants to back-up, we do it here.
 
