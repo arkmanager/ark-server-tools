@@ -1526,6 +1526,7 @@ doUpdate() {
       done
     fi
 
+    rm -f "${arkserverroot}/.ark-update.lock"
     # we restart the server only if it was started before the update
     if [ $serverWasAlive -eq 1 ] || [ -f "${arkserverroot}/.startAfterUpdate" ]; then
       rm -f "${arkserverroot}/.startAfterUpdate"
