@@ -172,7 +172,7 @@ declare -A modsrcdirs
 # timestamp
 #
 timestamp() {
-  date +%T
+  date +"%Y-%m-%d %H:%M:%S"
 }
 
 #
