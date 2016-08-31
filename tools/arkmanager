@@ -881,12 +881,14 @@ doStart() {
     local updatepid="$(<"${arkserverroot}/.ark-update.lock")"
     if kill -0 "$updatepid" >/dev/null 2>&1; then
       echo "An update is currently in progress.  Start aborted"
+      echo "`timestamp`: Start aborted due to running update - pid: $updatepid" >>"$logdir/$arkserverLog"
       return 1
     fi
   fi
 
   if isTheServerRunning; then
     echo "The server is already running"
+    echo "`timestamp`: Start aborted due to server already running"
   else
     if [ "$arkAutoUpdateOnStart" == "true" ]; then
       if ! [[ " $* " =~ " --noautoupdate " ]]; then
@@ -969,7 +971,7 @@ doStop() {
     fi
     tput sc
     echo "Stopping server..."
-    echo "`timestamp`: stopping" >> "$logdir/$arkmanagerLog"
+    echo "`timestamp`: stopping; reason: $stopreason" >> "$logdir/$arkmanagerLog"
     rm -f "$arkserverroot/$arkautorestartfile"
     # kill the server with the PID
     PID=`getServerPID`
@@ -1364,6 +1366,12 @@ doUpdate() {
     esac
   done
 
+  # check if the server was alive before the update so we can launch it back after the update
+  serverWasAlive=0
+  if isTheServerRunning ;then
+    serverWasAlive=1
+  fi
+
   echo "$$" >"${arkserverroot}/.ark-update.lock.$$" 2>/dev/null
   while true; do
     if ! ln "${arkserverroot}/.ark-update.lock.$$" "${arkserverroot}/.ark-update.lock" 2>/dev/null; then
@@ -1379,6 +1387,8 @@ doUpdate() {
     fi
   done
   rm -f "${arkserverroot}/.ark-update.lock.$$"
+
+  echo "`timestamp`: checking for update; PID: $$"
 
   if [ -n "$modupdate" ]; then
     if [ -z "$nodownload" ]; then
@@ -1461,12 +1471,6 @@ doUpdate() {
       fi
     fi
 
-    # check if the server was alive before the update so we can launch it back after the update
-    serverWasAlive=0
-    if isTheServerRunning ;then
-      serverWasAlive=1
-    fi
-
     if [ -n "$saveworld" ]; then
       echo "Saving world"
       doSaveWorld
@@ -1525,20 +1529,21 @@ doUpdate() {
         fi
       done
     fi
-
-    rm -f "${arkserverroot}/.ark-update.lock"
-    # we restart the server only if it was started before the update
-    if [ $serverWasAlive -eq 1 ] || [ -f "${arkserverroot}/.startAfterUpdate" ]; then
-      rm -f "${arkserverroot}/.startAfterUpdate"
-      rm -f "${arkserverroot}/.ark-update.lock"
-      doStart --noautoupdate
-    fi
   else
     echo "Your server is already up to date! The most recent version is ${bnumber}."
     echo "`timestamp`: No update needed." >> "$logdir/update.log"
   fi;
 
   rm -f "${arkserverroot}/.ark-update.lock"
+
+  if ! isTheServerRunning; then
+    # we restart the server only if it was started before the update
+    if [ $serverWasAlive -eq 1 ] || [ -f "${arkserverroot}/.startAfterUpdate" ]; then
+      rm -f "${arkserverroot}/.startAfterUpdate"
+      rm -f "${arkserverroot}/.ark-update.lock"
+      doStart --noautoupdate
+    fi
+  fi
 }
 
 #
@@ -2642,10 +2647,9 @@ main(){
       sleep 1
       for instance in "${instances[@]}"; do
       (
+        echo "`timestamp`: restart" >> "$logdir/$arkmanagerLog"
         useConfig "$instance"
         doStart "${options[@]}"
-        echo "`timestamp`: start" >> "$logdir/$arkmanagerLog"
-        echo "`timestamp`: restart" >> "$logdir/$arkmanagerLog"
       )
       done
     fi
