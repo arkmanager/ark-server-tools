@@ -230,6 +230,9 @@ instances.
     Installs all mods specified in the instance config into the
     `ShooterGame/Content/Mods` directory
 
+`uninstallmods`::
+    Deletes all mods from the `ShooterGame/Content/Mods` directory
+
 `installmod <modnum>[,<modnum>[,...]]`::
     Installs the specified mods into the `ShooterGame/Content/Mods`
     directory

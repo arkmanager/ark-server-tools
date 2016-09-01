@@ -1884,14 +1884,29 @@ doInstallAllMods(){
 }
 
 #
+# Removes all mods from the mods directory
+#
+doUninstallAllMods(){
+  for modid in $(getModIds); do
+    if [[ "$modid" != "111111111" && "$modid" != "TheCenter" ]]; then
+      doUninstallMod "$modid"
+    fi
+  done
+}
+
+#
 # Removes mod from mods directory
 #
 doUninstallMod(){
   local modid
   for modid in "${1//,/ }"; do
     local moddir="$arkserverroot/ShooterGame/Content/Mods/$modid"
+    local modfile="$arkserverroot/ShooterGame/Content/Mods/${modid}.mod"
     if [ -d "${moddir}" ]; then
       rm -rf "${moddir}"
+    fi
+    if [ -f "${modfile}" ]; then
+      rm -f "$modfile"
     fi
   done
 }
@@ -2599,6 +2614,9 @@ main(){
         installmods)
           doInstallAllMods
         ;;
+	uninstallmods)
+	  doUninstallAllMods
+	;;
         uninstallmod)
           doUninstallMod "${args[@]}"
         ;;
