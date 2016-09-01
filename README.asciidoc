@@ -230,15 +230,18 @@ instances.
     Installs all mods specified in the instance config into the
     `ShooterGame/Content/Mods` directory
 
-`installmod <modnum>`::
-    Installs the specified mod into the `ShooterGame/Content/Mods`
+`installmod <modnum>[,<modnum>[,...]]`::
+    Installs the specified mods into the `ShooterGame/Content/Mods`
     directory
 
-`uninstallmod <modnum>`::
-    Deletes the specified mod from the `ShooterGame/Content/Mods`
+`uninstallmod <modnum>[,<modnum>[,...]]`::
+    Deletes the specified mods from the `ShooterGame/Content/Mods`
     directory
 
-`reinstallmod <modnum>`::
+`removemod <modnum>[,<modnum>[,...]]`::
+    Deletes the specified mods from the SteamCMD workshop directory
+
+`reinstallmod <modnum>[,<modnum>[,...]]`::
     Runs the `uninstallmod` command followed by the `installmod`
     command
 

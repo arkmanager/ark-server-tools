@@ -1861,16 +1861,17 @@ doExtractMod(){
 # Downloads mod and installs it into mods directory
 #
 doInstallMod(){
-  local modid=$1
+  local modid
+  for modid in "${1//,/ }"; do
+    if [ -f "$steamcmdroot/steamapps/workshop/appworkshop_${mod_appid}.acf" ]; then
+      sed -i "/^\\t\\t\"${modid}\"/,/^\\t\\t}/d" "$steamcmdroot/steamapps/workshop/appworkshop_${mod_appid}.acf"
+    fi
 
-  if [ -f "$steamcmdroot/steamapps/workshop/appworkshop_${mod_appid}.acf" ]; then
-    sed -i "/^\\t\\t\"${modid}\"/,/^\\t\\t}/d" "$steamcmdroot/steamapps/workshop/appworkshop_${mod_appid}.acf"
-  fi
-
-  if doDownloadMod $modid; then
-    doExtractMod $modid
-    echo "Mod $modid installed"
-  fi
+    if doDownloadMod $modid; then
+      doExtractMod $modid
+      echo "Mod $modid installed"
+    fi
+  done
 }
 
 #
@@ -1886,11 +1887,13 @@ doInstallAllMods(){
 # Removes mod from mods directory
 #
 doUninstallMod(){
-  local modid=$1
-  local moddir="$arkserverroot/ShooterGame/Content/Mods/$modid"
-  if [ -d "${moddir}" ]; then
-    rm -rf "${moddir}"
-  fi
+  local modid
+  for modid in "${1//,/ }"; do
+    local moddir="$arkserverroot/ShooterGame/Content/Mods/$modid"
+    if [ -d "${moddir}" ]; then
+      rm -rf "${moddir}"
+    fi
+  done
 }
 
 #
