@@ -59,7 +59,7 @@ case "$status" in
     ;;
 
   "1")
-    echo "Something where wrong :("
+    echo "Something went wrong :( Make sure you meet the Prerequisites found in the readme."
     ;;
   "2")
     echo "WARNING: A previous version of ARK Server Tools was detected in your system, your old configuration was not overwritten. You may need to manually update it."
