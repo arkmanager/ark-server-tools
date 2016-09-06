@@ -752,7 +752,7 @@ doStart() {
     if [ "$arkAutoUpdateOnStart" == "true" ]; then
       if ! [[ " $* " =~ " --noautoupdate " ]]; then
         echo "Updating server"
-        doUpdate --update-mods
+        doUpdate --update-mods --no-autostart
       fi
     fi
     tput sc
@@ -991,6 +991,7 @@ doUpdate() {
   local modupdate=
   local saveworld=
   local downloadonly=
+  local noautostart=
 
   for arg in "$@"; do
     if [ "$arg" == "--force" ]; then
@@ -1010,6 +1011,8 @@ doUpdate() {
       modupdate=1
     elif [ "$arg" == "--backup" ]; then
       arkBackupPreUpdate=true
+    elif [ "$arg" == "--no-autostart" ]; then
+      noautostart=1
     elif [[ "$arg" =~ ^--stagingdir= ]]; then
       arkStagingDir="${ark#--stagingdir=}"
     elif [ "$arg" == "--downloadonly" ]; then
@@ -1174,10 +1177,12 @@ doUpdate() {
 
     rm -f "${arkserverroot}/.ark-update.lock"
     # we restart the server only if it was started before the update
-    if [ $serverWasAlive -eq 1 ] || [ -f "${arkserverroot}/.startAfterUpdate" ]; then
-      rm -f "${arkserverroot}/.startAfterUpdate"
-      rm -f "${arkserverroot}/.ark-update.lock"
-      doStart --noautoupdate
+    if [ -z "$noautostart" ]; then
+      if [ $serverWasAlive -eq 1 ] || [ -f "${arkserverroot}/.startAfterUpdate" ]; then
+        rm -f "${arkserverroot}/.startAfterUpdate"
+        rm -f "${arkserverroot}/.ark-update.lock"
+        doStart --noautoupdate
+      fi
     fi
   else
     echo "Your server is already up to date! The most recent version is ${bnumber}."
