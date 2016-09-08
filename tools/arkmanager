@@ -986,6 +986,7 @@ doWarn(){
 #
 doUpdate() {
   local appupdate=
+  local bgupdate=
   local updatetype=normal
   local validate=
   local modupdate=
@@ -1082,6 +1083,11 @@ doUpdate() {
     fi
   fi
 
+  if [[ -f "$arkserverroot/$arkautorestartfile" && "$arkserverroot/$arkautorestartfile" -ot "${arkserverroot}/steamapps/appmanifest_${appid}.acf" ]]; then
+    echo "Server was updated while it was running"
+    bgupdate=1
+  fi
+
   if [ -n "$downloadonly" ]; then
     if [ -n "$appupdate" -a -n "$arkStagingDir" -a "$arkStagingDir" != "$arkserverroot" ]; then
       echo "Server update downloaded"
@@ -1090,7 +1096,7 @@ doUpdate() {
       echo "Mod update downloaded"
     fi
     echo "Not applying update - download-only enabled"
-  elif [ -n "$appupdate" -o -n "$modupdate" ]; then
+  elif [ -n "$appupdate" -o -n "$modupdate" -o -n "$bgupdate" ]; then
     if isTheServerRunning; then
       if [ "$updatetype" == "safe" ]; then
         while [ ! `find $arkserverroot/ShooterGame/Saved/SavedArks -mmin -1 -name ${serverMap##*/}.ark` ]; do
