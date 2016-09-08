@@ -244,7 +244,7 @@ declare -A modsrcdirs
 # timestamp
 #
 timestamp() {
-  date +%T
+  date +"%Y-%m-%d %H:%M:%S"
 }
 
 #
@@ -728,7 +728,22 @@ doRun() {
     exit 1
   fi
   
-  echo "$$" >"${arkserverroot}/${arkmanagerpidfile}"
+  # $$ returns the main process, $BASHPID returns the current process
+  echo "$BASHPID" >"${arkserverroot}/${arkmanagerpidfile}"
+
+  if [ -f "${arkserverroot}/.ark-update.lock" ]; then
+    local updatepid="$(<"${arkserverroot}/.ark-update.lock")"
+    if kill -0 "$updatepid" >/dev/null 2>&1; then
+      echo "An update is currently in progress.  Start aborted"
+      return 1
+    fi
+  fi
+
+  if [ " $* " = *" --wait "* ]; then
+    # This requires bash 4+
+    # $$ returns the main process, $BASHPID returns the current process
+    kill -STOP $BASHPID # wait for caller to renice us
+  fi
 
   arkserveropts="$serverMap"
 
@@ -932,13 +947,25 @@ doRun() {
 # start function
 #
 doStart() {
+  touch "${arkserverroot}/.startAfterUpdate"
+
+  if [ -f "${arkserverroot}/.ark-update.lock" ]; then
+    local updatepid="$(<"${arkserverroot}/.ark-update.lock")"
+    if kill -0 "$updatepid" >/dev/null 2>&1; then
+      echo "An update is currently in progress.  Start aborted"
+      echo "`timestamp`: Start aborted due to running update - pid: $updatepid" >>"$logdir/$arkserverLog"
+      return 1
+    fi
+  fi
+
   if isTheServerRunning; then
     echo "The server is already running"
+    echo "`timestamp`: Start aborted due to server already running"
   else
     if [ "$arkAutoUpdateOnStart" == "true" ]; then
       if ! [[ " $* " =~ " --noautoupdate " ]]; then
         echo "Updating server"
-        doUpdate --update-mods
+        doUpdate --update-mods --no-autostart
       fi
     fi
 
@@ -948,7 +975,20 @@ doStart() {
     tput sc
     echo "The server is starting..."
 
-    doRun </dev/null >>"$logdir/$arkserverLog" 2>&1 & # output of this command is logged
+    local pid=$!
+    if [ -n "$arkPriorityBoost" ]; then
+      doRun --wait </dev/null >>"$logdir/$arkserverLog" 2>&1 & # output of this command is logged
+      local pid="$!"
+
+      # Wait for monitor process to suspend itself
+      wait
+
+      echo "Boosting priority of ark server"
+      sudo renice -n "$arkPriorityBoost" "$pid"
+      kill -CONT "$pid"
+    else
+      doRun </dev/null >>"$logdir/$arkserverLog" 2>&1 & # output of this command is logged
+    fi
     echo "`timestamp`: start" >> "$logdir/$arkmanagerLog"
     tput rc; tput ed;
     echo "The server is now running, and should be up within 10 minutes"
@@ -974,6 +1014,10 @@ doStartAll(){
 # stop the ARK server
 #
 doStop() {
+  if [ "$1" != "update" ]; then
+    rm -f "${arkserverroot}/.startAfterUpdate"
+  fi
+
   if isTheServerRunning; then
     local stopreason="$1"
     local dowarn=
@@ -999,7 +1043,7 @@ doStop() {
     fi
     tput sc
     echo "Stopping server..."
-    echo "`timestamp`: stopping" >> "$logdir/$arkmanagerLog"
+    echo "`timestamp`: stopping; reason: $stopreason" >> "$logdir/$arkmanagerLog"
     rm -f "$arkserverroot/$arkautorestartfile"
     # kill the server with the PID
     PID=`getServerPID`
@@ -1366,12 +1410,14 @@ doWarn(){
 #
 doUpdate() {
   local appupdate=
+  local bgupdate=
   local updatetype=normal
   local validate=
   local modupdate=
   local saveworld=
   local downloadonly=
   local nodownload=
+  local noautostart=
 
   for arg in "$@"; do
     case "$arg" in
@@ -1384,6 +1430,7 @@ doUpdate() {
       --saveworld) saveworld=1; ;;
       --update-mods) modupdate=1; ;;
       --backup) arkBackupPreUpdate=true; ;;
+      --no-autostart) noautostart=1; ;;
       --stagingdir=*) arkStagingDir="${arg#--stagingdir=}"; ;;
       --downloadonly) downloadonly=1; ;;
       --no-download) nodownload=1; ;;
@@ -1393,6 +1440,12 @@ doUpdate() {
         exit 1
     esac
   done
+
+  # check if the server was alive before the update so we can launch it back after the update
+  serverWasAlive=0
+  if isTheServerRunning ;then
+    serverWasAlive=1
+  fi
 
   echo "$$" >"${arkserverroot}/.ark-update.lock.$$" 2>/dev/null
   while true; do
@@ -1409,6 +1462,8 @@ doUpdate() {
     fi
   done
   rm -f "${arkserverroot}/.ark-update.lock.$$"
+
+  echo "`timestamp`: checking for update; PID: $$"
 
   if [ -n "$modupdate" ]; then
     if [ -z "$nodownload" ]; then
@@ -1461,6 +1516,11 @@ doUpdate() {
     fi
   fi
 
+  if [[ -f "$arkserverroot/$arkautorestartfile" && "$arkserverroot/$arkautorestartfile" -ot "${arkserverroot}/steamapps/appmanifest_${appid}.acf" ]]; then
+    echo "Server was updated while it was running"
+    bgupdate=1
+  fi
+
   if [ -n "$downloadonly" ]; then
     if [ -n "$appupdate" -a -n "$arkStagingDir" -a "$arkStagingDir" != "$arkserverroot" ]; then
       echo "Server update downloaded"
@@ -1469,7 +1529,7 @@ doUpdate() {
       echo "Mod update downloaded"
     fi
     echo "Not applying update - download-only enabled"
-  elif [ -n "$appupdate" -o -n "$modupdate" ]; then
+  elif [ -n "$appupdate" -o -n "$modupdate" -o -n "$bgupdate" ]; then
     arkversion="$(<"$arkserverroot/version.txt")"
     if isTheServerRunning; then
       if [ "$updatetype" == "safe" ]; then
@@ -1489,12 +1549,6 @@ doUpdate() {
           return 1
         fi
       fi
-    fi
-
-    # check if the server was alive before the update so we can launch it back after the update
-    serverWasAlive=0
-    if isTheServerRunning ;then
-      serverWasAlive=1
     fi
 
     if [ -n "$saveworld" ]; then
@@ -1555,17 +1609,23 @@ doUpdate() {
         fi
       done
     fi
-
-    # we restart the server only if it was started before the update
-    if [ $serverWasAlive -eq 1 ]; then
-      doStart --noautoupdate
-    fi
   else
     echo "Your server is already up to date! The most recent version is ${bnumber}."
     echo "`timestamp`: No update needed." >> "$logdir/update.log"
   fi;
 
   rm -f "${arkserverroot}/.ark-update.lock"
+
+  if ! isTheServerRunning; then
+    # we restart the server only if it was started before the update
+    if [ -z "$noautostart" ]; then
+      if [ $serverWasAlive -eq 1 ] || [ -f "${arkserverroot}/.startAfterUpdate" ]; then
+        rm -f "${arkserverroot}/.startAfterUpdate"
+        rm -f "${arkserverroot}/.ark-update.lock"
+        doStart --noautoupdate
+      fi
+    fi
+  fi
 }
 
 #
@@ -1883,16 +1943,17 @@ doExtractMod(){
 # Downloads mod and installs it into mods directory
 #
 doInstallMod(){
-  local modid=$1
+  local modid
+  for modid in "${1//,/ }"; do
+    if [ -f "$steamcmdroot/steamapps/workshop/appworkshop_${mod_appid}.acf" ]; then
+      sed -i "/^\\t\\t\"${modid}\"/,/^\\t\\t}/d" "$steamcmdroot/steamapps/workshop/appworkshop_${mod_appid}.acf"
+    fi
 
-  if [ -f "$steamcmdroot/steamapps/workshop/appworkshop_${mod_appid}.acf" ]; then
-    sed -i "/^\\t\\t\"${modid}\"/,/^\\t\\t}/d" "$steamcmdroot/steamapps/workshop/appworkshop_${mod_appid}.acf"
-  fi
-
-  if doDownloadMod $modid; then
-    doExtractMod $modid
-    echo "Mod $modid installed"
-  fi
+    if doDownloadMod $modid; then
+      doExtractMod $modid
+      echo "Mod $modid installed"
+    fi
+  done
 }
 
 #
@@ -1905,14 +1966,31 @@ doInstallAllMods(){
 }
 
 #
+# Removes all mods from the mods directory
+#
+doUninstallAllMods(){
+  for modid in $(getModIds); do
+    if [[ "$modid" != "111111111" && "$modid" != "TheCenter" ]]; then
+      doUninstallMod "$modid"
+    fi
+  done
+}
+
+#
 # Removes mod from mods directory
 #
 doUninstallMod(){
-  local modid=$1
-  local moddir="$arkserverroot/ShooterGame/Content/Mods/$modid"
-  if [ -d "${moddir}" ]; then
-    rm -rf "${moddir}"
-  fi
+  local modid
+  for modid in "${1//,/ }"; do
+    local moddir="$arkserverroot/ShooterGame/Content/Mods/$modid"
+    local modfile="$arkserverroot/ShooterGame/Content/Mods/${modid}.mod"
+    if [ -d "${moddir}" ]; then
+      rm -rf "${moddir}"
+    fi
+    if [ -f "${modfile}" ]; then
+      rm -f "$modfile"
+    fi
+  done
 }
 
 #
@@ -2621,6 +2699,9 @@ main(){
         installmods)
           doInstallAllMods
         ;;
+	uninstallmods)
+	  doUninstallAllMods
+	;;
         uninstallmod)
           doUninstallMod "${args[@]}"
         ;;
@@ -2672,10 +2753,9 @@ main(){
       sleep 1
       for instance in "${instances[@]}"; do
       (
+        echo "`timestamp`: restart" >> "$logdir/$arkmanagerLog"
         useConfig "$instance"
         doStart "${options[@]}"
-        echo "`timestamp`: start" >> "$logdir/$arkmanagerLog"
-        echo "`timestamp`: restart" >> "$logdir/$arkmanagerLog"
       )
       done
     fi

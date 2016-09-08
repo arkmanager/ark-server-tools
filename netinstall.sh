@@ -67,7 +67,7 @@ function doInstallFromRelease(){
     echo "Latest release is ${tagname}"
     echo "Getting commit for latest release..."
     local commit="$(curl -s "https://api.github.com/repos/FezVrasta/ark-server-tools/git/refs/tags/${tagname}" | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p')"
-    doUpgradeToolsFromCommit "$commit"
+    doInstallFromCommit "$commit"
   else
     echo "Unable to get latest release"
   fi
@@ -82,6 +82,7 @@ function doInstallFromBranch(){
       echo "Channel ${channel} not found - trying master"
       doInstallFromBranch master
     else
+      echo "Channel ${channel} not found - trying latest stable release"
       doInstallFromRelease
     fi
   fi

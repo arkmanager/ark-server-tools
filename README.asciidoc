@@ -230,15 +230,21 @@ instances.
     Installs all mods specified in the instance config into the
     `ShooterGame/Content/Mods` directory
 
-`installmod <modnum>`::
-    Installs the specified mod into the `ShooterGame/Content/Mods`
+`uninstallmods`::
+    Deletes all mods from the `ShooterGame/Content/Mods` directory
+
+`installmod <modnum>[,<modnum>[,...]]`::
+    Installs the specified mods into the `ShooterGame/Content/Mods`
     directory
 
-`uninstallmod <modnum>`::
-    Deletes the specified mod from the `ShooterGame/Content/Mods`
+`uninstallmod <modnum>[,<modnum>[,...]]`::
+    Deletes the specified mods from the `ShooterGame/Content/Mods`
     directory
 
-`reinstallmod <modnum>`::
+`removemod <modnum>[,<modnum>[,...]]`::
+    Deletes the specified mods from the SteamCMD workshop directory
+
+`reinstallmod <modnum>[,<modnum>[,...]]`::
     Runs the `uninstallmod` command followed by the `installmod`
     command
 
@@ -395,6 +401,11 @@ The following options can be overridden on a per-instance basis:
 
 `arkMaxBackupSizeMB`::
     Limits the size of the stored backups
+
+`arkPriorityBoost`::
+    Attempts to boost the priority of the ARK server.
+    Negative values give a higher priority, and positive values give a lower priority.
+    Requires `sudo` and `renice`
 
 `msgWarnUpdateMinutes`::
 `msgWarnUpdateSeconds`::
