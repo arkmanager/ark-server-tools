@@ -1190,6 +1190,10 @@ doUpdate() {
         doStart --noautoupdate
       fi
     fi
+    
+    if [ -z "$bgupdate" ]; then
+      touch "${arkserverroot}/steamapps/appmanifest_${appid}.acf"
+    fi
   else
     echo "Your server is already up to date! The most recent version is ${bnumber}."
     echo "`timestamp`: No update needed." >> "$logdir/update.log"
