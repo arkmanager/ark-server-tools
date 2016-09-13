@@ -1417,16 +1417,16 @@ doUpdate() {
           cp -al "$arkserverroot/ShooterGame/." "$arkStagingDir/ShooterGame"
           cp -al "$arkserverroot/Engine/." "$arkStagingDir/Engine"
           cp -al "$arkserverroot/linux64/." "$arkStagingDir/linux64"
-          cp -al "$arkserverroot/PackageInfo.bin" "$arkStagingDir/PackageInfo.bin"
-          cp -al "$arkserverroot/steamclient.so" "$arkStagingDir/steamclient.so"
-          cp -al "$arkserverroot/version.txt" "$arkStagingDir/version.txt"
           cp -a "$arkserverroot/steamapps/." "$arkStagingDir/steamapps"
+	  cp -l "$arkserverroot/"* "$arkStagingDir"
         else
           rsync -a "$arkserverroot/." "$arkStagingDir/."
         fi
         rm -rf "$arkStagingDir/ShooterGame/Content/Mods/"*
         rm -rf "$arkStagingDir/ShooterGame/Saved/"*
         rm -rf "$arkStagingDir/Engine/Binaries/ThirdParty/SteamCMD/Linux/steamapps"
+	cp -al "$arkserverroot/ShooterGame/Content/Mods/111111111/." "$arkStagingDir/ShooterGame/Content/Mods/111111111"
+	cp -l "$arkserverroot/ShooterGame/Content/Mods/111111111.mod" "$arkStagingDir/ShooterGame/Content/Mods/111111111.mod"
       fi
 
       if [ -z "$nodownload" ]; then
@@ -1458,7 +1458,12 @@ doUpdate() {
     fi
     echo "Not applying update - download-only enabled"
   elif [ -n "$appupdate" -o -n "$modupdate" -o -n "$bgupdate" ]; then
-    arkversion="$(<"$arkserverroot/version.txt")"
+    if [ -f "$arkserverroot/version.txt" ]; then
+      arkversion="$(<"$arkserverroot/version.txt")"
+    else
+      arkversion="$(getCurrentVersion; echo "$instver")"
+    fi
+
     if isTheServerRunning; then
       if [ "$updatetype" == "safe" ]; then
         while [ ! `find $arkserverroot/ShooterGame/Saved/SavedArks -mmin -1 -name ${serverMap##*/}.ark` ]; do
@@ -1499,9 +1504,7 @@ doUpdate() {
           cp -alu --remove-destination "$arkStagingDir/ShooterGame/." "$arkserverroot/ShooterGame"
           cp -alu --remove-destination "$arkStagingDir/Engine/." "$arkserverroot/Engine"
           cp -alu --remove-destination "$arkStagingDir/linux64/." "$arkserverroot/linux64"
-          cp -alu --remove-destination "$arkStagingDir/PackageInfo.bin" "$arkserverroot/PackageInfo.bin"
-          cp -alu --remove-destination "$arkStagingDir/steamclient.so" "$arkserverroot/steamclient.so"
-          cp -alu --remove-destination "$arkStagingDir/version.txt" "$arkserverroot/version.txt"
+	  cp -lu --remove-destination "$arkStagingDir/"* "$arkserverroot"
           cp -au --remove-destination "$arkStagingDir/steamapps/." "$arkserverroot/steamapps"
         else
           rsync -a "$arkStagingDir/." "$arkserverroot"
@@ -2286,7 +2289,9 @@ printStatus(){
 
   getCurrentVersion
   echo -e "$NORMAL" "Server build ID: " "$GREEN" $instver "$NORMAL"
-  echo -e "$NORMAL" "Server version: " "$GREEN" "$(<"$arkserverroot/version.txt")" "$NORMAL"
+  if [ -f "$arkserverroot/version.txt" ]; then
+    echo -e "$NORMAL" "Server version: " "$GREEN" "$(<"$arkserverroot/version.txt")" "$NORMAL"
+  fi
 }
 
 getAllInstanceNames(){
