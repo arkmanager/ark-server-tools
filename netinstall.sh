@@ -28,11 +28,11 @@ fi
 
 function doInstallFromCommit(){
   local commit="$1"
-  tmpdir="$(mktemp -d "ark-server-tools-XXXXXXXX")"
+  tmpdir="$(mktemp -t -d "ark-server-tools-XXXXXXXX")"
   if [ -z "$tmpdir" ]; then echo "Unable to create temporary directory"; exit 1; fi
   cd "$tmpdir"
   echo "Downloading installer"
-  curl -L "https://github.com/${arkstGithubRepo}/archive/${commit}.tar.gz" | tar -xz
+  curl -s -L "https://github.com/${arkstGithubRepo}/archive/${commit}.tar.gz" | tar -xz
   cd "ark-server-tools-${commit}/tools"
   if [ ! -f "install.sh" ]; then echo "install.sh not found in $PWD"; exit 1; fi
   sed -i -e "s|^arkstCommit='.*'|arkstCommit='${commit}'|" \
@@ -45,9 +45,9 @@ function doInstallFromCommit(){
   rm -rf "$tmpdir"
 
   if [ "$result" = 0 ] || [ "$result" = 2 ]; then
-    "ARK Server Tools successfully installed"
+    echo "ARK Server Tools successfully installed"
   else
-    "ARK Server Tools install failed"
+    echo "ARK Server Tools install failed"
   fi
   return $result
 }
@@ -69,7 +69,7 @@ function doInstallFromRelease(){
     echo "Latest release is ${tagname}"
     echo "Getting commit for latest release..."
     local commit="$(curl -s "https://api.github.com/repos/${arkstGithubRepo}/git/refs/tags/${tagname}" | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p')"
-    doUpgradeToolsFromCommit "$commit"
+    doInstallFromCommit "$commit"
   else
     echo "Unable to get latest release"
     return 1
