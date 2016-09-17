@@ -57,10 +57,10 @@ doUpgradeToolsFromCommit(){
   rm -rf "$tmpdir"
 
   if [ "$result" = 0 ] || [ "$result" = 2 ]; then
-    "ARK Server Tools successfully upgraded"
+    echo "ARK Server Tools successfully upgraded"
     "$0" --version
   else
-    "ARK Server Tools upgrade failed"
+    echo "ARK Server Tools upgrade failed"
   fi
   exit $result
 }
