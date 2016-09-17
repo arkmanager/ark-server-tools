@@ -148,7 +148,6 @@ arkserverLog="arkserver.log"    # here is logged the output of ShooterGameServer
 
 appid="${appid:-376030}"
 mod_appid="${mod_appid:-346110}"
-arkautorestartfile="${arkautorestartfile:-ShooterGame/Saved/.autorestart}"
 install_bindir="${install_bindir:-${0%/*}}"
 install_libexecdir="${install_libexecdir:-${install_bindir%/*}/libexec/arkmanager}"
 
@@ -736,7 +735,7 @@ doRun() {
 # start function
 #
 doStart() {
-  touch "${arkserverroot}/.startAfterUpdate"
+  touch "${arkserverroot}/.startAfterUpdate-${instance}"
 
   if [ -f "${arkserverroot}/.ark-update.lock" ]; then
     local updatepid="$(<"${arkserverroot}/.ark-update.lock")"
@@ -785,7 +784,7 @@ doStartAll(){
 #
 doStop() {
   if [ "$1" != "update" ]; then
-    rm -f "${arkserverroot}/.startAfterUpdate"
+    rm -f "${arkserverroot}/.startAfterUpdate-${instance}"
   fi
 
   if isTheServerRunning; then
@@ -1184,8 +1183,8 @@ doUpdate() {
     rm -f "${arkserverroot}/.ark-update.lock"
     # we restart the server only if it was started before the update
     if [ -z "$noautostart" ]; then
-      if [ $serverWasAlive -eq 1 ] || [ -f "${arkserverroot}/.startAfterUpdate" ]; then
-        rm -f "${arkserverroot}/.startAfterUpdate"
+      if [ $serverWasAlive -eq 1 ] || [ -f "${arkserverroot}/.startAfterUpdate-${instance}" ]; then
+        rm -f "${arkserverroot}/.startAfterUpdate-${instance}"
         rm -f "${arkserverroot}/.ark-update.lock"
         doStart --noautoupdate
       fi
@@ -1725,6 +1724,7 @@ useConfig() {
     echo "Error: arkserverroot not set"
     exit 1
   fi
+  arkautorestartfile="${arkautorestartfile:-ShooterGame/Saved/.autorestart-${1}}"
 }
 
 showUsage() {
