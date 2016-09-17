@@ -513,6 +513,14 @@ function getServerPID(){
       return
     fi
   fi
+  if [ -f "${arkserverroot}/${arkserveroldpidfile}" ]; then
+    serverpid="$(<"${arkserverroot}/${arkserveroldpidfile}")"
+    if kill -0 "$serverpid" >/dev/null 2>&1; then
+      echo $serverpid
+      return
+    fi
+  fi
+
   if [ -z "$arkopt_clusterid" ]; then
     ps -ef | grep "$arkserverroot/$arkserverexec" | grep -v grep | awk '{print $2}'
   fi
@@ -995,6 +1003,10 @@ doStop() {
         kill $PID
       fi
     fi
+
+    rm -f "${arkserverroot}/${arkserverpidfile}"
+    rm -f "${arkserverroot}/${arkserveroldpidfile}"
+    rm -f "${arkserverroot}/${arkmanagerpidfile}"
 
     tput rc; tput ed;
     echo "The server has been stopped"
@@ -2375,6 +2387,7 @@ useConfig() {
   fi
   arkautorestartfile="${arkautorestartfile:-ShooterGame/Saved/.autorestart-${1}}"
   arkserverpidfile="${arkserverpidfile:-ShooterGame/Saved/.arkserver-${1}.pid}"
+  arkserveroldpidfile="ShooterGame/Saved/.arkserver.pid"
   arkmanagerpidfile="${arkmanagerpidfile:-ShooterGame/Saved/.arkmanager-${1}.pid}"
 }
 
