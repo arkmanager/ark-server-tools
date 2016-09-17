@@ -7,28 +7,18 @@
 # Contributors:         Sispheor, Atriusftw, klightspeed, lexat, puseidr
 
 # Script version
-arkstVersion="1.5"
+arkstVersion='1.6-pre3'
+arkstTag=''
 arkstCommit=''
+arkstGithubRepo="FezVrasta/ark-server-tools"
 
 doUpgradeTools() {
   local sudo=sudo
   if [ "$UID" == 0 -o "$steamcmd_user" == "--me" ]; then
     sudo=
   fi
-  echo "arkmanager v${arkstVersion}: Checking for updates..."
-  arkstLatestVersion=`curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/.version`
-  arkstLatestCommit=`curl -s https://api.github.com/repos/FezVrasta/ark-server-tools/git/refs/heads/${arkstChannel} | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p'`
 
-  if [ "$arkstLatestVersion" == "Not Found" ]; then
-    echo "Channel ${arkstChannel} does not exist"
-    echo
-    echo "Available channels:"
-    curl -s https://api.github.com/repos/FezVrasta/ark-server-tools/git/refs/heads | sed -n 's|^ *"ref": "refs/heads/\(.*\)",|\1|p'
-    echo
-    return
-  fi
-
-  reinstall_args=()
+  local reinstall_args=()
   if [ -n "$install_bindir" ]; then
     reinstall_args=( "${reinstall_args[@]}" "--bindir" "$install_bindir" )
   fi
@@ -38,22 +28,102 @@ doUpgradeTools() {
   if [ -n "$install_datadir" ]; then
     reinstall_args=( "${reinstall_args[@]}" "--datadir" "$install_datadir" )
   fi
+
+  echo "arkmanager v${arkstVersion}: Checking for updates..."
+
+  if [ -n "$arkstUnstable" ] || [ "$arkstChannel" != "master" ]; then
+    doUpgradeToolsFromBranch
+  else
+    doUpgradeToolsFromRelease
+  fi
+}
+
+doUpgradeToolsFromCommit(){
+  local commit="$1"
+  tmpdir="$(mktemp -d "ark-server-tools-XXXXXXXX")"
+  if [ -z "$tmpdir" ]; then echo "Unable to create temporary directory"; exit 1; fi
+  cd "$tmpdir"
+  echo "Downloading installer"
+  curl -s -L "https://github.com/${arkstGithubRepo}/archive/${commit}.tar.gz" | tar -xz
+  cd "ark-server-tools-${commit}/tools"
+  if [ ! -f "install.sh" ]; then echo "install.sh not found in $PWD"; exit 1; fi
+  sed -i -e "s|^arkstCommit='.*'|arkstCommit='${commit}'|" \
+         -e "s|^arkstTag='.*'|arkstTag='${tagname}'|" \
+         arkmanager
+  echo "Running install.sh"
+  bash install.sh "$steamcmd_user" "${reinstall_args[@]}"
+  result=$?
+  cd /
+  rm -rf "$tmpdir"
+
+  if [ "$result" = 0 ] || [ "$result" = 2 ]; then
+    echo "ARK Server Tools successfully upgraded"
+    "$0" --version
+  else
+    echo "ARK Server Tools upgrade failed"
+  fi
+  exit $result
+}
+
+doUpgradeToolsFromBranch(){
+  arkstLatestVersion=`curl -s "https://raw.githubusercontent.com/${arkstGithubRepo}/${arkstChannel}/.version"`
+  arkstLatestCommit=`curl -s "https://api.github.com/repos/${arkstGithubRepo}/git/refs/heads/${arkstChannel}" | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p'`
+
+  if [ "$arkstLatestVersion" == "Not Found" ]; then
+    echo "Channel ${arkstChannel} does not exist"
+    echo
+    echo "Available channels:"
+    curl -s "https://api.github.com/repos/${arkstGithubRepo}/git/refs/heads" | sed -n 's|^ *"ref": "refs/heads/\(.*\)",|\1|p'
+    echo
+    return
+  fi
+
+  REPLY=
+
   if [[ $arkstLatestVersion > $arkstVersion ]]; then
     read -p "A new version was found! Do you want to upgrade ARK Server Tools to v${arkstLatestVersion}?" -n 1 -r
-    echo -en "\n"
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/netinstall.sh | $sudo bash -s -- ${steamcmd_user} ${arkstChannel} "${reinstall_args[@]}"
-        exit 0
-    fi
+    echo
   elif [[ $arkstLatestVersion == $arkstVersion && "$arkstLatestCommit" != "$arkstCommit" ]]; then
     read -p "A hotfix is available for v${arkstLatestVersion}.  Do you wish to install it?" -n 1 -r
-    echo -en "\n"
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        curl -s https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/netinstall.sh | $sudo bash -s -- ${steamcmd_user} ${arkstChannel} "${reinstall_args[@]}"
-        exit 0
-    fi
+    echo
   else
     echo "Your ARK server tools are already up to date"
+  fi
+
+  if [[ "$REPLY" =~ ^[Yy]$ ]]; then
+    doUpgradeToolsFromCommit "$arkstLatestCommit"
+  fi
+}
+
+doUpgradeToolsFromRelease(){
+  local tagname=
+  local desc=
+
+  echo "Getting latest release..."
+  # Read the variables from github
+  while IFS=$'\t' read n v; do
+    case "${n}" in
+      tag_name) tagname="${v}"; ;;
+      body) desc="${v}"
+    esac
+  done < <(curl -s "https://api.github.com/repos/${arkstGithubRepo}/releases/latest" | sed -n 's/^  "\([^"]*\)": "*\([^"]*\)"*,*/\1\t\2/p')
+
+  if [ -n "$tagname" ]; then
+    if [ "$tagname" != "$arkstTag" ]; then
+      echo "A new version has been released: ${tagname}"
+      echo -e "$desc"
+      read -p "Do you want to upgrade to ${tagname}? [Y/N] " -n 1 -r
+      echo
+      if [[ "$REPLY" =~ ^[Yy]$ ]]; then
+        echo "Getting commit for latest release..."
+        local commit="$(curl -s "https://api.github.com/repos/${arkstGithubRepo}/git/refs/tags/${tagname}" | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p')"
+        doUpgradeToolsFromCommit "$commit"
+      fi
+    else
+      echo "Your ARK server tools are already up to date"
+    fi
+  else
+    echo "Unable to get latest release"
   fi
 }
 
@@ -86,7 +156,10 @@ runAsRoot(){
     fi
   }
 
+  cd /
+
   arkstChannel="$(getConfigVar arkstChannel "master")"
+  arkstUnstable="$(getConfigVar arkstUnstable "")"
   install_bindir="$(getConfigVar install_bindir "${0%/*}")"
   install_libexecdir="$(getConfigVar install_libexecdir "${install_bindir%/*}/libexec/arkmanager")"
   install_datadir="$(getConfigVar install_datadir "${install_bindir%/*}/share/arkmanager")"
@@ -126,6 +199,8 @@ if [ -f "${HOME}/.arkmanager.cfg" ]; then
     source "${HOME}/.arkmanager.cfg"
 fi
 
+cd "$HOME"
+
 lsof=lsof
 if [ -x /usr/sbin/lsof ]; then
   lsof=/usr/sbin/lsof
@@ -157,6 +232,7 @@ else
   install_datadir="${install_datadir:-${install_bindir%/*}/share/arkmanager}"
 fi
 
+declare -A modsrcdirs
 
 #---------------------
 # functions
@@ -166,7 +242,7 @@ fi
 # timestamp
 #
 timestamp() {
-  date +%T
+  date +"%Y-%m-%d %H:%M:%S"
 }
 
 #
@@ -366,18 +442,28 @@ function runSteamCMD(){
 
 function runSteamCMDspinner(){
   if [ -n "$verbose" ]; then
-    echo
-    runSteamCMD "$@"
+    printf "Executing"
+    printf " %q" "$steamcmdroot/$steamcmdexec" +@NoPromptForPassword 1 +login ${steamlogin:-anonymous} "$@" +quit
+    printf "\n"
+    if (command >&3) 2>/dev/null; then
+      runSteamCMD "$@" > >(tee /dev/fd/3)
+    else
+      runSteamCMD "$@"
+    fi
     return $?
   else
     if [ -z "$progressDisplayType" ]; then
-      if stty <&1 >/dev/null 2>&1; then
+      if stty <&2 >/dev/null 2>&1; then
         progressDisplayType=spinner
       else
         progressDisplayType=dots
       fi
     fi
-    runSteamCMD "$@" >/dev/null 2>&1 &
+    if (command >&3) 2>/dev/null; then
+      runSteamCMD "$@" >&3 &
+    else
+      runSteamCMD "$@" >/dev/null &
+    fi
     local scpid=$!
     local pos=0
     local spinner=( '\b-' '\b/' '\b|' '\b\\' )
@@ -394,6 +480,12 @@ function runSteamCMDspinner(){
     wait $scpid
     return $?
   fi
+}
+
+function runSteamCMDspinnerSubst(){
+  local fd="$1"
+  shift
+  runSteamCMDspinner "$@" 3>&1 >/dev/fd/${fd}
 }
 
 #
@@ -487,7 +579,24 @@ function getAvailableVersion(){
 # Get the PID of the server process
 #
 function getServerPID(){
-  ps -ef | grep "$arkserverroot/$arkserverexec" | grep -v grep | awk '{print $2}'
+  if [ -f "${arkserverroot}/${arkserverpidfile}" ]; then
+    serverpid="$(<"${arkserverroot}/${arkserverpidfile}")"
+    if kill -0 "$serverpid" >/dev/null 2>&1; then
+      echo $serverpid
+      return
+    fi
+  fi
+  if [ -f "${arkserverroot}/${arkserveroldpidfile}" ]; then
+    serverpid="$(<"${arkserverroot}/${arkserveroldpidfile}")"
+    if kill -0 "$serverpid" >/dev/null 2>&1; then
+      echo $serverpid
+      return
+    fi
+  fi
+
+  if [ -z "$arkopt_clusterid" ]; then
+    ps -ef | grep "$arkserverroot/$arkserverexec" | grep -v grep | awk '{print $2}'
+  fi
 }
 
 #
@@ -570,25 +679,65 @@ function isTheServerOnline(){
 # Check if anybody is connected to the server
 #
 function numPlayersConnected(){
-  perl -MSocket -e '
-    my $port = int($ARGV[0]);
-    socket(my $socket, PF_INET, SOCK_DGRAM, 0);
-    setsockopt($socket, SOL_SOCKET, SO_RCVTIMEO, pack("i4", 1, 0, 0, 0));
-    my $sockaddr = pack_sockaddr_in($port, inet_aton($ARGV[1]));
-    send($socket, "\xff\xff\xff\xffTSource Engine Query\x00", 0, $sockaddr);
-    my $data = "";
-    recv($socket, $data, 1400, 0) or (print "-1" and exit(1));
-    my ($servername, $mapname, $game, $fullname, $rest) = split(/\x00/, substr($data, 6), 5);
-    my $players = ord(substr($rest, 2, 1));
-    print "$players\n";
-    ' "${ark_QueryPort}" "${ark_MultiHome:-127.0.0.1}"
+  if [ -n "$arkUsePlayerList" ]; then
+    perl -MSocket -e '
+      my $port = int($ARGV[0]);
+      socket(my $socket, PF_INET, SOCK_DGRAM, 0);
+      setsockopt($socket, SOL_SOCKET, SO_RCVTIMEO, pack("i4", 1, 0, 0, 0));
+      my $sockaddr = pack_sockaddr_in($port, inet_aton($ARGV[1]));
+      send($socket, "\xff\xff\xff\xff\x55\xff\xff\xff\xff", 0, $sockaddr);
+      my $data = "";
+      recv($socket, $data, 1400, 0) or (print "-1" and exit(1));
+      if (ord(substr($data, 4, 1)) == 0x41) {
+        my $chal = substr($data, 5);
+        send($socket, "\xff\xff\xff\xff\x55" . $chal, 0, $sockaddr);
+        $data = "";
+        recv($socket, $data, 1400, 0) or (print "-1" and exit(1));
+      }
+      ord(substr($data, 4, 1)) != 0x44 and (print "-1" and exit(1));
+      my $players = ord(substr($data, 5, 1));
+      my $active = 0;
+      my $pdata = substr($data, 6);
+      for my $i (0 .. $players) {
+        my $idx = ord(substr($pdata, 0, 1));
+        my ($name, $rest) = split(/\x00/, substr($pdata, 1), 2);
+        $pdata = substr($rest, 8);
+        if ($name ne "") {
+          $active = $active + 1;
+        }
+      }
+      print "$active\n";
+      ' "$(getQueryPort)" "${ark_MultiHome:-127.0.0.1}"
+  else
+    perl -MSocket -e '
+      my $port = int($ARGV[0]);
+      socket(my $socket, PF_INET, SOCK_DGRAM, 0);
+      setsockopt($socket, SOL_SOCKET, SO_RCVTIMEO, pack("i4", 1, 0, 0, 0));
+      my $sockaddr = pack_sockaddr_in($port, inet_aton($ARGV[1]));
+      send($socket, "\xff\xff\xff\xffTSource Engine Query\x00", 0, $sockaddr);
+      my $data = "";
+      recv($socket, $data, 1400, 0) or (print "-1" and exit(1));
+      my ($servername, $mapname, $game, $fullname, $rest) = split(/\x00/, substr($data, 6), 5);
+      my $players = ord(substr($rest, 2, 1));
+      print "$players\n";
+      ' "$(getQueryPort)" "${ark_MultiHome:-127.0.0.1}"
+  fi
 }
 
 #
 # run function
 #
 doRun() {
-  cd "$arkserverroot"
+  cd "${arkserverroot}/${arkserverexec%/*}"
+
+  if isTheServerRunning; then
+    echo "Error: another server instance is running from the same directory"
+    echo "Aborting - two servers MUST NOT run from the same directory"
+    exit 1
+  fi
+  
+  # $$ returns the main process, $BASHPID returns the current process
+  echo "$BASHPID" >"${arkserverroot}/${arkmanagerpidfile}"
 
   if [ -f "${arkserverroot}/.ark-update.lock" ]; then
     local updatepid="$(<"${arkserverroot}/.ark-update.lock")"
@@ -598,7 +747,29 @@ doRun() {
     fi
   fi
 
+  if [ " $* " = *" --wait "* ]; then
+    # This requires bash 4+
+    # $$ returns the main process, $BASHPID returns the current process
+    kill -STOP $BASHPID # wait for caller to renice us
+  fi
+
   arkserveropts="$serverMap"
+
+  while read varname; do
+    val="${!varname}"
+    modid="${varname#arkmod_}"
+    case "$val" in
+      game*|enabled)
+        ark_GameModIds="${ark_GameModIds}${ark_GameModIds:+,}${modid}"
+        ;;
+      map*)
+        serverMapModId="${modid}"
+        ;;
+      tc|total*)
+        ark_TotalConversionMod="${modid}"
+        ;;
+    esac
+  done < <(sed -n 's/^\(arkmod_[^= ]*\)=.*/\1/p' <"$configfile")
 
   if [ -n "$serverMapModId" ]; then
     serverMap="$(perl -e '
@@ -619,6 +790,42 @@ doRun() {
   fi
 
   arkextraopts=( )
+
+  while read varname; do
+    val="${!varname}"
+    case "$varname" in
+      ark_*)
+        name="${varname#ark_}"
+
+        # Port is actually one higher than specified
+        # i.e. specifying port 7777 will have the server
+        # use port 7778
+        if [ "$name" == "Port" ]; then
+          (( val = val - 1 ))
+        fi
+
+        if [ -n "$val" ]; then
+          arkserveropts="${arkserveropts}?${name}=${val}"
+        else
+          arkserveropts="${arkserveropts}?${name}"
+        fi
+      ;;
+      arkopt_*)
+        name="${varname#arkopt_}"
+        val="${!varname}"
+
+        if [ -n "$val" ]; then
+          arkextraopts=( "${arkextraopts[@]}" "-${name}=${val}" )
+        fi
+      ;;
+      arkflag_*)
+        name="${varname#arkflag_}"
+
+        arkextraopts=( "${arkextraopts[@]}" "-${name}" )
+      ;;
+    esac
+    unset $varname
+  done < <(sed -n 's/^\(ark\(\|opt\|flag\)_[^= ]*\)=.*/\1/p' <"$configfile")
 
   # bring in ark_... options
   for varname in "${!ark_@}"; do
@@ -656,11 +863,17 @@ doRun() {
     fi
   done
 
+  if [[ " ${arkextraopts[*]} " =~ " -automanagedmods " ]]; then
+    if [ ! -f "${arkserverroot}/Engine/Binaries/ThirdParty/SteamCMD/Linux/steamcmd.sh" ]; then
+      mkdir -p "${arkserverroot}/Engine/Binaries/ThirdParty/SteamCMD/Linux"
+      curl -s "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz" -o "${arkserverroot}/Engine/Binaries/ThirdParty/SteamCMD/Linux/steamcmd_linux.tar.gz"
+      tar -xzf "${arkserverroot}/Engine/Binaries/ThirdParty/SteamCMD/Linux/steamcmd_linux.tar.gz" -C "${arkserverroot}/Engine/Binaries/ThirdParty/SteamCMD/Linux"
+    fi
+  fi
+
   arkserveropts="${arkserveropts}?listen"
   # run the server in background
   echo "`timestamp`: start"
-  # set max open files limit before we start the server
-  ulimit -n $maxOpenFiles
 
   serverpid=0
   restartserver=1
@@ -668,10 +881,11 @@ doRun() {
   # Shutdown the server when we are terminated
   shutdown_server(){
     restartserver=0
-    rm "$arkserverroot/$arkautorestartfile"
+    rm -f "$arkserverroot/$arkautorestartfile"
     if [ "$serverpid" -ne 0 ]; then
-      kill -INT $serverpid
+      kill -INT $serverpid >/dev/null 2>&1
     fi
+    exit 0
   }
 
   trap shutdown_server INT TERM
@@ -685,10 +899,15 @@ doRun() {
     "$arkserverroot/$arkserverexec" "$arkserveropts" "${arkextraopts[@]}" &
     # Grab the server PID
     serverpid=$!
+    echo "$serverpid" >"${arkserverroot}/${arkserverpidfile}"
     echo "`timestamp`: Server PID: $serverpid"
     # Disable auto-restart so we don't get caught in a restart loop
     rm -f "$arkserverroot/$arkautorestartfile"
     restartserver=0
+    if [ -n "$arkAlwaysRestartOnCrash" ]; then
+      restartserver=1
+      touch "$arkserverroot/$arkautorestartfile"
+    fi
 
     sleep 5
 
@@ -723,6 +942,7 @@ doRun() {
     # doStop will remove the autorestart file
     if [ ! -f "$arkserverroot/$arkautorestartfile" ]; then
       restartserver=0
+
     fi
 
     if [ "$restartserver" -ne 0 ]; then
@@ -741,12 +961,14 @@ doStart() {
     local updatepid="$(<"${arkserverroot}/.ark-update.lock")"
     if kill -0 "$updatepid" >/dev/null 2>&1; then
       echo "An update is currently in progress.  Start aborted"
+      echo "`timestamp`: Start aborted due to running update - pid: $updatepid" >>"$logdir/$arkserverLog"
       return 1
     fi
   fi
 
   if isTheServerRunning; then
     echo "The server is already running"
+    echo "`timestamp`: Start aborted due to server already running"
   else
     if [ "$arkAutoUpdateOnStart" == "true" ]; then
       if ! [[ " $* " =~ " --noautoupdate " ]]; then
@@ -754,10 +976,27 @@ doStart() {
         doUpdate --update-mods --no-autostart
       fi
     fi
+
+    if [[ " $* " =~ " --alwaysrestart " ]]; then
+      arkAlwaysRestartOnCrash=true
+    fi
     tput sc
     echo "The server is starting..."
 
-    doRun </dev/null >>"$logdir/$arkserverLog" 2>&1 & # output of this command is logged
+    local pid=$!
+    if [ -n "$arkPriorityBoost" ]; then
+      doRun --wait </dev/null >>"$logdir/$arkserverLog" 2>&1 & # output of this command is logged
+      local pid="$!"
+
+      # Wait for monitor process to suspend itself
+      wait
+
+      echo "Boosting priority of ark server"
+      sudo renice -n "$arkPriorityBoost" "$pid"
+      kill -CONT "$pid"
+    else
+      doRun </dev/null >>"$logdir/$arkserverLog" 2>&1 & # output of this command is logged
+    fi
     echo "`timestamp`: start" >> "$logdir/$arkmanagerLog"
     tput rc; tput ed;
     echo "The server is now running, and should be up within 10 minutes"
@@ -788,15 +1027,31 @@ doStop() {
   fi
 
   if isTheServerRunning; then
-    if [[ " $* " =~ " --warn " ]]; then
-      doWarn "$1"
+    local stopreason="$1"
+    local dowarn=
+    local warnreason=
+    local dosave=
+    shift
+
+    for arg in "$@"; do
+      case "$arg" in
+        --warn) dowarn=1; ;;
+        --warnreason=*) warnreason="${arg#--warnreason=}"; dowarn=1; ;;
+        --saveworld) dosave=1; ;;
+      esac
+    done
+
+    if [[ -n "$dowarn" ]]; then
+      if ! doWarn "$stopreason" "$warnreason"; then
+        return 1
+      fi
     fi
-    if [[ " $* " =~ " --saveworld " ]]; then
+    if [[ -n "$dosave" ]]; then
       doSaveWorld
     fi
     tput sc
     echo "Stopping server..."
-    echo "`timestamp`: stopping" >> "$logdir/$arkmanagerLog"
+    echo "`timestamp`: stopping; reason: $stopreason" >> "$logdir/$arkmanagerLog"
     rm -f "$arkserverroot/$arkautorestartfile"
     # kill the server with the PID
     PID=`getServerPID`
@@ -814,6 +1069,17 @@ doStop() {
       echo "Killing server..."
       kill -KILL $PID
     fi
+
+    if [ -f "${arkserverroot}/${arkmanagerpidfile}" ]; then
+      PID="$(<"${arkserverroot}/${arkmanagerpidfile}")"
+      if [ -n "$PID" ]; then
+        kill $PID
+      fi
+    fi
+
+    rm -f "${arkserverroot}/${arkserverpidfile}"
+    rm -f "${arkserverroot}/${arkserveroldpidfile}"
+    rm -f "${arkserverroot}/${arkmanagerpidfile}"
 
     tput rc; tput ed;
     echo "The server has been stopped"
@@ -868,116 +1134,287 @@ doInstall() {
   getCurrentVersion
 }
 
+
+#
+# Cancels a pending shutdown
+#
+doCancelShutdown(){
+  if [ -f "${arkserverroot}/.ark-warn.lock" ]; then
+    local lockpid="$(<"${arkserverroot}/.ark-warn.lock")"
+    if [ -n "$lockpid" ]; then
+      kill "$lockpid"
+      rm -f "${arkserverroot}/.ark-warn.lock"
+    fi
+  fi
+}
+
+#
+# Formats a warning message based on replacement strings
+#
+printWarnMessage(){
+  local msg
+  if [ -n "$msgWarnReason" ]; then
+    local reason
+    local msgtime
+    if [ "$3" == "minutes" ]; then
+      if [ -n "$msgTimeMinutes" ]; then
+        msgtime="${msgTimeMinutes//\{minutes\}/$4}"
+      else
+        msgtime="$4 minutes"
+      fi
+    else
+      if [ -n "$msgTimeSeconds" ]; then
+        msgtime="${msgTimeSeconds//\{seconds\}/$4}"
+      else
+        msgtime="$4 seconds"
+      fi
+    fi
+    msg="${msgWarnReason//\{time\}/$msgtime}"
+    if [ -n "$warnreason" ]; then
+      local v="warnreason_$warnreason"
+      reason="${!v}"
+      if [ -z "$reason" ]; then
+        reason="$warnreason"
+      fi
+    elif [ "$1" == "update" ]; then
+      if [ -n "$appupdate" ]; then
+        if [ -n "$modupdate" ]; then
+          if [ -n "$msgReasonUpdateAppMod" ]; then
+            reason="$msgReasonUpdateMod"
+          else
+            reason="an update to the game and an update to mod(s) {modnamesupdated}"
+          fi
+        else
+          if [ -n "$msgReasonUpdateApp" ]; then
+            reason="$msgReasonUpdateApp"
+          else
+            reason="an update to the game"
+          fi
+        fi
+      elif [ -n "$modupdate" ]; then
+        if [ -n "$msgReasonUpdateMod" ]; then
+          reason="$msgReasonUpdateMod"
+        else
+          reason="an update to mod(s) {modnamesupdated}"
+        fi
+      fi
+    elif [ -n "$shutdownreason" ]; then
+      reason="$shutdownreason"
+    elif [ "$1" == "restart" ]; then
+      if [ -n "$msgReasonRestart" ]; then
+        reason="$msgReasonRestart"
+      else
+        reason="a restart"
+      fi
+    else
+      if [ -n "$msgReasonShutdown" ]; then
+        reason="$msgReasonShutdown"
+      else
+        reason="maintenance"
+      fi
+    fi
+    reason="${reason//\{time\}/${msgtime}}"
+    reason="${reason//\{modnamesupdated\}/${modnamesupdated}}"
+    reason="${reason//\{version\}/${arkversion}}"
+    msg="${msg//\{reason\}/${reason}}"
+  else
+    if [ "$1" == "update" ]; then
+      if [ "$3" == "minutes" ]; then
+        if [ -n "$msgWarnUpdateMinutes" ]; then
+          msg="${msgWarnUpdateMinutes//%d/$4}"
+        else
+          msg="This ARK server will shutdown for an update in $4 minutes"
+        fi
+      else
+        if [ -n "$msgWarnUpdateSeconds" ]; then
+          msg="${msgWarnUpdateSeconds//%d/$4}"
+        else
+          msg="This ARK server will shutdown for an update in $4 seconds"
+        fi
+      fi
+    elif [ "$1" == "restart" ]; then
+      if [ "$3" == "minutes" ]; then
+        if [ -n "$msgWarnRestartMinutes" ]; then
+          msg="${msgWarnRestartMinutes//%d/$4}"
+        else
+          msg="This ARK server will shutdown for a restart in $4 minutes"
+        fi
+      else
+        if [ -n "$msgWarnRestartSeconds" ]; then
+          msg="${msgWarnRestartSeconds//%d/$4}"
+        else
+          msg="This ARK server will shutdown for a restart in $4 seconds"
+        fi
+      fi
+    else
+      if [ "$3" == "minutes" ]; then
+        if [ -n "$msgWarnShutdownMinutes" ]; then
+          msg="${msgWarnShutdownMinutes//%d/$4}"
+        else
+          msg="This ARK server will shutdown in $4 minutes"
+        fi
+      else
+        if [ -n "$msgWarnShutdownSeconds" ]; then
+          msg="${msgWarnShutdownSeconds//%d/$4}"
+        else
+          msg="This ARK server will shutdown in $4 seconds"
+        fi
+      fi
+    fi
+  fi
+
+  doBroadcastWithEcho "$msg"
+}
+
+#
+# Checks if a player has requested an update cancel in the last 5 minutes
+#
+isUpdateCancelRequested(){
+  if [ -n "$chatCommandRestartCancel" ]; then
+    local canceltime="$(
+      find ~/ARK/server1/ShooterGame/Saved/Logs -name 'ServerGame.*.log' -mmin -5 -print0 | 
+        xargs -0 grep -F -e "${chatCommandRestartCancel}" | 
+        sed 's@^[[]\(....\)\.\(..\)\.\(..\)-\(..\)\.\(..\)\.\(..\):.*@\1-\2-\3 \4:\5:\6 UTC@' | 
+        head -n1)"
+    if [ -n canceltime ]; then
+      canceltime="$(date +%s --date="${canceltime}")"
+      local timenow="$(date +%s --date="now - 5 minutes")"
+      if (( canceltime > timenow )); then
+        return 0
+      fi
+    fi
+  fi
+
+  return 1
+}
+
 #
 # Waits for a configurable number of minutes before updating the server
 #
 doWarn(){
   cd "$arkserverroot"
 
-  local warnmsgmin
-  local warnmsgsec
-
-  if [ "$1" == "update" ]; then
-    if [ -n "$msgWarnUpdateMinutes" ]; then
-      warnmsgmin="$msgWarnUpdateMinutes"
-    else
-      warnmsgmin="This ARK server will shutdown for an update in %d minutes"
-    fi
-    if [ -n "$msgWarnUpdateSeconds" ]; then
-      warnmsgsec="$msgWarnUpdateSeconds"
-    else
-      warnmsgsec="This ARK server will shutdown for an update in %d seconds"
-    fi
-  elif [ "$1" == "restart" ]; then
-    if [ -n "$msgWarnRestartMinutes" ]; then
-      warnmsgmin="$msgWarnRestartMinutes"
-    else
-      warnmsgmin="This ARK server will shutdown for a restart in %d minutes"
-    fi
-    if [ -n "$msgWarnRestartSeconds" ]; then
-      warnmsgsec="$msgWarnRestartSeconds"
-    else
-      warnmsgsec="This ARK server will shutdown for a restart in %d seconds"
-    fi
-  else
-    if [ -n "$msgWarnShutdownMinutes" ]; then
-      warnmsgmin="$msgWarnShutdownMinutes"
-    else
-      warnmsgmin="This ARK server will shutdown in %d minutes"
-    fi
-    if [ -n "$msgWarnShutdownSeconds" ]; then
-      warnmsgsec="$msgWarnShutdownSeconds"
-    else
-      warnmsgsec="This ARK server will shutdown in %d seconds"
-    fi
-  fi
-
-  local pid=`getServerPID`
-  local sleeppid
-  if [ -n "$pid" ]; then
-    local warnmsg
-    local warnminutes=$(( arkwarnminutes ))
-    if (( warnminutes == 0 )); then
-      warnminutes=60
-    fi
-
-    local warnintervals=( 90 60 45 30 20 15 10 5 4 3 2 )
-
-    for warninterval in "${warnintervals[@]}"; do
-      if [ "`getServerPID`" != "$pid" ]; then
-        echo "Server has stopped.  Aborting $1"
-        return 1
+  (
+    echo "$$" >"${arkserverroot}/.ark-warn.lock.$$" 2>/dev/null
+    while true; do
+      if ! ln "${arkserverroot}/.ark-warn.lock.$$" "${arkserverroot}/.ark-warn.lock" 2>/dev/null; then
+        local lockpid="$(<"${arkserverroot}/.ark-warn.lock")"
+        if [ -n "$lockpid" ] && [ "$lockpid" != "$$" ] && kill -0 "$lockpid" 2>/dev/null; then
+          echo "Shutdown warning already in progress (PID: $lockpid)"
+          rm -f "${arkserverroot}/.ark-warn.lock.$$" 2>/dev/null
+          exit 1
+        fi
+        rm -f "${arkserverroot}/.ark-warn.lock"
+      else
+        break
       fi
-      if (( warnminutes > warninterval )); then
-        sleep 1m &
+    done
+    rm -f "${arkserverroot}/.ark-warn.lock.$$"
+
+    update_cancelled(){
+      if [ -n "$msgUpdateCancelled" ]; then
+        msg="${msgUpdateCancelled//%s/$1}"
+      else
+        msg="Shutdown cancelled by operator ($1)"
+      fi
+      doBroadcastWithEcho "${msg}"
+      exit 1
+    }
+
+    trap "update_cancelled 'Ctrl+C'" SIGINT
+    trap "update_cancelled 'Terminated'" SIGTERM
+    trap "update_cancelled 'Connection Closed'" SIGHUP
+    trap "update_cancelled 'Quit'" SIGQUIT
+
+    local pid=`getServerPID`
+    local sleeppid
+    if [ -n "$pid" ]; then
+      local warnmsg
+      local warnminutes=$(( arkwarnminutes ))
+      if (( warnminutes == 0 )); then
+        warnminutes=60
+      fi
+
+      local warnintervals=( 90 60 45 30 20 15 10 5 4 3 2 )
+
+      for warninterval in "${warnintervals[@]}"; do
+        if [ "`getServerPID`" != "$pid" ]; then
+          echo "Server has stopped.  Aborting $1"
+          rm -f "${arkserverroot}/.ark-warn.lock"
+          return 1
+        fi
+        if (( warnminutes >= warninterval )); then
+          sleep 1m &
+          sleeppid=$!
+          printWarnMessage "$1" "$2" "minutes" "$warnminutes"
+          for (( min = warnminutes; min >= warninterval; min-- )); do
+            numplayers=$(numPlayersConnected)
+            echo "There are ${numplayers} players connected"
+            if [[ "numplayers" == "-1" ]]; then
+              echo "Server is not running.  Shutting down immediately"
+              return 0
+            elif (( (numplayers + 0) == 0 )); then
+              doBroadcastWithEcho "Nobody is connected.  Shutting down immediately"
+              rm -f "${arkserverroot}/.ark-warn.lock"
+              return 0
+            fi
+            if isUpdateCancelRequested; then
+              doBroadcastWithEcho "Restart cancelled by player request"
+              return 1
+            fi
+            wait $sleeppid
+            if (( $min > $warninterval )); then
+              sleep 1m &
+              sleeppid=$!
+            fi
+          done
+          warnminutes=$(( warninterval - 1 ))
+        fi
+      done
+
+      local warnseconds=120
+      warnintervals=( 90 60 45 30 20 15 10 5 0 )
+      for warninterval in "${warnintervals[@]}"; do
+        sleep $(( warnseconds - warninterval ))s &
         sleeppid=$!
-        warnmsg="$(printf "$warnmsgmin" "$warnminutes")"
-        doBroadcastWithEcho "$warnmsg"
-        for (( min = warnminutes - 1; min >= warninterval; min-- )); do
+        if [ "`getServerPID`" != "$pid" ]; then
+          echo "Server has stopped.  Aborting update"
+          rm -f "${arkserverroot}/.ark-warn.lock"
+          return 1
+        fi
+        printWarnMessage "$1" "$2" "seconds" "$warnseconds"
+        if (( warnseconds >= 20 )); then
           numplayers=$(numPlayersConnected)
-          if (( (numplayers + 0) == 0 )); then
-            echo "Nobody is connected.  Shutting down immediately"
+          echo "There are ${numplayers} players connected"
+          if [[ "numplayers" == "-1" ]]; then
+            echo "Server is not running.  Shutting down immediately"
+            return 0
+          elif (( (numplayers + 0) == 0 )); then
+            doBroadcastWithEcho "Nobody is connected.  Shutting down immediately"
+            rm -f "${arkserverroot}/.ark-warn.lock"
             return 0
           fi
-          wait $sleeppid
-          if (( $min > $warninterval )); then
-            sleep 1m &
-            sleeppid=$!
+          if isUpdateCancelRequested; then
+            doBroadcastWithEcho "Restart cancelled by player request"
+            return 1
           fi
-        done
-        warnminutes=$warninterval
-      fi
-    done
-
-    local warnseconds=120
-    warnintervals=( 90 60 45 30 20 15 10 5 0 )
-    for warninterval in "${warnintervals[@]}"; do
-      sleep $(( warnseconds - warninterval ))s &
-      sleeppid=$!
-      if [ "`getServerPID`" != "$pid" ]; then
-        echo "Server has stopped.  Aborting update"
-        return 1
-      fi
-      warnmsg="$(printf "$warnmsgsec" "$warnseconds")"
-      doBroadcastWithEcho "$warnmsg"
-      if (( warnseconds >= 20 )); then
-        numplayers=$(numPlayersConnected)
-        if (( (numplayers + 0) == 0 )); then
-          echo "Nobody is connected.  Shutting down immediately"
-          return 0
         fi
-      fi
-      wait $sleeppid
-      warnseconds=$warninterval
-    done
-  fi
+        wait $sleeppid
+        warnseconds=$warninterval
+      done
+    fi
 
-  if [ "`getServerPID`" != "$pid" ]; then
-    echo "Server has stopped.  Aborting $1"
-    return 1
-  fi
+    rm -f "${arkserverroot}/.ark-warn.lock"
 
-  return 0
+    if [ "`getServerPID`" != "$pid" ]; then
+      echo "Server has stopped.  Aborting $1"
+      return 1
+    fi
+
+    return 0
+  )
+
+  return $?
 }
 
 #
@@ -991,38 +1428,36 @@ doUpdate() {
   local modupdate=
   local saveworld=
   local downloadonly=
+  local nodownload=
   local noautostart=
 
   for arg in "$@"; do
-    if [ "$arg" == "--force" ]; then
-      appupdate=1
-    elif [ "$arg" == "--safe" ]; then
-      updatetype=safe
-    elif [ "$arg" == "--warn" ]; then
-      updatetype=warn
-    elif [ "$arg" == "--ifempty" ]; then
-      updatetype=ifempty
-    elif [ "$arg" == "--validate" ]; then
-      validate=validate
-      appupdate=1
-    elif [ "$arg" == "--saveworld" ]; then
-      saveworld=1
-    elif [ "$arg" == "--update-mods" ]; then
-      modupdate=1
-    elif [ "$arg" == "--backup" ]; then
-      arkBackupPreUpdate=true
-    elif [ "$arg" == "--no-autostart" ]; then
-      noautostart=1
-    elif [[ "$arg" =~ ^--stagingdir= ]]; then
-      arkStagingDir="${ark#--stagingdir=}"
-    elif [ "$arg" == "--downloadonly" ]; then
-      downloadonly=1
-    else
-      echo "Unrecognized option $arg"
-      echo "Try 'arkmanager -h' or 'arkmanager --help' for more information."
-      exit 1
-    fi
+    case "$arg" in
+      --force) appupdate=1; ;;
+      --safe) updatetype=safe; ;;
+      --warn) updatetype=warn; ;;
+      --ifempty) updatetype=ifempty; ;;
+      --warnreason=*) warnreason="${arg#--warnreason=}"; updatetype=warn; ;;
+      --validate) validate=validate; appupdate=1; ;;
+      --saveworld) saveworld=1; ;;
+      --update-mods) modupdate=1; ;;
+      --backup) arkBackupPreUpdate=true; ;;
+      --no-autostart) noautostart=1; ;;
+      --stagingdir=*) arkStagingDir="${arg#--stagingdir=}"; ;;
+      --downloadonly) downloadonly=1; ;;
+      --no-download) nodownload=1; ;;
+      *)
+        echo "Unrecognized option $arg"
+        echo "Try 'arkmanager -h' or 'arkmanager --help' for more information."
+        exit 1
+    esac
   done
+
+  # check if the server was alive before the update so we can launch it back after the update
+  serverWasAlive=0
+  if isTheServerRunning ;then
+    serverWasAlive=1
+  fi
 
   echo "$$" >"${arkserverroot}/.ark-update.lock.$$" 2>/dev/null
   while true; do
@@ -1040,9 +1475,13 @@ doUpdate() {
   done
   rm -f "${arkserverroot}/.ark-update.lock.$$"
 
+  echo "`timestamp`: checking for update; PID: $$"
+
   if [ -n "$modupdate" ]; then
-    if ! doDownloadAllMods; then
-      modupdate=
+    if [ -z "$nodownload" ]; then
+      if ! doDownloadAllMods; then
+        modupdate=
+      fi
     fi
     if ! isAnyModUpdateNeeded; then
       modupdate=
@@ -1062,22 +1501,29 @@ doUpdate() {
           cp -al "$arkserverroot/ShooterGame/." "$arkStagingDir/ShooterGame"
           cp -al "$arkserverroot/Engine/." "$arkStagingDir/Engine"
           cp -al "$arkserverroot/linux64/." "$arkStagingDir/linux64"
-          cp -al "$arkserverroot/PackageInfo.bin" "$arkStagingDir/PackageInfo.bin"
-          cp -al "$arkserverroot/steamclient.so" "$arkStagingDir/steamclient.so"
           cp -a "$arkserverroot/steamapps/." "$arkStagingDir/steamapps"
+	  cp -l "$arkserverroot/"* "$arkStagingDir"
         else
           rsync -a "$arkserverroot/." "$arkStagingDir/."
         fi
         rm -rf "$arkStagingDir/ShooterGame/Content/Mods/"*
         rm -rf "$arkStagingDir/ShooterGame/Saved/"*
+        rm -rf "$arkStagingDir/Engine/Binaries/ThirdParty/SteamCMD/Linux/steamapps"
+	cp -al "$arkserverroot/ShooterGame/Content/Mods/111111111/." "$arkStagingDir/ShooterGame/Content/Mods/111111111"
+	cp -l "$arkserverroot/ShooterGame/Content/Mods/111111111.mod" "$arkStagingDir/ShooterGame/Content/Mods/111111111.mod"
       fi
 
-      echo -n "Downloading ARK update"
-      cd "$steamcmdroot"
-      runSteamCMDAppUpdate "$arkStagingDir" $validate
-      if [ -d "${arkStagingDir}/steamapps/downloading/${appid}" ]; then
-        echo "Update download interrupted"
-        return 1
+      if [ -z "$nodownload" ]; then
+        echo -n "Downloading ARK update"
+        cd "$steamcmdroot"
+        if runSteamCMDAppUpdate "$arkStagingDir" $validate; then
+	  rm -rf "${arkStagingDir}/steamapps/downloading/${appid}"
+	fi
+
+	if [ -d "${arkStagingDir}/steamapps/downloading/${appid}" ]; then
+          echo "Update download interrupted"
+          return 1
+        fi
       fi
     fi
   fi
@@ -1096,6 +1542,12 @@ doUpdate() {
     fi
     echo "Not applying update - download-only enabled"
   elif [ -n "$appupdate" -o -n "$modupdate" -o -n "$bgupdate" ]; then
+    if [ -f "$arkserverroot/version.txt" ]; then
+      arkversion="$(<"$arkserverroot/version.txt")"
+    else
+      arkversion="$(getCurrentVersion; echo "$instver")"
+    fi
+
     if isTheServerRunning; then
       if [ "$updatetype" == "safe" ]; then
         while [ ! `find $arkserverroot/ShooterGame/Saved/SavedArks -mmin -1 -name ${serverMap##*/}.ark` ]; do
@@ -1114,12 +1566,6 @@ doUpdate() {
           return 1
         fi
       fi
-    fi
-
-    # check if the server was alive before the update so we can launch it back after the update
-    serverWasAlive=0
-    if isTheServerRunning ;then
-      serverWasAlive=1
     fi
 
     if [ -n "$saveworld" ]; then
@@ -1142,8 +1588,7 @@ doUpdate() {
           cp -alu --remove-destination "$arkStagingDir/ShooterGame/." "$arkserverroot/ShooterGame"
           cp -alu --remove-destination "$arkStagingDir/Engine/." "$arkserverroot/Engine"
           cp -alu --remove-destination "$arkStagingDir/linux64/." "$arkserverroot/linux64"
-          cp -alu --remove-destination "$arkStagingDir/PackageInfo.bin" "$arkserverroot/PackageInfo.bin"
-          cp -alu --remove-destination "$arkStagingDir/steamclient.so" "$arkserverroot/steamclient.so"
+	  cp -lu --remove-destination "$arkStagingDir/"* "$arkserverroot"
           cp -au --remove-destination "$arkStagingDir/steamapps/." "$arkserverroot/steamapps"
         else
           rsync -a "$arkStagingDir/." "$arkserverroot"
@@ -1170,7 +1615,7 @@ doUpdate() {
       echo "`timestamp`: update to $instver complete" >> "$logdir/update.log"
     fi
 
-    if [ -n "$modupdate" ]; then
+    if [ -n "$modupdate" ] && [ -z "$arkflag_automanagedmods" ]; then
       for modid in $(getModIds); do
         if isModUpdateNeeded $modid; then
           echo "Updating mod $modid"
@@ -1179,17 +1624,6 @@ doUpdate() {
         fi
       done
     fi
-
-    rm -f "${arkserverroot}/.ark-update.lock"
-    # we restart the server only if it was started before the update
-    if [ -z "$noautostart" ]; then
-      if [ $serverWasAlive -eq 1 ] || [ -f "${arkserverroot}/.startAfterUpdate-${instance}" ]; then
-        rm -f "${arkserverroot}/.startAfterUpdate-${instance}"
-        rm -f "${arkserverroot}/.ark-update.lock"
-        doStart --noautoupdate
-      fi
-    fi
-    
     if [ -z "$bgupdate" ]; then
       touch "${arkserverroot}/steamapps/appmanifest_${appid}.acf"
     fi
@@ -1199,6 +1633,16 @@ doUpdate() {
   fi;
 
   rm -f "${arkserverroot}/.ark-update.lock"
+
+  if ! isTheServerRunning; then
+    # we restart the server only if it was started before the update
+    if [ -z "$noautostart" ]; then
+      if [ $serverWasAlive -eq 1 ] || [ -f "${arkserverroot}/.startAfterUpdate-${instance}" ]; then
+        rm -f "${arkserverroot}/.startAfterUpdate-${instance}"
+        doStart --noautoupdate
+      fi
+    fi
+  fi
 }
 
 #
@@ -1209,6 +1653,11 @@ getModIds(){
     echo "${serverMapModId}"
     echo "${ark_TotalConversionMod}"
     echo "${ark_GameModIds}" | tr ',' '\n'
+    for v in "${!arkmod_@}"; do
+      if [ "${!v}" != "disabled" ]; then
+        echo "${v#arkmod_}"
+      fi
+    done
     find "${arkserverroot}/ShooterGame/Content/Mods" -maxdepth 1 -type d -printf "%P\n"
   ) | sort | uniq | grep '^[1-9][0-9]*$'
 }
@@ -1218,6 +1667,10 @@ getModIds(){
 #
 doDownloadMod(){
   local modid=$1
+  local steamcmdroot="$steamcmdroot"
+  if [ -n "$arkflag_automanagedmods" ]; then
+    steamcmdroot="$arkserverroot/Engine/Binaries/ThirdParty/SteamCMD/Linux"
+  fi
   local modsrcdir="$steamcmdroot/steamapps/workshop/content/$mod_appid/$modid"
   local moddldir="$steamcmdroot/steamapps/workshop/downloads/$mod_appid"
   cd "$steamcmdroot"
@@ -1230,9 +1683,11 @@ doDownloadMod(){
 
   while true; do
     echo -n "Downloading mod $modid"
-    runSteamCMDspinner +workshop_download_item $mod_appid $modid
+    local output
+    output=$(runSteamCMDspinnerSubst 5 +workshop_download_item $mod_appid $modid)
     result=$?
     if [ $result -eq 0 ]; then
+      modsrcdir="$(echo "$output" | sed -n 's@^Success. Downloaded item [0-9][0-9]* to "\([^"]*\)" .*@\1@p')"
       break
     else
       echo
@@ -1246,10 +1701,11 @@ doDownloadMod(){
       fi
       echo "Mod $modid not fully downloaded - retrying"
     fi
-  done
+  done 5> >(cat)
 
   if [ -f "$modsrcdir/mod.info" ]; then
     echo "Mod $modid downloaded"
+    modsrcdirs[$modid]="$modsrcdir"
     return 0
   else
     echo "Mod $modid was not successfully downloaded"
@@ -1280,13 +1736,21 @@ isModUpdateNeeded(){
     return 1
   fi
 
+  if [ -n "${modsrcdirs[$modid]}" ]; then
+    modsrcdir="${modsrcdirs[$modid]}"
+  fi
+
   for varname in "${!mod_branch_@}"; do
     if [ "mod_branch_$modid" == "$varname" ]; then
       modbranch="${!varname}"
     fi
   done
 
-  if [ \( ! -f "$moddestdir/.modbranch" \) ] || [ "$(<"$moddestdir/.modbranch")" != "$modbranch" ]; then
+  if [ -f "$moddestdir/.modbranch" ]; then
+    mv "$moddestdir/.modbranch" "$moddestdir/__arkmanager_modbranch__.info"
+  fi
+
+  if [ \( ! -f "$moddestdir/__arkmanager_modbranch__.info" \) ] || [ "$(<"$moddestdir/__arkmanager_modbranch__.info")" != "$modbranch" ]; then
     return 0
   fi
 
@@ -1306,16 +1770,48 @@ isModUpdateNeeded(){
 }
 
 #
+# Get the name of the specified mod
+#
+getModName(){
+  local modid=$1
+  local modsrcdir="$steamcmdroot/steamapps/workshop/content/$mod_appid/$modid"
+
+  if [ -n "${modsrcdirs[$modid]}" ]; then
+    modsrcdir="${modsrcdirs[$modid]}"
+  fi
+
+  modname="$(curl -s "http://steamcommunity.com/sharedfiles/filedetails/?id=${modid}" | sed -n 's|^.*<div class="workshopItemTitle">\([^<]*\)</div>.*|\1|p')"
+
+  if [ -n "$modname" ]; then
+    echo "$modname"
+  else
+    perl -e '
+      my $data;
+      { local $/; $data = <STDIN>; }
+      my $mapnamelen = unpack("@0 L<", $data);
+      my $mapname = substr($data, 4, $mapnamelen - 1);
+      print $mapname
+    ' <"${modsrcdir}/mod.info"
+  fi
+}
+
+#
 # Checks if any installed or requested mods need to be updated
 #
 isAnyModUpdateNeeded(){
+  modnamesupdated=""
+  local ismodupdateneeded=1
   for modid in $(getModIds); do
     if isModUpdateNeeded $modid; then
-      return 0
+      ismodupdateneeded=0
+      if [ -n "$modnamesupdated" ]; then
+        modnamesupdated="${modnamesupdated}, "
+      fi
+      modnamesupdated="${modnamesupdated}$(getModName "$modid")"
     fi
   done
 
-  return 1
+  return $ismodupdateneeded
 }
 
 #
@@ -1332,13 +1828,21 @@ doExtractMod(){
     return 0
   fi
 
+  if [ -n "${modsrcdirs[$modid]}" ]; then
+    modsrcdir="${modsrcdirs[$modid]}"
+  fi
+
   for varname in "${!mod_branch_@}"; do
     if [ "mod_branch_$modid" == "$varname" ]; then
       modbranch="${!varname}"
     fi
   done
 
-  if [ \( ! -f "$moddestdir/.modbranch" \) ] || [ "$(<"$moddestdir/.modbranch")" != "$modbranch" ]; then
+  if [ -f "$moddestdir/.modbranch" ]; then
+    mv "$moddestdir/.modbranch" "$moddestdir/__arkmanager_modbranch__.info"
+  fi
+
+  if [ \( ! -f "$moddestdir/__arkmanager_modbranch__.info" \) ] || [ "$(<"$moddestdir/__arkmanager_modbranch__.info")" != "$modbranch" ]; then
     rm -rf "$moddestdir"
   fi
 
@@ -1413,26 +1917,42 @@ doExtractMod(){
       fi
     done
 
+    modname="$(curl -s "http://steamcommunity.com/sharedfiles/filedetails/?id=${modid}" | sed -n 's|^.*<div class="workshopItemTitle">\([^<]*\)</div>.*|\1|p')"
+
+    if [ -f "${moddestdir}/.mod" ]; then
+      rm "${moddestdir}/.mod"
+    fi
+
     perl -e '
       my $data;
       { local $/; $data = <STDIN>; }
       my $mapnamelen = unpack("@0 L<", $data);
       my $mapname = substr($data, 4, $mapnamelen - 1);
-      $mapnamelen += 4;
-      my $mapfilelen = unpack("@" . ($mapnamelen + 4) . " L<", $data);
-      my $mapfile = substr($data, $mapnamelen + 8, $mapfilelen);
-      print pack("L< L< L< Z8 L< C L< L<", $ARGV[0], 0, 8, "ModName", 1, 0, 1, $mapfilelen);
-      print $mapfile;
+      my $nummaps = unpack("@" . ($mapnamelen + 4) . " L<", $data);
+      my $pos = $mapnamelen + 8;
+      my $modname = ($ARGV[1] || $mapname) . "\x00";
+      my $modnamelen = length($modname);
+      my $modpath = "../../../ShooterGame/Content/Mods/" . $ARGV[0] . "\x00";
+      my $modpathlen = length($modpath);
+      print pack("L< L< L< Z$modnamelen L< Z$modpathlen L<",
+        $ARGV[0], 0, $modnamelen, $modname, $modpathlen, $modpath,
+        $nummaps);
+      for (my $mapnum = 0; $mapnum < $nummaps; $mapnum++){
+        my $mapfilelen = unpack("@" . ($pos) . " L<", $data);
+        my $mapfile = substr($data, $mapnamelen + 12, $mapfilelen);
+        print pack("L< Z$mapfilelen", $mapfilelen, $mapfile);
+        $pos = $pos + 4 + $mapfilelen;
+      }
       print "\x33\xFF\x22\xFF\x02\x00\x00\x00\x01";
-    ' $modid <"$moddestdir/mod.info" >"$moddestdir/.mod"
+    ' $modid "$modname" <"$moddestdir/mod.info" >"${moddestdir}.mod"
 
     if [ -f "$moddestdir/modmeta.info" ]; then
-      cat "$moddestdir/modmeta.info" >>"$moddestdir/.mod"
+      cat "$moddestdir/modmeta.info" >>"${moddestdir}.mod"
     else
-      echo -ne '\x01\x00\x00\x00\x08\x00\x00\x00ModType\x00\x02\x00\x00\x001\x00' >>"$moddestdir/.mod"
+      echo -ne '\x01\x00\x00\x00\x08\x00\x00\x00ModType\x00\x02\x00\x00\x001\x00' >>"${moddestdir}.mod"
     fi
 
-    echo "$modbranch" >"$moddestdir/.modbranch"
+    echo "$modbranch" >"$moddestdir/__arkmanager_modbranch__.info"
   fi
 }
 
@@ -1440,27 +1960,105 @@ doExtractMod(){
 # Downloads mod and installs it into mods directory
 #
 doInstallMod(){
-  local modid=$1
+  local modid
+  for modid in "${1//,/ }"; do
+    if [ -f "$steamcmdroot/steamapps/workshop/appworkshop_${mod_appid}.acf" ]; then
+      sed -i "/^\\t\\t\"${modid}\"/,/^\\t\\t}/d" "$steamcmdroot/steamapps/workshop/appworkshop_${mod_appid}.acf"
+    fi
 
-  if [ -f "$steamcmdroot/steamapps/workshop/appworkshop_${mod_appid}.acf" ]; then
-    sed -i "/^\\t\\t\"${modid}\"/,/^\\t\\t}/d" "$steamcmdroot/steamapps/workshop/appworkshop_${mod_appid}.acf"
-  fi
+    if doDownloadMod $modid; then
+      doExtractMod $modid
+      echo "Mod $modid installed"
+    fi
+  done
+}
 
-  if doDownloadMod $modid; then
-    doExtractMod $modid
-    echo "Mod $modid installed"
-  fi
+#
+# Downloads and installs all requested mods
+#
+doInstallAllMods(){
+  for modid in $(getModIds); do
+    doInstallMod "$modid"
+  done
+}
+
+#
+# Removes all mods from the mods directory
+#
+doUninstallAllMods(){
+  for modid in $(getModIds); do
+    if [[ "$modid" != "111111111" && "$modid" != "TheCenter" ]]; then
+      doUninstallMod "$modid"
+    fi
+  done
 }
 
 #
 # Removes mod from mods directory
 #
 doUninstallMod(){
-  local modid=$1
-  local moddir="$arkserverroot/ShooterGame/Content/Mods/$modid"
-  if [ -d "${moddir}" ]; then
-    rm -rf "${moddir}"
+  local modid
+  for modid in "${1//,/ }"; do
+    local moddir="$arkserverroot/ShooterGame/Content/Mods/$modid"
+    local modfile="$arkserverroot/ShooterGame/Content/Mods/${modid}.mod"
+    if [ -d "${moddir}" ]; then
+      rm -rf "${moddir}"
+    fi
+    if [ -f "${modfile}" ]; then
+      rm -f "$modfile"
+    fi
+  done
+}
+
+#
+# Enables a mod in the config
+#
+doEnableMod(){
+  local modid="${1%=*}"
+  local modtype="${1#*=}"
+  if [ "$modtype" = "$1" ]; then
+    modtype=game
   fi
+  local modvar="arkmod_${modid}"
+  if [ -n "${!modvar}" ]; then
+    sed -i "s|^\(${modvar}\)=[^ ]*|\1=${modtype}|" "$configfile"
+  else
+    echo "${modvar}=${modtype}" >>"$configfile"
+  fi
+}
+
+#
+# Disable a mod in the config
+#
+doDisableMod(){
+  local modid="$1"
+  local modvar="arkmod_$modid"
+  if [ "$ark_GameModIds" = *"$modid"* ]; then
+    sed -i "s|^\(ark_GameModIds=\(\|[\"']\)\(\|[^\"' ]*,\)\)${modid},*|\1|" "$configfile"
+  fi
+  if [ -n "$modvar" ]; then
+    sed -i "s|^\(arkmod_${modid}\)=[^ ]*|\1=disabled|" "$configfile"
+  fi
+}
+
+#
+# Removes mod from steamcmd workshop directory
+#
+doRemoveMods(){
+  local modid
+  for modid in ${1//,/ }; do
+    if [ -f "$steamcmdroot/steamapps/workshop/appworkshop_${mod_appid}.acf" ]; then
+      sed -i "/^\\t\\t\"${modid}\"/,/^\\t\\t}/d" "$steamcmdroot/steamapps/workshop/appworkshop_${mod_appid}.acf"
+    fi
+
+    if [ -d "$steamcmdroot/steamapps/workshop/content/${mod_appid}/${modid}" ]; then
+      rm -rf "$steamcmdroot/steamapps/workshop/content/${mod_appid}/${modid}"
+    fi
+
+    if [ -d "$steamcmdroot/steamapps/workshop/downloads/${mod_appid}/${modid}" ]; then
+      rm -rf "$steamcmdroot/steamapps/workshop/downloads/${mod_appid}/${modid}"
+    fi
+  done
 }
 
 #
@@ -1494,18 +2092,57 @@ doBackup(){
     savedir="${ark_AltSaveDirectoryName}"
   fi
 
+  saverootdir="${arkserverroot}/ShooterGame/Saved"
+  savedcfgdir="${saverootdir}/Config/LinuxServer"
+  savedir="${saverootdir}/${savedir}"
+
+  # Check for the (unlikely) case that the case of the
+  # saved ark directory is screwed up
+  if [ ! -d "${savedir}" ]; then
+    cisavedir="$(find "${arkserverroot}" -ipath "${savedir}" | head -n1)"
+
+    if [ -n "$cisavedir" ]; then
+      echo -e "  ${NORMAL}[  ${YELLOW}WARN${NORMAL}  ] Saved arks directory capitalization is inconsistent"
+      savedir="${cisavedir}"
+    else
+      echo -e "  ${NORMAL}[ ${RED}ERROR${NORMAL}  ] Saved arks directory does not exist"
+      return 1
+    fi
+  fi
+
   # ARK server uses Write-Unlink-Rename
   echo -ne "${NORMAL} Copying ARK world file "
-  cp -p "${arkserverroot}/ShooterGame/Saved/${savedir}/${serverMap##*/}.ark" "${backupdir}/${serverMap##*/}.ark"
-  if [ ! -f "${backupdir}/${serverMap##*/}.ark" ]; then
+
+  # Take into account screwed up casing of saved ark files
+  # in some environments
+  mapfile="$(find "${savedir}" -iname "${serverMap##*/}.ark" | head -n1)"
+
+  if [ -z "$mapfile" ]; then
     sleep 2
-    cp -p "${arkserverroot}/ShooterGame/Saved/${savedir}/${serverMap##*/}.ark" "${backupdir}/${serverMap##*/}.ark"
+    mapfile="$(find "${savedir}" -iname "${serverMap##*/}.ark" | head -n1)"
   fi
+
   # If both attempts fail, server may have
   # crashed between unlink and rename
-  if [ ! -f "${backupdir}/${serverMap##*/}.ark" ]; then
-    cp -p "${arkserverroot}/ShooterGame/Saved/${savedir}/${serverMap##*/}.tmp" "${backupdir##*/}/${serverMap##*/}.ark"
+  if [ -z "$mapfile" ]; then
+    mapfile="$(find "${savedir}" -iname "${serverMap##*/}.tmp" | head -n1)"
   fi
+
+  # If neither the ark nor the tmp file exists, then the
+  # map name may be incorrect.  Try to get any ark or tmp
+  # file in the saved arks directory
+  if [ -z "$mapfile" ]; then
+    mapfile="$(find "${savedir}" -iname "*.ark" | head -n1)"
+
+    if [ -z "$mapfile" ]; then
+      mapfile="$(find "${savedir}" -iname "*.tmp" | head -n1)"
+    fi
+  fi
+
+  if [ -f "${mapfile}" ]; then
+    cp -p "${mapfile}" "${backupdir}/${serverMap##*/}.ark"
+  fi
+
   if [ -f "${backupdir}/${serverMap##*/}.ark" ]; then
     echo -e "${NORMAL}\e[68G[   ${GREEN}OK${NORMAL}   ]"
   else
@@ -1517,7 +2154,7 @@ doBackup(){
   # ARK server uses a non-blocking lock and will
   # fail to update the file if the lock fails.
   echo -e "${NORMAL} Copying ARK profile files"
-  for f in "${arkserverroot}/ShooterGame/Saved/${savedir}/"*.arkprofile; do
+  for f in "${savedir}/"*.arkprofile; do
     echo -ne "${NORMAL}   ${f##*/} "
     cp -p "${f}" "${backupdir}/${f##*/}"
     if [ ! -s "${backupdir}/${f##*/}" ]; then
@@ -1538,7 +2175,7 @@ doBackup(){
 
   # ARK server uses Lock-Truncate-Write-Unlock
   echo -e "${NORMAL} Copying ARK tribe files "
-  for f in "${arkserverroot}/ShooterGame/Saved/${savedir}/"*.arktribe; do
+  for f in "${savedir}/"*.arktribe; do
     echo -ne "${NORMAL}   ${f##*/} "
     cp -p "${f}" "${backupdir}/${f##*/}"
     if [ ! -s "${backupdir}/${f##*/}" ]; then
@@ -1580,7 +2217,7 @@ doBackup(){
 
   # ARK server uses Lock-Truncate-Write-Unlock
   echo -ne "${NORMAL} Copying GameUserSettings.ini "
-  cp -p "${arkserverroot}/ShooterGame/Saved/Config/LinuxServer/GameUserSettings.ini" "${backupdir}/GameUserSettings.ini"
+  cp -p "${savedcfgdir}/GameUserSettings.ini" "${backupdir}/GameUserSettings.ini"
   if [ ! -s "${backupdir}/GameUserSettings.ini" ]; then
     sleep 2
     cp -p "${f}" "${backupdir}/${f##*/}"
@@ -1594,7 +2231,7 @@ doBackup(){
    
    echo -ne "${NORMAL} Copying Game.ini "
   
-  cp -p "${arkserverroot}/ShooterGame/Saved/Config/LinuxServer/Game.ini" "${backupdir}/Game.ini"
+  cp -p "${savedcfgdir}/Game.ini" "${backupdir}/Game.ini"
   if [ ! -s "${backupdir}/Game.ini" ]; then
     sleep 2
     cp -p "${f}" "${backupdir}/${f##*/}"
@@ -1637,6 +2274,66 @@ doBackup(){
   fi
 }
 
+#
+# Install a cron job to execute a particular command
+#
+doInstallCronJob(){
+  hour='*'
+  minute='0'
+  cmdopts="${arkCronExtraOpts}"
+  cmdargs=""
+  output=">/dev/null 2>&1"
+  arkmanagerpath="${0}"
+  command="$1"
+  shift
+
+  for opt in "$@"; do
+    case "$opt" in
+      --daily)
+      ;;
+      --hourly)
+        hour='*'
+      ;;
+      --hour=*)
+        hour="${opt#--hour=}"
+      ;;
+      --minute=*)
+        minute="${opt#--minute=}"
+      ;;
+      --enable-output)
+        output=
+      ;;
+      --arg=*)
+        cmdargs="${cmdargs} $(printf "%q" "${opt#--arg=}")"
+      ;;
+      --*)
+        cmdopts="${cmdopts} $(printf "%q" "${opt}")"
+      ;;
+      *)
+        cmdargs="${args} $(printf "%q" "${opt}")"
+      ;;
+    esac
+  done
+
+  cronjob="${minute} ${hour} * * * ${arkmanagerpath} --cronjob ${command} @${instance} ${cmdopts} --args ${cmdargs} -- ${output}"
+
+  (crontab -l | \
+    sed -e "\\# [*] [*] [*] ${arkmanagerpath} --cronjob ${command} @${instance} #d";
+    echo "${cronjob}" ) | \
+    crontab -
+}
+
+#
+# Removes an installed cron job
+#
+doRemoveCronJob(){
+  arkmanagerpath="${0}"
+  command="$1"
+
+  crontab -l | \
+    sed -e "\\# [*] [*] [*] ${arkmanagerpath} --cronjob ${command} @${instance} #d" | \
+    crontab -
+}
 
 #
 # Print the status of the server (running? online? version?)
@@ -1665,6 +2362,28 @@ printStatus(){
       my $maxplayers = ord(substr($rest, 3, 1));
       print "Server Name: $servername\n";
       print "Players: $players / $maxplayers\n";
+      send($socket, "\xff\xff\xff\xff\x55\xff\xff\xff\xff", 0, $sockaddr);
+      $data = "";
+      recv($socket, $data, 1400, 0) or (print "Challenge request failed" and exit(1));
+      if (ord(substr($data, 4, 1)) == 0x41) {
+        my $chal = substr($data, 5);
+        send($socket, "\xff\xff\xff\xff\x55" . $chal, 0, $sockaddr);
+        $data = "";
+        recv($socket, $data, 1400, 0) or (print "A2S_PLAYERS request failed" and exit(1));
+      }
+      ord(substr($data, 4, 1)) != 0x44 and (print ("A2S_PLAYERS Response: : " . unpack("H*", $data)) and exit(1));
+      my $players = ord(substr($data, 5, 1));
+      my $active = 0;
+      my $pdata = substr($data, 6);
+      for my $i (0 .. $players) {
+        my $idx = ord(substr($pdata, 0, 1));
+        my ($name, $rest) = split(/\x00/, substr($pdata, 1), 2);
+        $pdata = substr($rest, 8);
+        if ($name ne "") {
+          $active = $active + 1;
+        }
+      }
+      print "Active Players: $active\n";
       ' "$(getQueryPort)" "${ark_MultiHome:-127.0.0.1}"
 
     if isTheServerOnline; then
@@ -1676,7 +2395,10 @@ printStatus(){
   fi
 
   getCurrentVersion
-  echo -e "$NORMAL" "Server version: " "$GREEN" $instver "$NORMAL"
+  echo -e "$NORMAL" "Server build ID: " "$GREEN" $instver "$NORMAL"
+  if [ -f "$arkserverroot/version.txt" ]; then
+    echo -e "$NORMAL" "Server version: " "$GREEN" "$(<"$arkserverroot/version.txt")" "$NORMAL"
+  fi
 }
 
 getAllInstanceNames(){
@@ -1718,6 +2440,23 @@ doListAllInstances(){
   fi
 }
 
+doPrintConfig(){
+  declare -A vars
+  declare -A vals
+  for v in $(eval echo \$\{\!{a..z}\*\} \$\{\!{A..Z}\*\} \$\{\!_\*\}); do
+    vals["$v"]="${!v}"
+  done
+  for cfgfile in "$configfile" "$HOME/.arkmanager.cfg" "/etc/arkmanager/arkmanager.cfg"; do
+    while read v; do
+      val="$(source "$cfgfile"; echo "${!v}")"
+      if [[ "$val" = "${vals[$v]}" && -z "${vars[$v]}" ]]; then
+        vars["$v"]="$cfgfile"
+	echo "${cfgfile} => ${v}"
+      fi
+    done < <(sed -n 's/^[[:space:]]*\([A-Za-z_][A-Za-z0-9_]*\)=.*/\1/p' <"$cfgfile")
+  done
+}
+
 useConfig() {
   configfile=
   if [ -f "/etc/arkmanager/instances/${1}.cfg" ]; then
@@ -1746,6 +2485,9 @@ useConfig() {
     exit 1
   fi
   arkautorestartfile="${arkautorestartfile:-ShooterGame/Saved/.autorestart-${1}}"
+  arkserverpidfile="${arkserverpidfile:-ShooterGame/Saved/.arkserver-${1}.pid}"
+  arkserveroldpidfile="ShooterGame/Saved/.arkserver.pid"
+  arkmanagerpidfile="${arkmanagerpidfile:-ShooterGame/Saved/.arkmanager-${1}.pid}"
 }
 
 showUsage() {
@@ -1774,6 +2516,8 @@ showUsage() {
   echo "installmod <modid>    Installs a mod from the Steam workshop"
   echo "uninstallmod <modid>  Removes the mod from the Mods directory"
   echo "reinstallmod <modid>  Removes and re-installs a mod in the Mods directory"
+  echo "install-cronjob <cmd> Adds a cron job using the specified command"
+  echo "remove-cronjob <cmd>  Removes a cron job that used the specified command"
   echo "restart               Stops the server and then starts it"
   echo "run                   Runs the server without daemonizing"
   echo "start                 Starts the server"
@@ -1797,212 +2541,280 @@ showUsage() {
 # Main program
 #---------------------
 
-# check the configuration and throw errors or warnings if needed
-checkConfig
+main(){
+  # check the configuration and throw errors or warnings if needed
+  checkConfig
 
-while true; do
-  options=( )
-  allinstances=no
-  instances=( )
-  args=( )
-  command="$1"
-  shift
-  nrarg=0
+  while true; do
+    options=( )
+    allinstances=no
+    instances=( )
+    args=( )
+    command="$1"
+    shift
+    nrarg=0
 
-  # get the number of arguments for commands that take arguments
-  case "$command" in
-    installmod) nrarg=1; ;;
-    uninstallmod) nrarg=1; ;;
-    reinstallmod) nrarg=1; ;;
-    broadcast) nrarg=1; ;;
-    rconcmd) nrarg=1; ;;
-    useconfig) nrarg=1; ;;
-  esac
-
-  # Enumerate the options and arguments
-  while [ $# -ne 0 ]; do
-    case "$1" in
-      --)
-        shift
-        break
-      ;;
-      --args)
-        nrarg=$#
-      ;;
+    # Handle global options
+    case "$command" in
       --verbose)
         verbose=1
+        continue
       ;;
       --dots)
         progressDisplayType=dots
+        continue
       ;;
       --spinner)
         progressDisplayType=spinner
+        continue
       ;;
-      --*)
-        options+=( "$1" )
+      --cronjob)
+        inCronJob=true
+        continue
       ;;
-      @all)
-        allinstances=yes
-      ;;
-      @*)
-        instances+=( "${1#@}" )
-      ;;
-      *)
-        if [ $nrarg -gt 0 ]; then
-          args+=( "$1" )
-	  (( nrarg-- ))
-        else
+    esac
+
+    # get the number of arguments for commands that take arguments
+    case "$command" in
+      installmod) nrarg=1; ;;
+      uninstallmod) nrarg=1; ;;
+      reinstallmod) nrarg=1; ;;
+      broadcast) nrarg=1; ;;
+      rconcmd) nrarg=1; ;;
+      useconfig) nrarg=1; ;;
+      install-cronjob) nrarg=1; ;;
+      remove-cronjob) nrarg=1; ;;
+      remove-mods) nrarg=1; ;;
+    esac
+
+    # Enumerate the options and arguments
+    while [ $# -ne 0 ]; do
+      case "$1" in
+        --)
+          shift
           break
+        ;;
+        --args)
+          nrarg=$#
+        ;;
+        --verbose)
+          verbose=1
+        ;;
+        --dots)
+          progressDisplayType=dots
+        ;;
+        --spinner)
+          progressDisplayType=spinner
+        ;;
+        --*)
+          options+=( "$1" )
+        ;;
+        @all)
+          allinstances=yes
+        ;;
+        @*)
+          instances+=( "${1#@}" )
+        ;;
+        *)
+          if [ $nrarg -gt 0 ]; then
+            args+=( "$1" )
+            (( nrarg-- ))
+          else
+            break
+          fi
+        ;;
+      esac
+      shift
+    done
+
+    # handle non-instance separately
+    case "$command" in
+      upgrade-tools)
+        doUpgradeTools
+        exit
+      ;;
+      uninstall-tools)
+        doUninstallTools
+        exit
+      ;;
+      useconfig)
+        defaultinstance="${args[0]}"
+        continue
+      ;;
+      remove-mods)
+        doRemoveMods "${args[0]}"
+        if [ $# -eq 0 ]; then
+          exit 0
+        else
+          continue
         fi
       ;;
-    esac
-    shift
-  done
-
-  # handle non-instance separately
-  case "$command" in
-    upgrade-tools)
-      doUpgradeTools
-      exit
-    ;;
-    uninstall-tools)
-      doUninstallTools
-      exit
-    ;;
-    useconfig)
-      defaultinstance="${args[0]}"
-      continue
-    ;;
-    list-instances)
-      doListAllInstances "${options[@]}"
-      exit
-    ;;
-    --version)
-      echo "Version: ${arkstVersion}"
-      echo "Channel: ${arkstChannel}"
-      if [ -n "${arkstCommit}" ]; then
-        echo "Commit: ${arkstCommit:0:7}"
-      fi
-      exit 1
-    ;;
-    -h|--help)
-      showUsage
-      exit 1
-    ;;
-    "")
-      echo "arkmanager v${arkstVersion}: no command specified"
-      showUsage
-      exit 1
-    ;;
-  esac
-
-  # Handle no instances being specified
-  if [[ "${#instances[@]}" == 0 && "$allinstances" == "no" ]]; then
-    if [ -n "$defaultinstance" ]; then
-      instances=( "$defaultinstance" )
-    else
-      echo "No instances supplied for command ${command} ${options[*]} ${args[*]}"
-      read -p "Do you wish to run this command for all instances?" -n 1 -r
-      echo
-      if [[ "$REPLY" =~ ^[Yy]$ ]]; then
-        allinstances=yes
-      else
+      list-instances)
+        doListAllInstances "${options[@]}"
+        exit
+      ;;
+      --version)
+        echo "Version: ${arkstVersion}"
+        echo "Channel: ${arkstChannel}"
+        if [ -n "${arkstCommit}" ]; then
+          echo "Commit: ${arkstCommit:0:7}"
+        fi
+        if [ -n "${arkstTag}" ]; then
+          echo "Release Tag: ${arkstTag}"
+        fi
+        blobsize="$(sed "s@^\\(arkst\\(Commit\\|Tag\\)\\)=.*@\\1=''@" "$0" | wc -c)"
+        echo "Blob SHA: $( (echo -ne "blob ${blobsize}\0"; sed "s@^\\(arkst\\(Commit\\|Tag\\)\\)=.*@\\1=''@" "$0") | sha1sum | cut -d' ' -f1)"
         exit 1
+      ;;
+      -h|--help)
+        showUsage
+        exit 1
+      ;;
+      "")
+        echo "arkmanager v${arkstVersion}: no command specified"
+        showUsage
+        exit 1
+      ;;
+    esac
+
+    # Handle no instances being specified
+    if [[ "${#instances[@]}" == 0 && "$allinstances" == "no" ]]; then
+      if [ -n "$defaultinstance" ]; then
+        instances=( "$defaultinstance" )
+      else
+        echo "No instances supplied for command ${command} ${options[*]} ${args[*]}"
+        read -p "Do you wish to run this command for all instances?" -n 1 -r
+        echo
+        if [[ "$REPLY" =~ ^[Yy]$ ]]; then
+          allinstances=yes
+        else
+          exit 1
+        fi
       fi
     fi
-  fi
 
-  # Handle all instances being requested
-  if [[ "$allinstances" == "yes" ]]; then
-    instances=( $(getAllInstanceNames) )
-  fi
+    # Handle all instances being requested
+    if [[ "$allinstances" == "yes" ]]; then
+      instances=( $(getAllInstanceNames) )
+    fi
 
-  # Run the command for each instance requested
-  for instance in "${instances[@]}"; do
-  (
-    echo "Running command '${command}' for instance '${instance}'"
-    useConfig "$instance"
-    checkConfig
-
-    case "$command" in
-      run)
-        doRun
-      ;;
-      start)
-        doStart "${options[@]}"
-      ;;
-      stop)
-        doStop shutdown "${options[@]}"
-      ;;
-      restart)
-        doStop restart "${options[@]}"
-        echo "`timestamp`: stop" >> "$logdir/$arkmanagerLog"
-      ;;
-      install)
-        doInstall
-      ;;
-      update)
-        doUpdate "${options[@]}"
-      ;;
-      checkupdate)
-        checkForUpdate
-      ;;
-      installmod)
-        doInstallMod "${args[@]}"
-      ;;
-      uninstallmod)
-        doUninstallMod "${args[@]}"
-      ;;
-      reinstallmod)
-        doUninstallMod "${args[@]}"
-        doInstallMod "${args[@]}"
-      ;;
-      backup)
-        doBackup
-      ;;
-      broadcast)
-        doBroadcast "${args[@]}"
-      ;;
-      saveworld)
-        doSaveWorld
-      ;;
-      rconcmd)
-        rconcmd "${args[@]}"
-      ;;
-      status)
-        printStatus
-      ;;
-      *)
-        echo -n "arkmanager v${arkstVersion}: unknown command '$command' specified"
-        showUsage
-        exit 255
-      ;;
-    esac
-  )
-  laststatus=$?
-  if [ $laststatus -eq 255 ]; then
-    exit 1
-  elif [ $laststatus -ne 0 ]; then
-    status=$laststatus
-  fi
-  done
-
-  # Perform the restart portion of the restart command
-  if [[ "$command" == "restart" ]]; then
-    sleep 1
+    # Run the command for each instance requested
     for instance in "${instances[@]}"; do
     (
+      echo "Running command '${command}' for instance '${instance}'"
       useConfig "$instance"
-      doStart "${options[@]}"
-      echo "`timestamp`: start" >> "$logdir/$arkmanagerLog"
-      echo "`timestamp`: restart" >> "$logdir/$arkmanagerLog"
+      checkConfig
+
+      case "$command" in
+        run)
+          doRun
+        ;;
+        start)
+          doStart "${options[@]}"
+        ;;
+        stop)
+          doStop shutdown "${options[@]}"
+        ;;
+        restart)
+          doStop restart "${options[@]}"
+          echo "`timestamp`: stop" >> "$logdir/$arkmanagerLog"
+        ;;
+        cancelshutdown)
+          doCancelShutdown "${options[@]}"
+        ;;
+        install)
+          doInstall
+        ;;
+        update)
+          doUpdate "${options[@]}"
+        ;;
+        checkupdate)
+          checkForUpdate
+        ;;
+        installmod)
+          doInstallMod "${args[@]}"
+        ;;
+        enablemod)
+          doEnableMod "${args[@]}"
+        ;;
+        disablemod)
+          doDisableMod "${args[@]}"
+        ;;
+        installmods)
+          doInstallAllMods
+        ;;
+	uninstallmods)
+	  doUninstallAllMods
+	;;
+        uninstallmod)
+          doUninstallMod "${args[@]}"
+        ;;
+        reinstallmod)
+          doUninstallMod "${args[@]}"
+          doInstallMod "${args[@]}"
+        ;;
+        backup)
+          doBackup
+        ;;
+        broadcast)
+          doBroadcast "${args[@]}"
+        ;;
+        saveworld)
+          doSaveWorld
+        ;;
+        rconcmd)
+          rconcmd "${args[@]}"
+        ;;
+        printconfig)
+          doPrintConfig
+        ;;
+        status)
+          printStatus
+        ;;
+        install-cronjob)
+          doInstallCronJob "${args[@]}" "${options[@]}"
+        ;;
+        remove-cronjob)
+          doRemoveCronJob "${args[@]}"
+        ;;
+        *)
+          echo -n "arkmanager v${arkstVersion}: unknown command '$command' specified"
+          showUsage
+          exit 255
+        ;;
+      esac
     )
+    laststatus=$?
+    if [ $laststatus -eq 255 ]; then
+      exit 1
+    elif [ $laststatus -ne 0 ]; then
+      status=$laststatus
+    fi
     done
-  fi
 
-  if [ $# -eq 0 ]; then
-    break
-  fi
-done
+    # Perform the restart portion of the restart command
+    if [[ "$command" == "restart" ]]; then
+      sleep 1
+      for instance in "${instances[@]}"; do
+      (
+        echo "`timestamp`: restart" >> "$logdir/$arkmanagerLog"
+        useConfig "$instance"
+        doStart "${options[@]}"
+      )
+      done
+    fi
 
-exit $status
+    if [ $# -eq 0 ]; then
+      break
+    fi
+  done
+
+  exit $status
+}
+
+# Only execute main function if script is not being sourced
+# by another script
+if [[ "$(caller)" =~ ^0 ]]; then
+  main "$@"
+fi
+

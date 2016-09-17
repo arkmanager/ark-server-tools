@@ -3,6 +3,7 @@
 userinstall=no
 steamcmd_user=
 showusage=no
+migrateconfig=no
 
 while [ -n "$1" ]; do
   case "$1" in
@@ -62,6 +63,9 @@ while [ -n "$1" ]; do
     --datadir)
       DATADIR="$2"
       shift
+    ;;
+    --migrate-config)
+      migrateconfig=yes
     ;;
     -*)
       echo "Invalid option '$1'"
@@ -169,7 +173,7 @@ if [ "$userinstall" == "yes" ]; then
            "${INSTALL_ROOT}${INSTANCEDIR}/instance.cfg.example"
 
     # Copy arkmanager.cfg to ~/.arkmanager.cfg.NEW
-    cp arkmanager.cfg "${INSTALL_ROOT}${CONFIGFILE}.NEW"
+    cp arkmanager.cfg "${INSTALL_ROOT}${CONFIGFILE}.example"
     # Change the defaults in the new config file
     sed -i -e "s|^steamcmd_user=\"steam\"|steamcmd_user=\"--me\"|" \
            -e "s|\"/home/steam|\"${PREFIX}|" \
@@ -177,18 +181,24 @@ if [ "$userinstall" == "yes" ]; then
            -e "s|^install_bindir=.*|install_bindir=\"${BINDIR}\"|" \
            -e "s|^install_libexecdir=.*|install_libexecdir=\"${LIBEXECDIR}\"|" \
            -e "s|^install_datadir=.*|install_datadir=\"${DATADIR}\"|" \
-           "${INSTALL_ROOT}${CONFIGFILE}.NEW"
+           "${INSTALL_ROOT}${CONFIGFILE}.example"
 
     # Copy arkmanager.cfg to ~/.arkmanager.cfg if it doesn't already exist
     if [ -f "${INSTALL_ROOT}${CONFIGFILE}" ]; then
-      bash ./migrate-config.sh "${INSTALL_ROOT}${CONFIGFILE}"
-      bash ./migrate-main-instance.sh "${INSTALL_ROOT}${CONFIGFILE}" "${INSTALL_ROOT}${INSTANCEDIR}/main.cfg"
+      SUFFIX=
+      if [ "$migrateconfig" = "no" ]; then
+        SUFFIX=".NEW"
+        cp "${INSTALL_ROOT}${CONFIGFILE}" "${INSTALL_ROOT}${CONFIGFILE}${SUFFIX}"
+      fi
+
+      bash ./migrate-config.sh "${INSTALL_ROOT}${CONFIGFILE}${SUFFIX}"
+      bash ./migrate-main-instance.sh "${INSTALL_ROOT}${CONFIGFILE}${SUFFIX}" "${INSTALL_ROOT}${INSTANCEDIR}/main.cfg${SUFFIX}"
 
       echo "A previous version of ARK Server Tools was detected in your system, your old configuration was not overwritten. You may need to manually update it."
       echo "A copy of the new configuration file was included in '${CONFIGFILE}.NEW'. Make sure to review any changes and update your config accordingly!"
       exit 2
     else
-      mv -n "${INSTALL_ROOT}${CONFIGFILE}.NEW" "${INSTALL_ROOT}${CONFIGFILE}"
+      cp -n "${INSTALL_ROOT}${CONFIGFILE}.example" "${INSTALL_ROOT}${CONFIGFILE}"
       cp -n "${INSTALL_ROOT}/${INSTANCEDIR}/instance.cfg.example" "${INSTALL_ROOT}/${INSTANCEDIR}/main.cfg"
     fi
 else
@@ -301,24 +311,30 @@ else
     # Copy arkmanager.cfg inside linux configuation folder if it doesn't already exists
     mkdir -p "${INSTALL_ROOT}/etc/arkmanager"
     chown "$steamcmd_user" "${INSTALL_ROOT}/etc/arkmanager"
-    cp arkmanager.cfg "${INSTALL_ROOT}${CONFIGFILE}.NEW"
-    chown "$steamcmd_user" "${INSTALL_ROOT}${CONFIGFILE}.NEW"
+    cp arkmanager.cfg "${INSTALL_ROOT}${CONFIGFILE}.example"
+    chown "$steamcmd_user" "${INSTALL_ROOT}${CONFIGFILE}.example"
     sed -i -e "s|^steamcmd_user=\"steam\"|steamcmd_user=\"$steamcmd_user\"|" \
            -e "s|\"/home/steam|\"/home/$steamcmd_user|" \
            -e "s|^install_bindir=.*|install_bindir=\"${BINDIR}\"|" \
            -e "s|^install_libexecdir=.*|install_libexecdir=\"${LIBEXECDIR}\"|" \
            -e "s|^install_datadir=.*|install_datadir=\"${DATADIR}\"|" \
-           "${INSTALL_ROOT}${CONFIGFILE}.NEW"
+           "${INSTALL_ROOT}${CONFIGFILE}.example"
 
     if [ -f "${INSTALL_ROOT}${CONFIGFILE}" ]; then
-      bash ./migrate-config.sh "${INSTALL_ROOT}${CONFIGFILE}"
-      bash ./migrate-main-instance.sh "${INSTALL_ROOT}${CONFIGFILE}" "${INSTALL_ROOT}${INSTANCEDIR}/main.cfg"
+      SUFFIX=
+      if [ "$migrateconfig" = "no" ]; then
+        SUFFIX=".NEW"
+        cp "${INSTALL_ROOT}${CONFIGFILE}" "${INSTALL_ROOT}${CONFIGFILE}${SUFFIX}"
+      fi
+
+      bash ./migrate-config.sh "${INSTALL_ROOT}${CONFIGFILE}${SUFFIX}"
+      bash ./migrate-main-instance.sh "${INSTALL_ROOT}${CONFIGFILE}${SUFFIX}" "${INSTALL_ROOT}${INSTANCEDIR}/main.cfg${SUFFIX}"
 
       echo "A previous version of ARK Server Tools was detected in your system, your old configuration was not overwritten. You may need to manually update it."
       echo "A copy of the new configuration file was included in /etc/arkmanager. Make sure to review any changes and update your config accordingly!"
       exit 2
     else
-      mv -n "${INSTALL_ROOT}${CONFIGFILE}.NEW" "${INSTALL_ROOT}${CONFIGFILE}"
+      cp -n "${INSTALL_ROOT}${CONFIGFILE}.example" "${INSTALL_ROOT}${CONFIGFILE}"
       cp -n "${INSTALL_ROOT}/${INSTANCEDIR}/instance.cfg.example" "${INSTALL_ROOT}/${INSTANCEDIR}/main.cfg"
     fi
 fi
