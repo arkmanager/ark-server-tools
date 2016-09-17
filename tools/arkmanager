@@ -513,7 +513,9 @@ function getServerPID(){
       return
     fi
   fi
-  ps -ef | grep "$arkserverroot/$arkserverexec" | grep -v grep | awk '{print $2}'
+  if [ -z "$arkopt_clusterid" ]; then
+    ps -ef | grep "$arkserverroot/$arkserverexec" | grep -v grep | awk '{print $2}'
+  fi
 }
 
 #
