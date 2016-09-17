@@ -4,6 +4,8 @@
 # Net Installer, used with curl
 #
 
+arkstGithubRepo="FezVrasta/ark-server-tools"
+
 steamcmd_user="$1"
 channel=${2:-master} # if defined by 2nd argument install the defined version, otherwise install master
 shift
@@ -30,7 +32,7 @@ function doInstallFromCommit(){
   if [ -z "$tmpdir" ]; then echo "Unable to create temporary directory"; exit 1; fi
   cd "$tmpdir"
   echo "Downloading installer"
-  curl -L "https://github.com/FezVrasta/ark-server-tools/archive/${commit}.tar.gz" | tar -xz
+  curl -L "https://github.com/${arkstGithubRepo}/archive/${commit}.tar.gz" | tar -xz
   cd "ark-server-tools-${commit}/tools"
   if [ ! -f "install.sh" ]; then echo "install.sh not found in $PWD"; exit 1; fi
   sed -i -e "s|^arkstCommit='.*'|arkstCommit='${commit}'|" \
@@ -61,12 +63,12 @@ function doInstallFromRelease(){
       tag_name) tagname="${v}"; ;;
       body) desc="${v}"
     esac
-  done < <(curl -s "https://api.github.com/repos/FezVrasta/ark-server-tools/releases/latest" | sed -n 's/^  "\([^"]*\)": "*\([^"]*\)"*,*/\1\t\2/p')
+  done < <(curl -s "https://api.github.com/repos/${arkstGithubRepo}/releases/latest" | sed -n 's/^  "\([^"]*\)": "*\([^"]*\)"*,*/\1\t\2/p')
 
   if [ -n "$tagname" ]; then
     echo "Latest release is ${tagname}"
     echo "Getting commit for latest release..."
-    local commit="$(curl -s "https://api.github.com/repos/FezVrasta/ark-server-tools/git/refs/tags/${tagname}" | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p')"
+    local commit="$(curl -s "https://api.github.com/repos/${arkstGithubRepo}/git/refs/tags/${tagname}" | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p')"
     doUpgradeToolsFromCommit "$commit"
   else
     echo "Unable to get latest release"
@@ -76,7 +78,7 @@ function doInstallFromRelease(){
 
 function doInstallFromBranch(){
   channel="$1"
-  commit="`curl -s "https://api.github.com/repos/FezVrasta/ark-server-tools/git/refs/heads/${channel}" | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p'`"
+  commit="`curl -s "https://api.github.com/repos/${arkstGithubRepo}/git/refs/heads/${channel}" | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p'`"
   
   if [ -z "$commit" ]; then
     if [ -n "$unstable" ]; then

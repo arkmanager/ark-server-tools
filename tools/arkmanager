@@ -10,6 +10,7 @@
 arkstVersion='1.6-pre3'
 arkstTag=''
 arkstCommit=''
+arkstGithubRepo="FezVrasta/ark-server-tools"
 
 doUpgradeTools() {
   local sudo=sudo
@@ -43,7 +44,7 @@ doUpgradeToolsFromCommit(){
   if [ -z "$tmpdir" ]; then echo "Unable to create temporary directory"; exit 1; fi
   cd "$tmpdir"
   echo "Downloading installer"
-  curl -L "https://github.com/FezVrasta/ark-server-tools/archive/${commit}.tar.gz" | tar -xz
+  curl -L "https://github.com/${arkstGithubRepo}/archive/${commit}.tar.gz" | tar -xz
   cd "ark-server-tools-${commit}/tools"
   if [ ! -f "install.sh" ]; then echo "install.sh not found in $PWD"; exit 1; fi
   sed -i -e "s|^arkstCommit='.*'|arkstCommit='${commit}'|" \
@@ -65,14 +66,14 @@ doUpgradeToolsFromCommit(){
 }
 
 doUpgradeToolsFromBranch(){
-  arkstLatestVersion=`curl -s "https://raw.githubusercontent.com/FezVrasta/ark-server-tools/${arkstChannel}/.version"`
-  arkstLatestCommit=`curl -s "https://api.github.com/repos/FezVrasta/ark-server-tools/git/refs/heads/${arkstChannel}" | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p'`
+  arkstLatestVersion=`curl -s "https://raw.githubusercontent.com/${arkstGithubRepo}/${arkstChannel}/.version"`
+  arkstLatestCommit=`curl -s "https://api.github.com/repos/${arkstGithubRepo}/git/refs/heads/${arkstChannel}" | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p'`
 
   if [ "$arkstLatestVersion" == "Not Found" ]; then
     echo "Channel ${arkstChannel} does not exist"
     echo
     echo "Available channels:"
-    curl -s https://api.github.com/repos/FezVrasta/ark-server-tools/git/refs/heads | sed -n 's|^ *"ref": "refs/heads/\(.*\)",|\1|p'
+    curl -s "https://api.github.com/repos/${arkstGithubRepo}/git/refs/heads" | sed -n 's|^ *"ref": "refs/heads/\(.*\)",|\1|p'
     echo
     return
   fi
@@ -105,7 +106,7 @@ doUpgradeToolsFromRelease(){
       tag_name) tagname="${v}"; ;;
       body) desc="${v}"
     esac
-  done < <(curl -s "https://api.github.com/repos/FezVrasta/ark-server-tools/releases/latest" | sed -n 's/^  "\([^"]*\)": "*\([^"]*\)"*,*/\1\t\2/p')
+  done < <(curl -s "https://api.github.com/repos/${arkstGithubRepo}/releases/latest" | sed -n 's/^  "\([^"]*\)": "*\([^"]*\)"*,*/\1\t\2/p')
 
   if [ -n "$tagname" ]; then
     if [ "$tagname" != "$arkstTag" ]; then
@@ -115,7 +116,7 @@ doUpgradeToolsFromRelease(){
       echo
       if [[ "$REPLY" =~ ^[Yy]$ ]]; then
         echo "Getting commit for latest release..."
-        local commit="$(curl -s "https://api.github.com/repos/FezVrasta/ark-server-tools/git/refs/tags/${tagname}" | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p')"
+        local commit="$(curl -s "https://api.github.com/repos/${arkstGithubRepo}/git/refs/tags/${tagname}" | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p')"
         doUpgradeToolsFromCommit "$commit"
       fi
     else
