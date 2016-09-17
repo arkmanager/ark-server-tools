@@ -101,7 +101,7 @@ doUpgradeToolsFromRelease(){
 
   echo "Getting latest release..."
   # Read the variables from github
-  while IFS=$'\t' read n v; do
+  while IFS=$'\t' read -r n v; do
     case "${n}" in
       tag_name) tagname="${v}"; ;;
       body) desc="${v}"
