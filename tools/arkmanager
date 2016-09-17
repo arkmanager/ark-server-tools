@@ -2662,7 +2662,7 @@ main(){
         if [ -n "${arkstTag}" ]; then
           echo "Release Tag: ${arkstTag}"
         fi
-        blobsize="$(sed "s@^arkst\\(Commit\\|Tag\\)=.*@\\1=''@" "$0" | wc -c)"
+        blobsize="$(sed "s@^\\(arkst\\(Commit\\|Tag\\)\\)=.*@\\1=''@" "$0" | wc -c)"
         echo "Blob SHA: $( (echo -ne "blob ${blobsize}\0"; sed "s@^\\(arkst\\(Commit\\|Tag\\)\\)=.*@\\1=''@" "$0") | sha1sum | cut -d' ' -f1)"
         exit 1
       ;;
