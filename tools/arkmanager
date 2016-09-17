@@ -44,7 +44,7 @@ doUpgradeToolsFromCommit(){
   if [ -z "$tmpdir" ]; then echo "Unable to create temporary directory"; exit 1; fi
   cd "$tmpdir"
   echo "Downloading installer"
-  curl -L "https://github.com/${arkstGithubRepo}/archive/${commit}.tar.gz" | tar -xz
+  curl -s -L "https://github.com/${arkstGithubRepo}/archive/${commit}.tar.gz" | tar -xz
   cd "ark-server-tools-${commit}/tools"
   if [ ! -f "install.sh" ]; then echo "install.sh not found in $PWD"; exit 1; fi
   sed -i -e "s|^arkstCommit='.*'|arkstCommit='${commit}'|" \
