@@ -7,7 +7,7 @@
 # Contributors:         Sispheor, Atriusftw, klightspeed, lexat, puseidr
 
 # Script version
-arkstVersion='1.6-pre3'
+arkstVersion='1.6'
 arkstTag=''
 arkstCommit=''
 arkstGithubRepo="FezVrasta/ark-server-tools"
