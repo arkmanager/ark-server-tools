@@ -594,7 +594,7 @@ function getServerPID(){
     fi
   fi
 
-  if [ -z "$arkopt_clusterid" ]; then
+  if [[ -z "$arkopt_clusterid" || -f "${arkserverroot}/${arkoldautorestartfile}" ]]; then
     ps -ef | grep "$arkserverroot/$arkserverexec" | grep -v grep | awk '{print $2}'
   fi
 }
@@ -739,8 +739,8 @@ doRun() {
   # $$ returns the main process, $BASHPID returns the current process
   echo "$BASHPID" >"${arkserverroot}/${arkmanagerpidfile}"
 
-  if [ -f "${arkserverroot}/.ark-update.lock" ]; then
-    local updatepid="$(<"${arkserverroot}/.ark-update.lock")"
+  if [ -f "${arkserverroot}/${arkupdatelockfile}" ]; then
+    local updatepid="$(<"${arkserverroot}/${arkupdatelockfile}")"
     if kill -0 "$updatepid" >/dev/null 2>&1; then
       echo "An update is currently in progress.  Start aborted"
       return 1
@@ -957,8 +957,8 @@ doRun() {
 doStart() {
   touch "${arkserverroot}/.startAfterUpdate-${instance}"
 
-  if [ -f "${arkserverroot}/.ark-update.lock" ]; then
-    local updatepid="$(<"${arkserverroot}/.ark-update.lock")"
+  if [ -f "${arkserverroot}/${arkupdatelockfile}" ]; then
+    local updatepid="$(<"${arkserverroot}/${arkupdatelockfile}")"
     if kill -0 "$updatepid" >/dev/null 2>&1; then
       echo "An update is currently in progress.  Start aborted"
       echo "`timestamp`: Start aborted due to running update - pid: $updatepid" >>"$logdir/$arkserverLog"
@@ -1053,6 +1053,7 @@ doStop() {
     echo "Stopping server..."
     echo "`timestamp`: stopping; reason: $stopreason" >> "$logdir/$arkmanagerLog"
     rm -f "$arkserverroot/$arkautorestartfile"
+    rm -f "$arkserverroot/$arkoldautorestartfile"
     # kill the server with the PID
     PID=`getServerPID`
     kill -INT $PID
@@ -1139,11 +1140,11 @@ doInstall() {
 # Cancels a pending shutdown
 #
 doCancelShutdown(){
-  if [ -f "${arkserverroot}/.ark-warn.lock" ]; then
-    local lockpid="$(<"${arkserverroot}/.ark-warn.lock")"
+  if [ -f "${arkserverroot}/${arkwarnlockfile}" ]; then
+    local lockpid="$(<"${arkserverroot}/${arkwarnlockfile}")"
     if [ -n "$lockpid" ]; then
       kill "$lockpid"
-      rm -f "${arkserverroot}/.ark-warn.lock"
+      rm -f "${arkserverroot}/${arkwarnlockfile}"
     fi
   fi
 }
@@ -1295,21 +1296,21 @@ doWarn(){
   cd "$arkserverroot"
 
   (
-    echo "$$" >"${arkserverroot}/.ark-warn.lock.$$" 2>/dev/null
+    echo "$$" >"${arkserverroot}/${arkwarnlockfile}.${BASHPID}" 2>/dev/null
     while true; do
-      if ! ln "${arkserverroot}/.ark-warn.lock.$$" "${arkserverroot}/.ark-warn.lock" 2>/dev/null; then
-        local lockpid="$(<"${arkserverroot}/.ark-warn.lock")"
+      if ! ln "${arkserverroot}/${arkwarnlockfile}.${BASHPID}" "${arkserverroot}/${arkwarnlockfile}" 2>/dev/null; then
+        local lockpid="$(<"${arkserverroot}/${arkwarnlockfile}")"
         if [ -n "$lockpid" ] && [ "$lockpid" != "$$" ] && kill -0 "$lockpid" 2>/dev/null; then
           echo "Shutdown warning already in progress (PID: $lockpid)"
-          rm -f "${arkserverroot}/.ark-warn.lock.$$" 2>/dev/null
+          rm -f "${arkserverroot}/${arkwarnlockfile}.${BASHPID}" 2>/dev/null
           exit 1
         fi
-        rm -f "${arkserverroot}/.ark-warn.lock"
+        rm -f "${arkserverroot}/${arkwarnlockfile}"
       else
         break
       fi
     done
-    rm -f "${arkserverroot}/.ark-warn.lock.$$"
+    rm -f "${arkserverroot}/${arkwarnlockfile}.${BASHPID}"
 
     update_cancelled(){
       if [ -n "$msgUpdateCancelled" ]; then
@@ -1340,7 +1341,7 @@ doWarn(){
       for warninterval in "${warnintervals[@]}"; do
         if [ "`getServerPID`" != "$pid" ]; then
           echo "Server has stopped.  Aborting $1"
-          rm -f "${arkserverroot}/.ark-warn.lock"
+          rm -f "${arkserverroot}/${arkwarnlockfile}"
           return 1
         fi
         if (( warnminutes >= warninterval )); then
@@ -1355,7 +1356,7 @@ doWarn(){
               return 0
             elif (( (numplayers + 0) == 0 )); then
               doBroadcastWithEcho "Nobody is connected.  Shutting down immediately"
-              rm -f "${arkserverroot}/.ark-warn.lock"
+              rm -f "${arkserverroot}/${arkwarnlockfile}"
               return 0
             fi
             if isUpdateCancelRequested; then
@@ -1379,7 +1380,7 @@ doWarn(){
         sleeppid=$!
         if [ "`getServerPID`" != "$pid" ]; then
           echo "Server has stopped.  Aborting update"
-          rm -f "${arkserverroot}/.ark-warn.lock"
+          rm -f "${arkserverroot}/${arkwarnlockfile}"
           return 1
         fi
         printWarnMessage "$1" "$2" "seconds" "$warnseconds"
@@ -1391,7 +1392,7 @@ doWarn(){
             return 0
           elif (( (numplayers + 0) == 0 )); then
             doBroadcastWithEcho "Nobody is connected.  Shutting down immediately"
-            rm -f "${arkserverroot}/.ark-warn.lock"
+            rm -f "${arkserverroot}/${arkwarnlockfile}"
             return 0
           fi
           if isUpdateCancelRequested; then
@@ -1404,7 +1405,7 @@ doWarn(){
       done
     fi
 
-    rm -f "${arkserverroot}/.ark-warn.lock"
+    rm -f "${arkserverroot}/${arkwarnlockfile}"
 
     if [ "`getServerPID`" != "$pid" ]; then
       echo "Server has stopped.  Aborting $1"
@@ -1459,23 +1460,23 @@ doUpdate() {
     serverWasAlive=1
   fi
 
-  echo "$$" >"${arkserverroot}/.ark-update.lock.$$" 2>/dev/null
+  echo "$$" >"${arkserverroot}/${arkupdatelockfile}.${BASHPID}" 2>/dev/null
   while true; do
-    if ! ln "${arkserverroot}/.ark-update.lock.$$" "${arkserverroot}/.ark-update.lock" 2>/dev/null; then
-      local lockpid="$(<"${arkserverroot}/.ark-update.lock")"
+    if ! ln "${arkserverroot}/${arkupdatelockfile}.${BASHPID}" "${arkserverroot}/${arkupdatelockfile}" 2>/dev/null; then
+      local lockpid="$(<"${arkserverroot}/${arkupdatelockfile}")"
       if [ -n "$lockpid" ] && [ "$lockpid" != "$$" ] && kill -0 "$lockpid" 2>/dev/null; then
         echo "Update already in progress (PID: $lockpid)"
-	rm -f "${arkserverroot}/.ark-update.lock.$$" 2>/dev/null
+	rm -f "${arkserverroot}/${arkupdatelockfile}.${BASHPID}" 2>/dev/null
         return 1
       fi
-      rm -f "${arkserverroot}/.ark-update.lock"
+      rm -f "${arkserverroot}/${arkupdatelockfile}"
     else
       break
     fi
   done
-  rm -f "${arkserverroot}/.ark-update.lock.$$"
+  rm -f "${arkserverroot}/${arkupdatelockfile}.${BASHPID}"
 
-  echo "`timestamp`: checking for update; PID: $$"
+  echo "`timestamp`: checking for update; PID: ${BASHPID}"
 
   if [ -n "$modupdate" ]; then
     if [ -z "$nodownload" ]; then
@@ -1632,7 +1633,7 @@ doUpdate() {
     echo "`timestamp`: No update needed." >> "$logdir/update.log"
   fi;
 
-  rm -f "${arkserverroot}/.ark-update.lock"
+  rm -f "${arkserverroot}/${arkupdatelockfile}"
 
   if ! isTheServerRunning; then
     # we restart the server only if it was started before the update
@@ -2485,9 +2486,13 @@ useConfig() {
     exit 1
   fi
   arkautorestartfile="${arkautorestartfile:-ShooterGame/Saved/.autorestart-${1}}"
+  arkoldautorestartfile="ShooterGame/Saved/.autorestart"
   arkserverpidfile="${arkserverpidfile:-ShooterGame/Saved/.arkserver-${1}.pid}"
   arkserveroldpidfile="ShooterGame/Saved/.arkserver.pid"
   arkmanagerpidfile="${arkmanagerpidfile:-ShooterGame/Saved/.arkmanager-${1}.pid}"
+  arkwarnlockfile="${arkwarnlockfile:-ShooterGame/Saved/.ark-warn-${instance}.lock}"
+  # This is linked to the directory, not to the instance
+  arkupdatelockfile="${arkupdatelockfile:-ShooterGame/Saved/.ark-update.lock}"
 }
 
 showUsage() {
