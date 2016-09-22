@@ -1612,6 +1612,11 @@ doUpdate() {
               fi
             fi
           done
+        for f in *; do
+          if [[ -f "${f}" && ! -e "${arkStagingDir}/${f}" ]]; then
+            rm "${f}"
+          fi
+        done
       else
         echo -n "Performing ARK update"
         cd "$steamcmdroot"
