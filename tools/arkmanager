@@ -1431,6 +1431,9 @@ doUpdate() {
   local downloadonly=
   local nodownload=
   local noautostart=
+  local use_systemd=
+  local use_service=
+  local use_upstart=
 
   for arg in "$@"; do
     case "$arg" in
@@ -1447,6 +1450,9 @@ doUpdate() {
       --stagingdir=*) arkStagingDir="${arg#--stagingdir=}"; ;;
       --downloadonly) downloadonly=1; ;;
       --no-download) nodownload=1; ;;
+      --systemd) use_systemd=1; ;;
+      --service) use_service=1; ;;
+      --upstart) use_upstart=1; ;;
       *)
         echo "Unrecognized option $arg"
         echo "Try 'arkmanager -h' or 'arkmanager --help' for more information."
@@ -1640,7 +1646,19 @@ doUpdate() {
     if [ -z "$noautostart" ]; then
       if [ $serverWasAlive -eq 1 ] || [ -f "${arkserverroot}/.startAfterUpdate-${instance}" ]; then
         rm -f "${arkserverroot}/.startAfterUpdate-${instance}"
-        doStart --noautoupdate
+        if [ -n "$use_systemd" ]; then
+          sudo systemctl start "arkmanager@$instance"
+        elif [ -n "$use_service" ]; then
+          if [ -f "/etc/init.d/arkmanager" ]; then
+            sudo "/etc/init.d/arkmanager" start "$instance"
+          elif [ -f "/etc/rc.d/init.d/arkmanager" ]; then
+            sudo "/etc/rc.d/init.d/arkmanager" start "$instance"
+          fi
+        elif [ -n "$use_upstart" ]; then
+          sudo start arkmanager "service=$instance"
+        else
+          doStart --noautoupdate
+        fi
       fi
     fi
   fi
