@@ -1687,6 +1687,18 @@ getModIds(){
 }
 
 #
+# Checks if a mod update is available before trying to download it
+isModUpdateAvailable(){
+  local modid="$1"
+  local instmft="$(sed -n '/^\t"WorkshopItemsInstalled"$/,/^\t[}]$/{/^\t\t"'"${modid}"'"$/,/^\t\t[}]$/{s|^\t\t\t"manifest"\t\t"\(.*\)"$|\1|p}}' <"$steamcmdroot/steamapps/workshop/appworkshop_${mod_appid}.acf")"
+  local remmft="$(curl -s -d "itemcount=1&publishedfileids[0]=${modid}" http://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1 | sed -n 's|^[[:space:]]*"hcontent_file": "\(.*\)",|\1|p')"
+  if [[ -n "${remmft}" && "${instmft}" != "${remmft}" ]]; then
+    return 0 # true
+  fi
+  return 1 # false
+}
+
+#
 # Downloads a mod from the Steam workshop
 #
 doDownloadMod(){
@@ -1742,7 +1754,9 @@ doDownloadMod(){
 #
 doDownloadAllMods(){
   for modid in $(getModIds); do
-    doDownloadMod $modid || return 1
+    if isModUpdateAvailable $nodid; then
+      doDownloadMod $modid || return 1
+    fi
   done
 }
 
