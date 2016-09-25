@@ -1509,7 +1509,7 @@ doUpdate() {
           cp -al "$arkserverroot/Engine/." "$arkStagingDir/Engine"
           cp -al "$arkserverroot/linux64/." "$arkStagingDir/linux64"
           cp -a "$arkserverroot/steamapps/." "$arkStagingDir/steamapps"
-	  cp -l "$arkserverroot/"* "$arkStagingDir"
+	  cp -l "$arkserverroot/"* "$arkStagingDir" >/dev/null 2>&1
         else
           rsync -a "$arkserverroot/." "$arkStagingDir/."
         fi
@@ -1595,7 +1595,7 @@ doUpdate() {
           cp -alu --remove-destination "$arkStagingDir/ShooterGame/." "$arkserverroot/ShooterGame"
           cp -alu --remove-destination "$arkStagingDir/Engine/." "$arkserverroot/Engine"
           cp -alu --remove-destination "$arkStagingDir/linux64/." "$arkserverroot/linux64"
-	  cp -lu --remove-destination "$arkStagingDir/"* "$arkserverroot"
+	  cp -lu --remove-destination "$arkStagingDir/"* "$arkserverroot" >/dev/null 2>&1
           cp -au --remove-destination "$arkStagingDir/steamapps/." "$arkserverroot/steamapps"
         else
           rsync -a "$arkStagingDir/." "$arkserverroot"
