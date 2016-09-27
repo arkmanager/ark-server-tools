@@ -69,8 +69,8 @@ doUpgradeToolsFromBranch(){
   arkstLatestVersion=`curl -s "https://raw.githubusercontent.com/${arkstGithubRepo}/${arkstChannel}/.version"`
   arkstLatestCommit=`curl -s "https://api.github.com/repos/${arkstGithubRepo}/git/refs/heads/${arkstChannel}" | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p'`
 
-  if [ "$arkstLatestVersion" == "Not Found" ]; then
-    echo "Channel ${arkstChannel} does not exist"
+  if [[ "$arkstLatestVersion" == "404: Not Found" ]]; then
+    echo "Channel '${arkstChannel}' does not exist"
     echo
     echo "Available channels:"
     curl -s "https://api.github.com/repos/${arkstGithubRepo}/git/refs/heads" | sed -n 's|^ *"ref": "refs/heads/\(.*\)",|\1|p'
