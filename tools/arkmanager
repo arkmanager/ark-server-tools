@@ -2193,63 +2193,69 @@ doBackup(){
   # fail to update the file if the lock fails.
   echo -e "${NORMAL} Copying ARK profile files"
   for f in "${savedir}/"*.arkprofile; do
-    echo -ne "${NORMAL}   ${f##*/} "
-    cp -p "${f}" "${backupdir}/${f##*/}"
-    if [ ! -s "${backupdir}/${f##*/}" ]; then
-      sleep 2
+    if [ -f "${f}" ]; then
+      echo -ne "${NORMAL}   ${f##*/} "
       cp -p "${f}" "${backupdir}/${f##*/}"
-    fi
-    # If both attempts fail, server may have
-    # crashed between truncate and write
-    if [ ! -s "${backupdir}/${f##*/}" ]; then
-      cp -p "${f%.arkprofile}.tmpprofile" "${backupdir}/${f##*/}"
-    fi
-    if [ -s "${backupdir}/${f##*/}" ]; then
-      echo -e "${NORMAL}\e[68G[   ${GREEN}OK${NORMAL}   ]"
-    else
-      echo -e "${NORMAL}\e[68G[ ${RED}FAILED${NORMAL} ]"
+      if [ ! -s "${backupdir}/${f##*/}" ]; then
+        sleep 2
+        cp -p "${f}" "${backupdir}/${f##*/}"
+      fi
+      # If both attempts fail, server may have
+      # crashed between truncate and write
+      if [[ ! -s "${backupdir}/${f##*/}" && -f "${f%.arkprofile}.tmpprofile" ]]; then
+        cp -p "${f%.arkprofile}.tmpprofile" "${backupdir}/${f##*/}"
+      fi
+      if [ -s "${backupdir}/${f##*/}" ]; then
+        echo -e "${NORMAL}\e[68G[   ${GREEN}OK${NORMAL}   ]"
+      else
+        echo -e "${NORMAL}\e[68G[ ${RED}FAILED${NORMAL} ]"
+      fi
     fi
   done
 
   # ARK server uses Lock-Truncate-Write-Unlock
   echo -e "${NORMAL} Copying ARK tribe files "
   for f in "${savedir}/"*.arktribe; do
-    echo -ne "${NORMAL}   ${f##*/} "
-    cp -p "${f}" "${backupdir}/${f##*/}"
-    if [ ! -s "${backupdir}/${f##*/}" ]; then
-      sleep 2
+    if [ -f "${f}" ]; then
+      echo -ne "${NORMAL}   ${f##*/} "
       cp -p "${f}" "${backupdir}/${f##*/}"
-    fi
-    # If both attempts fail, server may have
-    # crashed between truncate and write
-    if [ ! -s "${backupdir}/${f##*/}" ]; then
-      cp -p "${f%.arktribe}.tmptribe" "${backupdir}/${f##*/}"
-    fi
-    if [ -s "${backupdir}/${f##*/}" ]; then
-      echo -e "${NORMAL}\e[68G[   ${GREEN}OK${NORMAL}   ]"
-    else
-      echo -e "${NORMAL}\e[68G[ ${RED}FAILED${NORMAL} ]"
+      if [ ! -s "${backupdir}/${f##*/}" ]; then
+        sleep 2
+        cp -p "${f}" "${backupdir}/${f##*/}"
+      fi
+      # If both attempts fail, server may have
+      # crashed between truncate and write
+      if [[ ! -s "${backupdir}/${f##*/}" && -f "${f%.arktribe}.tmptribe" ]]; then
+        cp -p "${f%.arktribe}.tmptribe" "${backupdir}/${f##*/}"
+      fi
+      if [ -s "${backupdir}/${f##*/}" ]; then
+        echo -e "${NORMAL}\e[68G[   ${GREEN}OK${NORMAL}   ]"
+      else
+        echo -e "${NORMAL}\e[68G[ ${RED}FAILED${NORMAL} ]"
+      fi
     fi
   done
 
   # ARK server uses Lock-Truncate-Write-Unlock
   echo -e "${NORMAL} Copying ARK tribute tribe files "
-  for f in "${arkserverroot}/ShooterGame/Saved/${savedir}/"*.arktributetribe; do
-    echo -ne "${NORMAL}   ${f##*/} "
-    cp -p "${f}" "${backupdir}/${f##*/}"
-    if [ ! -s "${backupdir}/${f##*/}" ]; then
-      sleep 2
+  for f in "${savedir}/"*.arktributetribe; do
+    if [ -f "${f}" ]; then
+      echo -ne "${NORMAL}   ${f##*/} "
       cp -p "${f}" "${backupdir}/${f##*/}"
-    fi
-    # If both attempts fail, server may have
-    # crashed between truncate and write
-    if [ ! -s "${backupdir}/${f##*/}" ]; then
-      cp -p "${f%.arktribe}.tmptributetribe" "${backupdir}/${f##*/}"
-    fi
-    if [ -s "${backupdir}/${f##*/}" ]; then
-      echo -e "${NORMAL}\e[68G[   ${GREEN}OK${NORMAL}   ]"
-    else
-      echo -e "${NORMAL}\e[68G[ ${RED}FAILED${NORMAL} ]"
+      if [ ! -s "${backupdir}/${f##*/}" ]; then
+        sleep 2
+        cp -p "${f}" "${backupdir}/${f##*/}"
+      fi
+      # If both attempts fail, server may have
+      # crashed between truncate and write
+      if [[ ! -s "${backupdir}/${f##*/}" && -f "${f%.arktributetribe}.tmptributetribe" ]]; then
+        cp -p "${f%.arktributetribe}.tmptributetribe" "${backupdir}/${f##*/}"
+      fi
+      if [ -s "${backupdir}/${f##*/}" ]; then
+        echo -e "${NORMAL}\e[68G[   ${GREEN}OK${NORMAL}   ]"
+      else
+        echo -e "${NORMAL}\e[68G[ ${RED}FAILED${NORMAL} ]"
+      fi
     fi
   done
 
