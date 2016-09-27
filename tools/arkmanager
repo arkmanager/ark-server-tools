@@ -1549,7 +1549,7 @@ doUpdate() {
     fi
     echo "Not applying update - download-only enabled"
   elif [ -n "$appupdate" -o -n "$modupdate" -o -n "$bgupdate" ]; then
-    if [ -f "$arkserverroot/version.txt" ]; then
+    if false && [ -f "$arkserverroot/version.txt" ]; then
       arkversion="$(<"$arkserverroot/version.txt")"
     else
       arkversion="$(getCurrentVersion; echo "$instver")"
@@ -2440,7 +2440,7 @@ printStatus(){
 
   getCurrentVersion
   echo -e "$NORMAL" "Server build ID: " "$GREEN" $instver "$NORMAL"
-  if [ -f "$arkserverroot/version.txt" ]; then
+  if false && [ -f "$arkserverroot/version.txt" ]; then
     echo -e "$NORMAL" "Server version: " "$GREEN" "$(<"$arkserverroot/version.txt")" "$NORMAL"
   fi
 }
