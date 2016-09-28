@@ -11,6 +11,7 @@ arkstVersion='1.6'
 arkstTag=''
 arkstCommit=''
 arkstGithubRepo="FezVrasta/ark-server-tools"
+arkstRootUseEnv=''
 
 doUpgradeTools() {
   local sudo=sudo
@@ -54,6 +55,7 @@ doUpgradeToolsFromCommit(){
   if [ ! -f "install.sh" ]; then echo "install.sh not found in $PWD"; exit 1; fi
   sed -i -e "s|^arkstCommit='.*'|arkstCommit='${commit}'|" \
          -e "s|^arkstTag='.*'|arkstTag='${tagname}'|" \
+	 -e "s|^arkstRootUseEnv='.*'|arkstRootUseEnv='${arkstRootUseEnv}'|" \
          arkmanager
   echo "Running install.sh"
   $sudo bash install.sh "$steamcmd_user" "${reinstall_args[@]}"
@@ -154,6 +156,11 @@ doUninstallTools() {
 runAsRoot(){
   getConfigVar(){
     val="$(echo -ne "$(sed -n "/^$1=/{s|^[^=]*=||;s|[[:space:]]*\\(#.*\\)*\$||;s|^\"\\(.*\\)\"\$|\\1|;s|^'\\(.*\\)'\$|\\1|;p}" <"/etc/arkmanager/arkmanager.cfg" | tail -n1)")"
+
+    if [ -n "$arkstRootUseEnv" ]; then
+      val="$(eval printf "%s" "$(printf "%q" "${val}" | sed 's|\\[$]\\[{]\([A-Za-z][A-Za-z0-9_]*\)\\[}]|${\1}|g;s|\\[$]\([A-Za-z][A-Za-z0-9_]*\)|${\1}|g')")"
+    fi
+
     if [ -n "$val" ]; then
       echo "$val"
     else
@@ -2715,8 +2722,8 @@ main(){
         if [ -n "${arkstTag}" ]; then
           echo "Release Tag: ${arkstTag}"
         fi
-        blobsize="$(sed "s@^\\(arkst\\(Commit\\|Tag\\)\\)=.*@\\1=''@" "$0" | wc -c)"
-        echo "Blob SHA: $( (echo -ne "blob ${blobsize}\0"; sed "s@^\\(arkst\\(Commit\\|Tag\\)\\)=.*@\\1=''@" "$0") | sha1sum | cut -d' ' -f1)"
+        blobsize="$(sed "s@^\\(arkst\\(Commit\\|Tag\\|RootUseEnv\\)\\)=.*@\\1=''@" "$0" | wc -c)"
+        echo "Blob SHA: $( (echo -ne "blob ${blobsize}\0"; sed "s@^\\(arkst\\(Commit\\|Tag\\|RootUseEnv\\)\\)=.*@\\1=''@" "$0") | sha1sum | cut -d' ' -f1)"
         exit 1
       ;;
       -h|--help)
