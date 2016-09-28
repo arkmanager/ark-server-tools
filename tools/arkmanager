@@ -39,6 +39,11 @@ doUpgradeTools() {
 }
 
 doUpgradeToolsFromCommit(){
+  local sudo=sudo
+  if [ "$UID" == 0 -o "$steamcmd_user" == "--me" ]; then
+    sudo=
+  fi
+
   local commit="$1"
   tmpdir="$(mktemp -d "ark-server-tools-XXXXXXXX")"
   if [ -z "$tmpdir" ]; then echo "Unable to create temporary directory"; exit 1; fi
@@ -51,7 +56,7 @@ doUpgradeToolsFromCommit(){
          -e "s|^arkstTag='.*'|arkstTag='${tagname}'|" \
          arkmanager
   echo "Running install.sh"
-  bash install.sh "$steamcmd_user" "${reinstall_args[@]}"
+  $sudo bash install.sh "$steamcmd_user" "${reinstall_args[@]}"
   result=$?
   cd /
   rm -rf "$tmpdir"
