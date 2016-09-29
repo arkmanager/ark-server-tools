@@ -920,6 +920,8 @@ doRun() {
       restartserver=1
       touch "$arkserverroot/$arkautorestartfile"
     fi
+    # Retries for checking it the server comes back up after going down
+    serverdowntries=0
 
     sleep 5
 
@@ -927,6 +929,7 @@ doRun() {
       # Grab the current server PID
       local pid="`getServerPID`"
       if [ "$pid" == "$serverpid" ]; then
+        serverdowntries=0
         if [ "$restartserver" -eq 0 ]; then
           # Check if the server has fully started
           if ! isTheServerUp; then
@@ -934,6 +937,28 @@ doRun() {
             echo "`timestamp`: server is up"
             touch "$arkserverroot/$arkautorestartfile"
             restartserver=1
+          fi
+        elif isTheServerUp; then
+          (( serverdowntries++ ))
+
+          if (( serverdowntries > 12 )); then
+            # Server has not been listening for 60 seconds, so restart it.
+            echo "`timestamp`: The server has stopped listening"
+            echo "`timestamp`: Restarting server"
+            for (( i = 0; i < 5; i++ )); do
+              if ! kill -0 "$serverpid"; then
+                break
+              fi
+              kill -INT "$serverpid"
+              sleep 5
+            done
+            if kill -0 "$serverpid"; then
+              echo "`timestamp`: Graceful restart failed - killing server"
+              kill -KILL "$serverpid"
+            fi
+
+            # Exit the server check loop
+            break
           fi
 	fi
       else
