@@ -394,7 +394,7 @@ rconcmd() {
       my $reqid = 1;
       sendpkt($sock, $reqid, 3, $password);
       my ($resid, $restype, $rcvbody) = recvpkt($sock);
-      die "Authentication failed" if $resid == -1;
+      die "Authentication failed" if $resid == -1 or $resid == 0xFFFFFFFF;
     }
 
     my $port = $ARGV[0];
