@@ -446,6 +446,17 @@ doBroadcastWithEcho(){
 }
 
 #
+# Download SteamCMD
+#
+function doDownloadSteamCMD(){
+  if [ ! -f "${steamcmdroot}/${steamcmdexec}" ]; then
+    mkdir -p "${steamcmdroot}"
+    curl -s "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz" -o "${steamcmdroot}/steamcmd_linux.tar.gz"
+    tar -xzf "${steamcmdroot}/steamcmd_linux.tar.gz" -C "${steamcmdroot}"
+  fi
+}
+
+#
 # SteamCMD helper function
 #
 function runSteamCMD(){
@@ -876,11 +887,9 @@ doRun() {
   done
 
   if [[ " ${arkextraopts[*]} " =~ " -automanagedmods " ]]; then
-    if [ ! -f "${arkserverroot}/Engine/Binaries/ThirdParty/SteamCMD/Linux/steamcmd.sh" ]; then
-      mkdir -p "${arkserverroot}/Engine/Binaries/ThirdParty/SteamCMD/Linux"
-      curl -s "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz" -o "${arkserverroot}/Engine/Binaries/ThirdParty/SteamCMD/Linux/steamcmd_linux.tar.gz"
-      tar -xzf "${arkserverroot}/Engine/Binaries/ThirdParty/SteamCMD/Linux/steamcmd_linux.tar.gz" -C "${arkserverroot}/Engine/Binaries/ThirdParty/SteamCMD/Linux"
-    fi
+    steamcmdroot="${arkserverroot}/Engine/Binaries/ThirdParty/SteamCMD/Linux"
+    steamcmdexec="steamcmd.sh"
+    doDownloadSteamCMD
   fi
 
   arkserveropts="${arkserveropts}?listen"
@@ -1167,6 +1176,7 @@ doInstall() {
   cd "$steamcmdroot"
   echo -n "Installing ARK server"
   # install the server
+  doDownloadSteamCMD
   runSteamCMDAppUpdate "$arkserverroot" validate
   # the current version should be the last version. We set our version
   getCurrentVersion
@@ -1559,6 +1569,7 @@ doUpdate() {
 
       if [ -z "$nodownload" ]; then
         echo -n "Downloading ARK update"
+	doDownloadSteamCMD
         cd "$steamcmdroot"
         if runSteamCMDAppUpdate "$arkStagingDir" $validate; then
 	  rm -rf "${arkStagingDir}/steamapps/downloading/${appid}"
@@ -1656,6 +1667,7 @@ doUpdate() {
         done
       else
         echo -n "Performing ARK update"
+	doDownloadSteamCMD
         cd "$steamcmdroot"
 	runSteamCMDAppUpdate "$arkserverroot" $validate
       fi
@@ -1744,6 +1756,7 @@ doDownloadMod(){
   if [ -n "$arkflag_automanagedmods" ]; then
     steamcmdroot="$arkserverroot/Engine/Binaries/ThirdParty/SteamCMD/Linux"
   fi
+  doDownloadSteamCMD
   local modsrcdir="$steamcmdroot/steamapps/workshop/content/$mod_appid/$modid"
   local moddldir="$steamcmdroot/steamapps/workshop/downloads/$mod_appid"
   cd "$steamcmdroot"
