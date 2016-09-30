@@ -1102,7 +1102,7 @@ doStop() {
     rm -f "$arkserverroot/$arkoldautorestartfile"
     # kill the server with the PID
     PID=`getServerPID`
-    kill -INT $PID
+    kill -INT $PID >/dev/null 2>&1
 
     for (( i = 0; i < 20; i++ )); do
       sleep 1
@@ -1114,13 +1114,13 @@ doStop() {
     if isTheServerRunning; then
       tput rc
       echo "Killing server..."
-      kill -KILL $PID
+      kill -KILL $PID >/dev/null 2>&1
     fi
 
     if [ -f "${arkserverroot}/${arkmanagerpidfile}" ]; then
       PID="$(<"${arkserverroot}/${arkmanagerpidfile}")"
       if [ -n "$PID" ]; then
-        kill $PID
+        kill $PID >/dev/null 2>&1
       fi
     fi
 
