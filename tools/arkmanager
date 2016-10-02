@@ -1030,15 +1030,23 @@ doStart() {
     echo "The server is starting..."
 
     local pid=$!
-    if [ -n "$arkPriorityBoost" ]; then
+    if [[ -n "$arkPriorityBoost" || -n "$arkCpuAffinity" ]]; then
       doRun --wait </dev/null >>"$logdir/$arkserverLog" 2>&1 & # output of this command is logged
       local pid="$!"
 
       # Wait for monitor process to suspend itself
       wait
 
-      echo "Boosting priority of ark server"
-      sudo renice -n "$arkPriorityBoost" "$pid"
+      if [ -n "$arkPriorityBoost" ]; then
+        echo "Boosting priority of ark server"
+        sudo renice -n "$arkPriorityBoost" "$pid"
+      fi
+
+      if [ -n "$arkCpuAffinity" ]; then
+        echo "Setting CPU affinity for ark server"
+        sudo taskset -c "$arkCpuAffinity" -p "$pid"
+      fi
+
       kill -CONT "$pid"
     else
       doRun </dev/null >>"$logdir/$arkserverLog" 2>&1 & # output of this command is logged

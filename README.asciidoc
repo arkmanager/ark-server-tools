@@ -407,6 +407,11 @@ The following options can be overridden on a per-instance basis:
     Negative values give a higher priority, and positive values give a lower priority.
     Requires `sudo` and `renice`
 
+`arkCpuAffinity`::
+    Attempts to set the CPU affinity of the ARK server.
+    Setting is a comma-delimited list of processor indices on which the server should run.
+    Requires `sudo` and `taskset`
+
 `msgWarnUpdateMinutes`::
 `msgWarnUpdateSeconds`::
 `msgWarnRestartMinutes`::
