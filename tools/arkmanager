@@ -1747,7 +1747,9 @@ getModIds(){
 # Checks if a mod update is available before trying to download it
 isModUpdateAvailable(){
   local modid="$1"
+  if [ ! -f "$steamcmdroot/steamapps/workshop/appworkshop_${mod_appid}.acf" ]; then return 0; fi
   local instmft="$(sed -n '/^\t"WorkshopItemsInstalled"$/,/^\t[}]$/{/^\t\t"'"${modid}"'"$/,/^\t\t[}]$/{s|^\t\t\t"manifest"\t\t"\(.*\)"$|\1|p}}' <"$steamcmdroot/steamapps/workshop/appworkshop_${mod_appid}.acf")"
+  if [ -z "$instmft" ]; then return 0; fi
   local remmft="$(curl -s -d "itemcount=1&publishedfileids[0]=${modid}" http://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1 | sed -n 's|^[[:space:]]*"hcontent_file": "\(.*\)",|\1|p')"
   if [[ -n "${remmft}" && "${instmft}" != "${remmft}" ]]; then
     return 0 # true
