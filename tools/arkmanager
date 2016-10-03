@@ -1035,7 +1035,7 @@ doStart() {
       local pid="$!"
 
       # Wait for monitor process to suspend itself
-      wait
+      sleep 1
 
       if [ -n "$arkPriorityBoost" ]; then
         echo "Boosting priority of ark server"
