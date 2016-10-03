@@ -2386,6 +2386,7 @@ doInstallCronJob(){
   minute='0'
   cmdopts="${arkCronExtraOpts}"
   cmdargs=""
+  instargs=""
   output=">/dev/null 2>&1"
   arkmanagerpath="${0}"
   command="$1"
@@ -2414,15 +2415,23 @@ doInstallCronJob(){
         cmdopts="${cmdopts} $(printf "%q" "${opt}")"
       ;;
       *)
-        cmdargs="${args} $(printf "%q" "${opt}")"
+        cmdargs="${cmdargs} $(printf "%q" "${opt}")"
       ;;
     esac
   done
 
-  cronjob="${minute} ${hour} * * * ${arkmanagerpath} --cronjob ${command} @${instance} ${cmdopts} --args ${cmdargs} -- ${output}"
+  if [ -n "$allinstances" ]; then
+    instargs="@all"
+  else
+    for inst in "${instances[@]}"; do
+      instargs="${instargs} $(printf "%q" "@${inst}")"
+    done
+  fi
+
+  cronjob="${minute} ${hour} * * * ${arkmanagerpath} --cronjob ${command} ${instargs} ${cmdopts} --args ${cmdargs} -- ${output}"
 
   (crontab -l | \
-    sed -e "\\# [*] [*] [*] ${arkmanagerpath} --cronjob ${command} @${instance} #d";
+    sed -e "\\# [*] [*] [*] ${arkmanagerpath} --cronjob ${command} ${instargs} #d";
     echo "${cronjob}" ) | \
     crontab -
 }
@@ -2801,6 +2810,18 @@ main(){
       fi
     fi
 
+    # Handle cronjob commands specially
+    case "$command" in
+      install-cronjob)
+        doInstallCronJob "${args[@]}" "${options[@]}" "$@"
+	exit
+      ;;
+      remove-cronjob)
+        doRemoveCronJob "${args[@]}"
+	exit
+      ;;
+    esac
+
     # Handle all instances being requested
     if [[ "$allinstances" == "yes" ]]; then
       instances=( $(getAllInstanceNames) )
@@ -2878,12 +2899,6 @@ main(){
         ;;
         status)
           printStatus
-        ;;
-        install-cronjob)
-          doInstallCronJob "${args[@]}" "${options[@]}"
-        ;;
-        remove-cronjob)
-          doRemoveCronJob "${args[@]}"
         ;;
         *)
           echo -n "arkmanager v${arkstVersion}: unknown command '$command' specified"
