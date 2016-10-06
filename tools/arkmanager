@@ -1044,7 +1044,7 @@ doStart() {
 
       if [ -n "$arkCpuAffinity" ]; then
         echo "Setting CPU affinity for ark server"
-        taskset -c "$arkCpuAffinity" -p "$pid"
+        taskset -pc "$arkCpuAffinity" "$pid"
       fi
 
       kill -CONT "$pid"
