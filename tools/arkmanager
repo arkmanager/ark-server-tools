@@ -237,6 +237,7 @@ appid="${appid:-376030}"
 mod_appid="${mod_appid:-346110}"
 install_bindir="${install_bindir:-${0%/*}}"
 install_libexecdir="${install_libexecdir:-${install_bindir%/*}/libexec/arkmanager}"
+steamcmd_workshoplog="${steamcmd_workshoplog:-${HOME}/Steam/logs/workshop_log.txt}"
 
 if [ "$steamcmd_user" == "--me" ]; then
   install_datadir="${install_datadir:-${HOME}/.share/local/arkmanager}"
@@ -1787,7 +1788,11 @@ doDownloadMod(){
       break
     else
       echo
-      if [ ! -d "$moddldir" ]; then
+      failedmod="$(sed -n 's|.* Download item \([0-9]*\) result : \(.*\)|\1\t\2|p' "${steamcmd_workshoplog}" | grep -v ' OK' | tail -n1 | cut -f1)"
+      if [[ -n "$failedmod" && "$failedmod" != "$modid" ]]; then
+        echo "Mod $failedmod prevented mod update - removing failed mod"
+        doRemoveMods "$failedmod"
+      elif [ ! -d "$moddldir" ]; then
         echo "Mod $modid download failed"
         break
       fi
