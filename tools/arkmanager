@@ -1788,7 +1788,7 @@ doDownloadMod(){
       break
     else
       echo
-      failedmod="$(sed -n 's|.* Download item \([0-9]*\) result : \(.*\)|\1\t\2|p' "${steamcmd_workshoplog}" | grep -v ' OK' | tail -n1 | cut -f1)"
+      failedmod="$(tail -n 20 "${steamcmd_workshoplog}" | sed -n 's|.* Download item \([0-9]*\) result : \(.*\)|\1\t\2|p' | grep -v $'\tOK' | tail -n1 | cut -f1)"
       if [[ -n "$failedmod" && "$failedmod" != "$modid" ]]; then
         echo "Mod $failedmod prevented mod update - removing failed mod"
         doRemoveMods "$failedmod"
