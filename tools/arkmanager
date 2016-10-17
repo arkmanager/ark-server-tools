@@ -12,6 +12,8 @@ arkstTag=''
 arkstCommit=''
 arkstGithubRepo="FezVrasta/ark-server-tools"
 arkstRootUseEnv=''
+arkstGlobalCfgFile='/etc/arkmanager/arkmanager.cfg'
+arkstUserCfgFile='.arkmanager.cfg'
 
 doUpgradeTools() {
   local sudo=sudo
@@ -155,7 +157,7 @@ doUninstallTools() {
 
 runAsRoot(){
   getConfigVar(){
-    val="$(echo -ne "$(sed -n "/^$1=/{s|^[^=]*=||;s|[[:space:]]*\\(#.*\\)*\$||;s|^\"\\(.*\\)\"\$|\\1|;s|^'\\(.*\\)'\$|\\1|;p}" <"/etc/arkmanager/arkmanager.cfg" | tail -n1)")"
+    val="$(echo -ne "$(sed -n "/^$1=/{s|^[^=]*=||;s|[[:space:]]*\\(#.*\\)*\$||;s|^\"\\(.*\\)\"\$|\\1|;s|^'\\(.*\\)'\$|\\1|;p}" <"${arkstGlobalCfgFile}" | tail -n1)")"
 
     if [ -n "$arkstRootUseEnv" ]; then
       val="$(eval printf "%s" "$(printf "%q" "${val}" | sed 's|\\[$]\\[{]\([A-Za-z][A-Za-z0-9_]*\)\\[}]|${\1}|g;s|\\[$]\([A-Za-z][A-Za-z0-9_]*\)|${\1}|g')")"
@@ -203,12 +205,12 @@ fi
 #---------------------
 
 # Global variables
-if [ -f "/etc/arkmanager/arkmanager.cfg" ]; then
-    source /etc/arkmanager/arkmanager.cfg
+if [ -f "${arkstGlobalCfgFile}" ]; then
+    source "${arkstGlobalCfgFile}"
 fi
 
-if [ -f "${HOME}/.arkmanager.cfg" ]; then
-    source "${HOME}/.arkmanager.cfg"
+if [ -f "${HOME}/${arkstUserCfgFile}" ]; then
+    source "${HOME}/${arkstUserCfgFile}"
 fi
 
 cd "$HOME"
@@ -2564,7 +2566,7 @@ doPrintConfig(){
   for v in $(eval echo \$\{\!{a..z}\*\} \$\{\!{A..Z}\*\} \$\{\!_\*\}); do
     vals["$v"]="${!v}"
   done
-  for cfgfile in "$configfile" "$HOME/.arkmanager.cfg" "/etc/arkmanager/arkmanager.cfg"; do
+  for cfgfile in "$configfile" "${HOME}/${arkstUserCfgFile}" "${arkstGlobalCfgFile}"; do
     while read v; do
       val="$(source "$cfgfile"; echo "${!v}")"
       if [[ "$val" = "${vals[$v]}" && -z "${vars[$v]}" ]]; then
@@ -2589,15 +2591,23 @@ useConfig() {
       break
     fi
   done
-  if [ -z "$configfile" ]; then
-    echo "Error: no config files for instance $1"
-    exit 1
+  if [[ -z "$configfile" && -n "$arkSingleInstance" ]]; then
+    if [ -f "${HOME}/${arkstUserCfgFile}" ]; then
+      configfile="${HOME}/${arkstUserCfgFile}"
+    else
+      configfile="${arkstGlobalCfgFile}"
+    fi
+  else
+    if [ -z "$configfile" ]; then
+      echo "Error: no config files for instance $1"
+      exit 1
+    fi
+    if [ ! -f "$configfile" ]; then
+      echo "Error: config file $configfile does not exist"
+      exit 1
+    fi
+    source "$configfile"
   fi
-  if [ ! -f "$configfile" ]; then
-    echo "Error: config file $configfile does not exist"
-    exit 1
-  fi
-  source "$configfile"
   if [ -z "$arkserverroot" ]; then
     echo "Error: arkserverroot not set"
     exit 1
@@ -2607,7 +2617,7 @@ useConfig() {
   arkserverpidfile="${arkserverpidfile:-ShooterGame/Saved/.arkserver-${1}.pid}"
   arkserveroldpidfile="ShooterGame/Saved/.arkserver.pid"
   arkmanagerpidfile="${arkmanagerpidfile:-ShooterGame/Saved/.arkmanager-${1}.pid}"
-  arkwarnlockfile="${arkwarnlockfile:-ShooterGame/Saved/.ark-warn-${instance}.lock}"
+  arkwarnlockfile="${arkwarnlockfile:-ShooterGame/Saved/.ark-warn-${1}.lock}"
   # This is linked to the directory, not to the instance
   arkupdatelockfile="${arkupdatelockfile:-ShooterGame/Saved/.ark-update.lock}"
 }
