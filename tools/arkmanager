@@ -641,8 +641,11 @@ function isTheServerRunning(){
 #
 #
 function isTheServerUp(){
-  $lsof -i "${ark_MultiHome:+udp@}${ark_MultiHome}:$(getGamePort)" > /dev/null
-  result=$?
+  result=1
+  if [ ! -x "$lsof" ]; then
+    "$lsof" -i "${ark_MultiHome:+udp@}${ark_MultiHome}:$(getGamePort)" > /dev/null
+    result=$?
+  fi
   if [ $result -ne 0 ]; then
     perl -MSocket -MFcntl -e '
       my $port = int($ARGV[0]);
