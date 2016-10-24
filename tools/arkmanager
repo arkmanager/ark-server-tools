@@ -463,13 +463,13 @@ function doDownloadSteamCMD(){
 # SteamCMD helper function
 #
 function runSteamCMD(){
-  "$steamcmdroot/$steamcmdexec" +@NoPromptForPassword 1 +login ${steamlogin:-anonymous} "$@" +quit
+  "$steamcmdroot/$steamcmdexec" +@NoPromptForPassword 1 ${steamcmd_cmds_prelogin} +login ${steamlogin:-anonymous} ${steamcmd_cmds_postlogin} "$@" +quit
 }
 
 function runSteamCMDspinner(){
   if [ -n "$verbose" ]; then
     printf "Executing"
-    printf " %q" "$steamcmdroot/$steamcmdexec" +@NoPromptForPassword 1 +login ${steamlogin:-anonymous} "$@" +quit
+    printf " %q" "$steamcmdroot/$steamcmdexec" +@NoPromptForPassword 1 ${steamcmd_cmds_prelogin} +login ${steamlogin:-anonymous} ${steamcmd_cmds_postlogin} "$@" +quit
     printf "\n"
     if (command >&3) 2>/dev/null; then
       runSteamCMD "$@" > >(tee /dev/fd/3)
