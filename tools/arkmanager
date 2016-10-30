@@ -1334,7 +1334,7 @@ printWarnMessage(){
 isUpdateCancelRequested(){
   if [ -n "$chatCommandRestartCancel" ]; then
     local canceltime="$(
-      find "${arkserverrroot}/ShooterGame/Saved/Logs" -name 'ServerGame.*.log' -mmin -5 -print0 | 
+      find "${arkserverroot}/ShooterGame/Saved/Logs" -name 'ServerGame.*.log' -mmin -5 -print0 | 
         xargs -0 grep -F -e "${chatCommandRestartCancel}" | 
         sed 's@^[[]\(....\)\.\(..\)\.\(..\)-\(..\)\.\(..\)\.\(..\):.*@\1-\2-\3 \4:\5:\6 UTC@' | 
         head -n1)"
