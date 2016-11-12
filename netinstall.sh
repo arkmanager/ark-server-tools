@@ -26,6 +26,19 @@ if [ "$1" = "--unstable" ]; then
   unstable=1
 fi
 
+userinstall=
+if [ "$1" = "--perform-user-install" ]; then
+  userinstall=yes
+fi
+
+if [[ "$steamcmd_user" == "--me" && -z "$userinstall" ]]; then
+  echo "You have requested a user-install.  You probably don't want this."
+  echo "A user-install will create ~/.config/arkmanager/instances/main.cfg"
+  echo "This config file will override /etc/arkmanager/instances/main.cfg"
+  echo "Add --perform-user-install if you really want this."
+  exit 1
+fi
+
 function doInstallFromCommit(){
   local commit="$1"
   tmpdir="$(mktemp -t -d "ark-server-tools-XXXXXXXX")"
