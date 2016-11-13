@@ -2585,7 +2585,7 @@ useConfig() {
   if [ -f "/etc/arkmanager/instances/${1}.cfg" ]; then
     configfile="/etc/arkmanager/instances/${1}.cfg"
   fi
-  if [ -f "${HOME}/.config/arkmanager/instances/${1}.cfg" ]; then
+  if [[ -f "${HOME}/.config/arkmanager/instances/${1}.cfg" && "${HOME}/.config/arkmanager/instances/${1}.cfg" -nt "/etc/arkmanager/instances/${1}.cfg" ]]; then
     configfile="${HOME}/.config/arkmanager/instances/${1}.cfg"
   fi
   for varname in "${!configfile_@}"; do
