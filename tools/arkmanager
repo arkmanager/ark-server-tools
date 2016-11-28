@@ -542,9 +542,9 @@ function checkForUpdate(){
 # Return 0 if update is needed, else return 1
 #
 function isUpdateNeeded(){
-  getCurrentVersion
-  getAvailableVersion
-  if [[ "$bnumber" == "Unknown" || "$bnumber" -eq "$instver" ]]; then
+  instver="$(getCurrentVersion)"
+  bnumber="$(getAvailableVersion)"
+  if [[ -z "$bnumber" || "$bnumber" -eq "$instver" ]]; then
     return 1   # no update needed
   else
     return 0   # update needed
@@ -583,10 +583,16 @@ function parseSteamACF(){
 #
 function getCurrentVersion(){
   if [ -f "${arkserverroot}/steamapps/appmanifest_${appid}.acf" ]; then
-    instver=`while read name val; do if [ "${name}" == "{" ]; then parseSteamACF "" "buildid"; break; fi; done <"${arkserverroot}/steamapps/appmanifest_${appid}.acf"`
-    echo $instver > "$arkserverroot/arkversion"
-  else
-    instver=""
+    while read name val; do if [ "${name}" == "{" ]; then parseSteamACF "" "buildid"; break; fi; done <"${arkserverroot}/steamapps/appmanifest_${appid}.acf"
+  fi
+}
+
+#
+# Return the version from the staging directory
+#
+function getStagingVersion(){
+  if [ -f "${arkStagingDir}/steamapps/appmanifest_${appid}.acf" ]; then
+    while read name val; do if [ "${name}" == "{" ]; then parseSteamACF "" "buildid"; break; fi; done <"${arkStagingDir}/steamapps/appmanifest_${appid}.acf"
   fi
 }
 
@@ -595,10 +601,7 @@ function getCurrentVersion(){
 #
 function getAvailableVersion(){
   rm -f "$steamcmd_appinfocache"
-  bnumber=`runSteamCMD +app_info_update 1 +app_info_print "$appid" +quit | while read name val; do if [ "${name}" == "{" ]; then parseSteamACF ".depots.branches.public" "buildid"; break; fi; done`
-  if [ -z "$bnumber" ]; then
-    bnumber="Unknown"
-  fi
+  runSteamCMD +app_info_update 1 +app_info_print "$appid" +quit | while read name val; do if [ "${name}" == "{" ]; then parseSteamACF ".depots.branches.public" "buildid"; break; fi; done
 }
 
 #
@@ -1193,7 +1196,7 @@ doInstall() {
   doDownloadSteamCMD
   runSteamCMDAppUpdate "$arkserverroot" validate
   # the current version should be the last version. We set our version
-  getCurrentVersion
+  instver="$(getCurrentVersion)"
 }
 
 
@@ -1595,6 +1598,13 @@ doUpdate() {
         fi
       fi
     fi
+
+    local curver="$(getCurrentVersion)"
+    local newver="$(getStagingVersion)"
+    if [[ -z "${newver}" || "$curver" == "$newver" ]]; then
+      echo "Update download unsuccessful"
+      return 1
+    fi
   fi
 
   if [[ -f "$arkserverroot/$arkautorestartfile" && "$arkserverroot/$arkautorestartfile" -ot "${arkserverroot}/steamapps/appmanifest_${appid}.acf" ]]; then
@@ -1614,7 +1624,7 @@ doUpdate() {
     if false && [ -f "$arkserverroot/version.txt" ]; then
       arkversion="$(<"$arkserverroot/version.txt")"
     else
-      arkversion="$(getCurrentVersion; echo "$instver")"
+      arkversion="$(getCurrentVersion)"
     fi
 
     if isTheServerRunning; then
@@ -1686,7 +1696,7 @@ doUpdate() {
 	runSteamCMDAppUpdate "$arkserverroot" $validate
       fi
       # the current version should be the last version. We set our version
-      getCurrentVersion
+      instver="$(getCurrentVersion)"
       echo "`timestamp`: update to $instver complete" >> "$logdir/update.log"
     fi
 
@@ -2517,7 +2527,7 @@ printStatus(){
     fi
   fi
 
-  getCurrentVersion
+  instver="$(getCurrentVersion)"
   echo -e "$NORMAL" "Server build ID: " "$GREEN" $instver "$NORMAL"
   if false && [ -f "$arkserverroot/version.txt" ]; then
     echo -e "$NORMAL" "Server version: " "$GREEN" "$(<"$arkserverroot/version.txt")" "$NORMAL"
