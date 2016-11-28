@@ -1507,7 +1507,7 @@ doUpdate() {
       --warn) updatetype=warn; ;;
       --ifempty) updatetype=ifempty; ;;
       --warnreason=*) warnreason="${arg#--warnreason=}"; updatetype=warn; ;;
-      --validate) validate=validate; appupdate=1; ;;
+      --validate) validate=validate; appupdate=1; force=1; ;;
       --saveworld) saveworld=1; ;;
       --update-mods) modupdate=1; ;;
       --backup) arkBackupPreUpdate=true; ;;
