@@ -1498,10 +1498,11 @@ doUpdate() {
   local use_systemd=
   local use_service=
   local use_upstart=
+  local force=
 
   for arg in "$@"; do
     case "$arg" in
-      --force) appupdate=1; ;;
+      --force) appupdate=1; force=1; ;;
       --safe) updatetype=safe; ;;
       --warn) updatetype=warn; ;;
       --ifempty) updatetype=ifempty; ;;
@@ -1599,11 +1600,13 @@ doUpdate() {
       fi
     fi
 
-    local curver="$(getCurrentVersion)"
-    local newver="$(getStagingVersion)"
-    if [[ -z "${newver}" || "$curver" == "$newver" ]]; then
-      echo "Update download unsuccessful"
-      return 1
+    if [ -z "${force}" ]; then
+      local curver="$(getCurrentVersion)"
+      local newver="$(getStagingVersion)"
+      if [[ -z "${newver}" || "$curver" == "$newver" ]]; then
+        echo "Update download unsuccessful"
+        return 1
+      fi
     fi
   fi
 
