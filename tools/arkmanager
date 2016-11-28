@@ -1357,11 +1357,11 @@ doWarn(){
   cd "$arkserverroot"
 
   (
-    echo "$$" >"${arkserverroot}/${arkwarnlockfile}.${BASHPID}" 2>/dev/null
+    echo "${BASHPID}" >"${arkserverroot}/${arkwarnlockfile}.${BASHPID}" 2>/dev/null
     while true; do
       if ! ln "${arkserverroot}/${arkwarnlockfile}.${BASHPID}" "${arkserverroot}/${arkwarnlockfile}" 2>/dev/null; then
         local lockpid="$(<"${arkserverroot}/${arkwarnlockfile}")"
-        if [ -n "$lockpid" ] && [ "$lockpid" != "$$" ] && kill -0 "$lockpid" 2>/dev/null; then
+        if [ -n "$lockpid" ] && [ "$lockpid" != "${BASHPID}" ] && kill -0 "$lockpid" 2>/dev/null; then
           echo "Shutdown warning already in progress (PID: $lockpid)"
           rm -f "${arkserverroot}/${arkwarnlockfile}.${BASHPID}" 2>/dev/null
           exit 1
@@ -1527,11 +1527,11 @@ doUpdate() {
     serverWasAlive=1
   fi
 
-  echo "$$" >"${arkserverroot}/${arkupdatelockfile}.${BASHPID}" 2>/dev/null
+  echo "${BASHPID}" >"${arkserverroot}/${arkupdatelockfile}.${BASHPID}" 2>/dev/null
   while true; do
     if ! ln "${arkserverroot}/${arkupdatelockfile}.${BASHPID}" "${arkserverroot}/${arkupdatelockfile}" 2>/dev/null; then
       local lockpid="$(<"${arkserverroot}/${arkupdatelockfile}")"
-      if [ -n "$lockpid" ] && [ "$lockpid" != "$$" ] && kill -0 "$lockpid" 2>/dev/null; then
+      if [ -n "$lockpid" ] && [ "$lockpid" != "${BASHPID}" ] && kill -0 "$lockpid" 2>/dev/null; then
         echo "Update already in progress (PID: $lockpid)"
 	rm -f "${arkserverroot}/${arkupdatelockfile}.${BASHPID}" 2>/dev/null
         return 1
