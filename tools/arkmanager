@@ -1598,17 +1598,17 @@ doUpdate() {
           return 1
         fi
       fi
-    fi
 
-    local curver="$(getCurrentVersion)"
-    local newver="$(getStagingVersion)"
-    local nextver="$(getAvailableVersion)"
-    if [[ -z "${newver}" || "$curver" == "$newver" ]]; then
-      if [ -z "$force" ]; then
-        echo "Update download unsuccessful"
-        return 1
-      elif [ "${newver}" != "${nextver}" ]; then
-        echo "Warning: staging directory update was unsuccessful"
+      local curver="$(getCurrentVersion)"
+      local newver="$(getStagingVersion)"
+      local nextver="$(getAvailableVersion)"
+      if [[ -z "${newver}" || "$curver" == "$newver" ]]; then
+        if [ -z "$force" ]; then
+          echo "Update download unsuccessful"
+          return 1
+        elif [ "${newver}" != "${nextver}" ]; then
+          echo "Warning: staging directory update was unsuccessful"
+        fi
       fi
     fi
   fi
