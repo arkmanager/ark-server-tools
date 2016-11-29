@@ -546,6 +546,9 @@ function isUpdateNeeded(){
   bnumber="$(getAvailableVersion)"
   if [[ -z "$bnumber" || "$bnumber" -eq "$instver" ]]; then
     return 1   # no update needed
+  elif checkUpdateManifests; then
+    echo "Build ID changed but manifests have not changed"
+    return 1
   else
     return 0   # update needed
   fi
@@ -602,6 +605,20 @@ function getStagingVersion(){
 function getAvailableVersion(){
   rm -f "$steamcmd_appinfocache"
   runSteamCMD +app_info_update 1 +app_info_print "$appid" +quit | while read name val; do if [ "${name}" == "{" ]; then parseSteamACF ".depots.branches.public" "buildid"; break; fi; done
+}
+
+#
+# Check if the update manifest matches the current manifest
+#
+function checkUpdateManifests(){
+  appinfo="$(runSteamCMD +app_info_print "$appid" +quit)"
+  while read depot manifest <&3; do
+    newmanifest="$(echo "${appinfo}" | while read name val; do if [ "${name}" == "{" ]; then parseSteamACF ".depots.${depot}.manifests" "public"; break; fi; done)"
+    if [ "${newmanifest}" != "${manifest}" ]; then
+      return 1
+    fi
+  done 3< <(sed -n '/^[{]$/,/^[}]$/{/^\t"MountedDepots"$/,/^\t[}]$/{/^\t\t/p}}' "${arkserverroot}/steamapps/appmanifest_${appid}.acf")
+  return 0
 }
 
 #
