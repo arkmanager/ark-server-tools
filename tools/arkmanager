@@ -261,6 +261,14 @@ timestamp() {
 }
 
 #
+# Log a message to arkmanager.log, and exho it to the console
+#
+logprint(){
+  printf "%s\n" "$*"
+  printf "%s: %s\n" "$(timestamp)" "$*" >>"${logdir}/${arkmanagerLog}"
+}
+
+#
 # check configuration and report errors
 #
 checkConfig() {
@@ -1032,19 +1040,18 @@ doStart() {
   if [ -f "${arkserverroot}/${arkupdatelockfile}" ]; then
     local updatepid="$(<"${arkserverroot}/${arkupdatelockfile}")"
     if kill -0 "$updatepid" >/dev/null 2>&1; then
-      echo "An update is currently in progress.  Start aborted"
-      echo "`timestamp`: Start aborted due to running update - pid: $updatepid" >>"$logdir/$arkserverLog"
+      logprint "Start aborted due to running update - pid: $updatepid"
       return 1
     fi
   fi
 
-  if isTheServerRunning; then
-    echo "The server is already running"
-    echo "`timestamp`: Start aborted due to server already running"
+  serverpid="$(getServerPid)"
+  if [ -n "$serverpid" ] && kill -0 "$serverpid"; then
+    logprint "Start aborted due to server already running - pid: $serverpid"
   else
     if [ "$arkAutoUpdateOnStart" == "true" ]; then
       if ! [[ " $* " =~ " --noautoupdate " ]]; then
-        echo "Updating server"
+        logprint "Checking for updates before starting"
         doUpdate --update-mods --no-autostart
       fi
     fi
@@ -1053,7 +1060,7 @@ doStart() {
       arkAlwaysRestartOnCrash=true
     fi
     tput sc
-    echo "The server is starting..."
+    logprint "The server is starting..."
 
     local pid=$!
     if [[ -n "$arkPriorityBoost" || -n "$arkCpuAffinity" ]]; then
@@ -1064,7 +1071,7 @@ doStart() {
       sleep 1
 
       if [ -n "$arkPriorityBoost" ]; then
-        echo "Boosting priority of ark server"
+        logprint "Boosting priority of ark server"
         sudo renice -n "$arkPriorityBoost" "$pid"
       fi
 
@@ -1077,9 +1084,8 @@ doStart() {
     else
       doRun </dev/null >>"$logdir/$arkserverLog" 2>&1 & # output of this command is logged
     fi
-    echo "`timestamp`: start" >> "$logdir/$arkmanagerLog"
     tput rc; tput ed;
-    echo "The server is now running, and should be up within 10 minutes"
+    logprint "The server is now running, and should be up within 10 minutes"
   fi
 }
 
@@ -1130,8 +1136,7 @@ doStop() {
       doSaveWorld
     fi
     tput sc
-    echo "Stopping server..."
-    echo "`timestamp`: stopping; reason: $stopreason" >> "$logdir/$arkmanagerLog"
+    logprint "Stopping server; reason: $stopreason"
     rm -f "$arkserverroot/$arkautorestartfile"
     rm -f "$arkserverroot/$arkoldautorestartfile"
     # kill the server with the PID
@@ -1147,7 +1152,7 @@ doStop() {
 
     if isTheServerRunning; then
       tput rc
-      echo "Killing server..."
+      logprint "Killing server"
       kill -KILL $PID >/dev/null 2>&1
     fi
 
@@ -1163,8 +1168,7 @@ doStop() {
     rm -f "${arkserverroot}/${arkmanagerpidfile}"
 
     tput rc; tput ed;
-    echo "The server has been stopped"
-    echo "`timestamp`: stopped" >> "$logdir/$arkmanagerLog"
+    logprint "The server has been stopped"
   else
     echo "The server is already stopped"
   fi
@@ -1553,7 +1557,7 @@ doUpdate() {
     if ! ln "${arkserverroot}/${arkupdatelockfile}.${BASHPID}" "${arkserverroot}/${arkupdatelockfile}" 2>/dev/null; then
       local lockpid="$(<"${arkserverroot}/${arkupdatelockfile}")"
       if [ -n "$lockpid" ] && [ "$lockpid" != "${BASHPID}" ] && kill -0 "$lockpid" 2>/dev/null; then
-        echo "Update already in progress (PID: $lockpid)"
+        logprint "Update already in progress (PID: $lockpid)"
 	rm -f "${arkserverroot}/${arkupdatelockfile}.${BASHPID}" 2>/dev/null
         return 1
       fi
@@ -1564,7 +1568,7 @@ doUpdate() {
   done
   rm -f "${arkserverroot}/${arkupdatelockfile}.${BASHPID}"
 
-  echo "`timestamp`: checking for update; PID: ${BASHPID}"
+  logprint "Checking for update; PID: ${BASHPID}"
 
   if [ -n "$modupdate" ]; then
     if [ -z "$nodownload" ]; then
@@ -1584,7 +1588,7 @@ doUpdate() {
 
     if [ -n "${arkStagingDir}" -a "${arkStagingDir}" != "${arkserverroot}" ]; then
       if [ ! -d "$arkStagingDir/ShooterGame" ]; then
-        echo "Copying to staging directory"
+        logprint "Copying to staging directory"
         mkdir -p "$arkStagingDir"
         if [ "$(stat -c "%d" "$arkserverroot")" == "$(stat -c "%d" "$arkStagingDir")" ]; then
           cp -al "$arkserverroot/ShooterGame/." "$arkStagingDir/ShooterGame"
@@ -1604,6 +1608,7 @@ doUpdate() {
 
       if [ -z "$nodownload" ]; then
         echo -n "Downloading ARK update"
+	logprint "Downloading ARK update" >/dev/null
 	doDownloadSteamCMD
         cd "$steamcmdroot"
         if runSteamCMDAppUpdate "$arkStagingDir" $validate; then
@@ -1611,7 +1616,7 @@ doUpdate() {
 	fi
 
 	if [ -d "${arkStagingDir}/steamapps/downloading/${appid}" ]; then
-          echo "Update download interrupted"
+          logprint "Update download interrupted"
           return 1
         fi
 
@@ -1620,10 +1625,10 @@ doUpdate() {
         local nextver="$(getAvailableVersion)"
         if [[ -z "${newver}" || "$curver" == "$newver" ]]; then
           if [ -z "$force" ]; then
-            echo "Update download unsuccessful"
+            logprint "Update download unsuccessful"
             return 1
           elif [ "${newver}" != "${nextver}" ]; then
-            echo "Warning: staging directory update was unsuccessful"
+            logprint "Warning: staging directory update was unsuccessful"
           fi
         fi
       fi
@@ -1631,18 +1636,18 @@ doUpdate() {
   fi
 
   if [[ -f "$arkserverroot/$arkautorestartfile" && "$arkserverroot/$arkautorestartfile" -ot "${arkserverroot}/steamapps/appmanifest_${appid}.acf" ]]; then
-    echo "Server was updated while it was running"
+    logprint "Server was updated while it was running"
     bgupdate=1
   fi
 
   if [ -n "$downloadonly" ]; then
     if [ -n "$appupdate" -a -n "$arkStagingDir" -a "$arkStagingDir" != "$arkserverroot" ]; then
-      echo "Server update downloaded"
+      logprint "Server update downloaded"
     fi
     if [ -n "$modupdate" ]; then
-      echo "Mod update downloaded"
+      logprint "Mod update downloaded"
     fi
-    echo "Not applying update - download-only enabled"
+    logprint "Not applying update - download-only requested"
   elif [ -n "$appupdate" -o -n "$modupdate" -o -n "$bgupdate" ]; then
     if false && [ -f "$arkserverroot/version.txt" ]; then
       arkversion="$(<"$arkserverroot/version.txt")"
@@ -1653,10 +1658,10 @@ doUpdate() {
     if isTheServerRunning; then
       if [ "$updatetype" == "safe" ]; then
         while [ ! `find $arkserverroot/ShooterGame/Saved/SavedArks -mmin -1 -name ${serverMap##*/}.ark` ]; do
-          echo "`timestamp`: Save file older than 1 minute. Delaying update." >> "$logdir/update.log"
+          logprint "Save file older than 1 minute. Delaying update."
           sleep 30s
         done
-        echo "`timestamp`: Save file newer than 1 minute. Performing an update." >> "$logdir/update.log"
+        logprint "Save file newer than 1 minute. Performing an update."
       elif [ "$updatetype" == "warn" ]; then
         if ! doWarn update; then
           return 1
@@ -1664,14 +1669,14 @@ doUpdate() {
       elif [ "$updatetype" == "ifempty" ]; then
         numplayers=$(( $(numPlayersConnected) + 0 ))
         if (( numplayers != 0 )); then
-          echo "${numplayers} players are still connected"
+          logprint "${numplayers} players are still connected"
           return 1
         fi
       fi
     fi
 
     if [ -n "$saveworld" ]; then
-      echo "Saving world"
+      logprint "Saving world"
       doSaveWorld
     fi
 
@@ -1685,7 +1690,7 @@ doUpdate() {
 
     if [ -n "$appupdate" ]; then
       if [ -d "${arkStagingDir}" -a "${arkStagingDir}" != "${arkserverroot}" ]; then
-        echo "Applying update from staging directory"
+        logprint "Applying update from staging directory"
         if [ "$(stat -c "%d" "$arkserverroot")" == "$(stat -c "%d" "$arkStagingDir")" ]; then
           cp -alu --remove-destination "$arkStagingDir/ShooterGame/." "$arkserverroot/ShooterGame"
           cp -alu --remove-destination "$arkStagingDir/Engine/." "$arkserverroot/Engine"
@@ -1714,21 +1719,22 @@ doUpdate() {
         done
       else
         echo -n "Performing ARK update"
+	logprint "Performing ARK update" >/dev/null
 	doDownloadSteamCMD
         cd "$steamcmdroot"
 	runSteamCMDAppUpdate "$arkserverroot" $validate
       fi
       # the current version should be the last version. We set our version
       instver="$(getCurrentVersion)"
-      echo "`timestamp`: update to $instver complete" >> "$logdir/update.log"
+      logprint "Update to $instver complete"
     fi
 
     if [ -n "$modupdate" ] && [ -z "$arkflag_automanagedmods" ]; then
       for modid in $(getModIds); do
         if isModUpdateNeeded $modid; then
-          echo "Updating mod $modid"
+          logprint "Updating mod $modid"
           doExtractMod $modid
-          echo "`timestamp`: Mod $modid updated" >> "$logdir/update.log"
+          logprint "Mod $modid updated"
         fi
       done
     fi
@@ -1736,8 +1742,7 @@ doUpdate() {
       touch "${arkserverroot}/steamapps/appmanifest_${appid}.acf"
     fi
   else
-    echo "Your server is already up to date! The most recent version is ${bnumber}."
-    echo "`timestamp`: No update needed." >> "$logdir/update.log"
+    logprint "Your server is already up to date! The most recent version is ${bnumber}."
   fi;
 
   rm -f "${arkserverroot}/${arkupdatelockfile}"
