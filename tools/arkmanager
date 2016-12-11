@@ -1045,7 +1045,7 @@ doStart() {
     fi
   fi
 
-  serverpid="$(getServerPid)"
+  serverpid="$(getServerPID)"
   if [ -n "$serverpid" ] && kill -0 "$serverpid"; then
     logprint "Start aborted due to server already running - pid: $serverpid"
   else
