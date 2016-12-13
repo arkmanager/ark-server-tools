@@ -265,7 +265,7 @@ timestamp() {
 #
 logprint(){
   printf "%s\n" "$*"
-  printf "%s: %s\n" "$(timestamp)" "$*" >>"${logdir}/${arkmanagerLog}"
+  printf "%s: [%s] %s\n" "$(timestamp)" "${instance}" "$*" >>"${logdir}/${arkmanagerLog}"
 }
 
 #
