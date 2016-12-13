@@ -1064,7 +1064,7 @@ doStart() {
 
     local pid=$!
     if [[ -n "$arkPriorityBoost" || -n "$arkCpuAffinity" ]]; then
-      doRun --wait </dev/null >>"$logdir/$arkserverLog" 2>&1 & # output of this command is logged
+      doRun --wait </dev/null > >(while read -r l; do printf "%s: [%s] %s\n" "$(timestamp)" "${instance}" "${l}" >>"$logdir/$arkserverLog"; done) 2>&1 & # output of this command is logged
       local pid="$!"
 
       # Wait for monitor process to suspend itself
