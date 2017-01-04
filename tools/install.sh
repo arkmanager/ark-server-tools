@@ -308,6 +308,9 @@ else
     # Copy example instance config
     cp instance.cfg.example "${INSTALL_ROOT}${INSTANCEDIR}/instance.cfg.example"
 
+    # Copy arkmanager bash_completion into /etc/bash_completion.d/
+    cp bash_completion/arkmanager "${INSTALL_ROOT}/etc/bash_completion.d/arkmanager"
+
     # Copy arkmanager.cfg inside linux configuation folder if it doesn't already exists
     mkdir -p "${INSTALL_ROOT}/etc/arkmanager"
     chown "$steamcmd_user" "${INSTALL_ROOT}/etc/arkmanager"
