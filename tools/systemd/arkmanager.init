@@ -1,5 +1,14 @@
 #!/bin/bash
 
-for service in main $(grep -o '^configfile_[^=]*' /etc/arkmanager/arkmanager.cfg); do
-  systemctl start arkmanager@${service#configfile_}
+DAEMON="/usr/bin/arkmanager"
+
+for service in $(${DAEMON} list-instances --brief); do
+  case "$1" in
+    start)
+      systemctl start arkmanager@${service}
+    ;;
+    stop)
+      systemctl stop arkmanager@${service}
+    ;;
+  esac
 done

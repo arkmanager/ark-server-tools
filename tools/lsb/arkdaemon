@@ -20,46 +20,99 @@ NAME="ShooterGameServer"
 LOGFILE="${logdir}/${NAME}.log"
 DAEMON="/usr/bin/arkmanager"
 
+SVCNAME="${0##*/}"
+INSTANCE="${SVCNAME#*.}"
+
+if [ "$INSTANCE" == "$SVCNAME" ]; then
+  INSTANCE="$2"
+fi
+
 set -e
 
 # If the daemon is not there, then exit.
 test -x $DAEMON || exit 5
 
+function start_instance(){
+  local INSTANCE="$1"
+  PID="$(<"/var/run/arkmanager.${INSTANCE}.pid")"
+  if [ -n "$PID" ] && kill -0 "$PID" >/dev/null 2>&1; then
+    if grep " ${PID} .* ${DAEMON}" <(ps -ef) >/dev/null 2>&1; then
+      echo "$NAME @${INSTANCE} is already running"
+      return 0
+    fi
+  fi
+  log_daemon_msg "Starting" "$NAME @${INSTANCE}"
+  ulimit -n 100000
+  "${DAEMON}" run "@${INSTANCE}" &
+  PID="$!"
+
+  sleep 5
+  if kill -0 "$PID" >/dev/null 2>&1; then
+    echo "$PID" >"/var/run/arkmanager.${INSTANCE}.pid"
+    log_end_msg 0
+    return 0
+  else
+    log_end_msg 1
+    return 1
+  fi
+}
+
+function start_all_instances(){
+  local nosuccess=0
+  local anyfailure=0
+  for instance in $("${DAEMON}" list-instances --brief); do
+    if start_instance "$instance"; then
+      nosuccess=0
+    else
+      anyfailure=1
+    fi
+  done
+
+  return $nosuccess
+}
+
+function stop_instance(){
+  local INSTANCE="$1"
+  log_daemon_msg "Stopping $NAME @${INSTANCE}: "
+  "${DAEMON}" stop "@${INSTANCE}" &
+  rm -f "/var/run/arkmanager.${INSTANCE}.pid"
+  log_end_msg 0
+  return 0
+}
+
 case "$1" in
   start)
-    log_daemon_msg "Starting" "$NAME"
-    ulimit -n 100000
-    su -s /bin/sh -c "$DAEMON start --all" $steamcmd_user
-    sleep 5
-    PID=`ps -ef | grep $NAME | grep -v grep | awk '{print $2}'`
-    if  [ -n "$PID" ];  then
-      echo "$PID" >/var/run/arkmanager.pid
-      log_end_msg 0
+    if [ -n "$INSTANCE" ]; then
+      start_instance "$INSTANCE"
+      exit $?
     else
-      log_end_msg 1
+      if start_all_instances; then
+        exit 0
+      else
+        exit 1
+      fi
     fi
   ;;
 
   stop)
-    log_daemon_msg "Stopping" "$NAME"
-    su -s /bin/sh -c "$DAEMON stop --all" $steamcmd_user
-    sleep 5
-    PID=`ps -ef | grep $NAME | grep -v grep | awk '{print $2}'`
-    if  [ -n "$PID" ];  then
-      log_end_msg 1
+    if [ -n "$INSTANCE" ]; then
+      stop_instance "$INSTANCE"
+      exit $?
     else
-      rm /var/run/arkmanager.pid
-      log_end_msg 0
+      for instance in $("${DAEMON}" list-instances --brief); do
+        stop_instance "$instance"
+      done
+      exit $?
     fi
   ;;
 
   restart)
-    ulimit -n 100000
-    su -s /bin/sh -c "$DAEMON restart --all" $steamcmd_user
+    "$0" stop
+    "$0" start
   ;;
 
   status)
-    su -s /bin/sh -c "$DAEMON status" $steamcmd_user
+    "$DAEMON" status "@${INSTANCE:-all}"
   ;;
 
   *)

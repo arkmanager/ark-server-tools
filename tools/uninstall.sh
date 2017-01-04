@@ -35,3 +35,8 @@ if [ -n "$INITSCRIPT" ]; then
     fi
   done
 fi
+
+# remove bash_completion.d
+if [ -f "/etc/bash_completion.d/arkmanager" ]; then
+   rm "/etc/bash_completion.d/arkmanager"
+fi

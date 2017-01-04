@@ -1,0 +1,28 @@
+# config environment
+arkserverroot="/home/steam/ARK"                                     # path of your ARK server files (default ~/ARK)
+
+# ARK server options - use ark_<optionname>=<value>
+# comment out these values if you want to define them
+# inside your GameUserSettings.ini file
+serverMap="TheIsland"                                               # server map (default TheIsland)
+#serverMapModId="469987622"                                         # Uncomment this to specify the Map Mod Id (<fileid> in http://steamcommunity.com/sharedfiles/filedetails/?id=<fileid>)
+#ark_TotalConversionMod="496735411"                                 # Uncomment this to specify a total-conversion mod
+ark_RCONEnabled="True"                                              # Enable RCON Protocol
+ark_RCONPort="32330"                                                # RCON Port
+ark_SessionName="ARK Server Tools"                                  # if your session name needs special characters please use the .ini instead
+ark_Port="7778"                                                     # ARK server port (default 7778)
+ark_QueryPort="27015"                                               # ARK query port (default 27015)
+ark_ServerPassword=""                                               # ARK server password, empty: no password required to login
+ark_ServerAdminPassword="keyboardcat"                               # ARK server admin password, KEEP IT SAFE!
+ark_MaxPlayers="70"
+#ark_GameModIds="487516323,487516324,487516325"                     # Uncomment to specify additional mods by Mod Id separated by commas
+#ark_AltSaveDirectoryName="SotF"                                    # Uncomment to specify a different save directory name
+
+# ARK server flags - use arkflag_<optionname>=true
+#arkflag_OnlyAdminRejoinAsSpectator=true                            # Uncomment to only allow admins to rejoin as spectator
+#arkflag_DisableDeathSpectator=true                                 # Uncomment to disable players from becoming spectators when they die
+
+# ARK server options - i.e. for -optname=val, use arkopt_optname=val
+#arkopt_StructureDestructionTag=DestroySwampSnowStructures
+
+
