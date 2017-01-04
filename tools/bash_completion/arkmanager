@@ -1,0 +1,33 @@
+# a bash_completion for arkmanager with server names
+# ARK: survival evolved manager
+#
+# Original author:	AnEmortalKid 
+
+_arkmanager() 
+{
+    local cur prev opts home_instances etc_instances
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+   # retrieve the ones in /etc/arkmanager/instances first
+   etc_instances=$(for f in `ls -1 /etc/arkmanager/instances/*.cfg`; do if [ -f "${f}" ]; then instancename="${f##*/}"; echo "@${instancename%.cfg}"; fi done)
+  
+   # check that ${HOME}/.config/arkmanager/instances exists
+   if [ -d "${HOME}/.config/arkmanager/instances/" ] ; then
+     # check that it also isn't empty if it exists
+     if [ "$(ls -A ${HOME}/.config/arkmanager/instances/)" ] ; then
+     home_instances=$(for f in `ls -1 ${HOME}/.config/arkmanager/instances/*.cfg`; do if [ -f "${f}" ]; then instancename="${f##*/}"; echo "@${instancename%.cfg}"; fi done)
+      fi
+   fi
+   
+   # append both results together for the completion
+   all_instances="@all ${etc_instances} ${home_instances}"
+   
+   if [[ ${cur} == @* ]] ; then
+        COMPREPLY=( $(compgen -W "${all_instances}" -- ${cur}) )
+        return 0
+    fi
+}
+complete -F _arkmanager arkmanager
+
