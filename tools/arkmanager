@@ -299,7 +299,8 @@ checkConfig() {
     local savedarksdir="${arkserverroot}/ShooterGame/Saved/${ark_AltSaveDirectoryName:-SavedArks}"
     mkdir -p "${savedarksdir}"
     if [ ! -w "${savedarksdir}" ]; then
-      echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tThe ARK SavedArks directory is not writable, and saveworld will fail"
+      echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tThe ARK SavedArks directory is not writable, and saveworld will fail."
+      echo -e "[" "$YELLOW" "WARN" "$NORMAL" "]" "\tThis message will show up on first install as directories have not been created."
     fi
   fi
 
