@@ -5,7 +5,8 @@ After=network.target
 [Service]
 ExecStart=/usr/libexec/arkmanager/arkmanager.init start
 ExecStop=/usr/libexec/arkmanager/arkmanager.init stop
-Type=oneshot
+Type=forking
+RemainAfterExit=yes
 
 [Install]
 WantedBy=multi-user.target

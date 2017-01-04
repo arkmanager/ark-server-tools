@@ -129,6 +129,9 @@ Instanceless commands
 `useconfig`::
     Legacy command for specifying an instance for the following command(s)
 
+`remove-mods`::
+    Remove the specified mods from the `steamcmd` workshop directory
+
 Commands acting on instances
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -146,11 +149,19 @@ instances.
     `--noautoupdate`;;
         Disables automatic updating on startup if it is enabled
 
+    `--alwaysrestart`;;
+        Enable automatically restarting the server even if it crashes
+        without becoming ready for player connections.
+
+
 `stop`::
     Stops the server if it is running
 
     `--warn`;;
         Warns any connected players that the server is going down
+
+    `--warnreason`;;
+        Gives a reason for the shutdown.  Defaults to `maintenance`
 
     `--saveworld`;;
         Saves the world using `saveworld` - usually not
@@ -160,6 +171,9 @@ instances.
 `restart`::
     Runs the `stop` command followed by the `restart` command.
     Accepts and passes the options for those commands
+
+    `--warnreason`;;
+        Gives a reason for the restart.  Defaults to `a restart`
 
 `install`::
     Downloads and installs (or validates an existing install) of
@@ -205,20 +219,50 @@ instances.
         Downloads the update but does not apply it.  Only has effect
         if a staging directory is set.
 
+`cancelshutdown`::
+    Cancels a pending update / shutdown / restart that was run with
+    the `--warn` option
+
 `checkupdate`::
     Checks if an ARK server update is available
 
-`installmod <modnum>`::
-    Installs the specified mod into the `ShooterGame/Content/Mods`
+`installmods`::
+    Installs all mods specified in the instance config into the
+    `ShooterGame/Content/Mods` directory
+
+`uninstallmods`::
+    Deletes all mods from the `ShooterGame/Content/Mods` directory
+
+`installmod <modnum>[,<modnum>[,...]]`::
+    Installs the specified mods into the `ShooterGame/Content/Mods`
     directory
 
-`uninstallmod <modnum>`::
-    Deletes the specified mod from the `ShooterGame/Content/Mods`
+`uninstallmod <modnum>[,<modnum>[,...]]`::
+    Deletes the specified mods from the `ShooterGame/Content/Mods`
     directory
 
-`reinstallmod <modnum>`::
+`removemod <modnum>[,<modnum>[,...]]`::
+    Deletes the specified mods from the SteamCMD workshop directory
+
+`reinstallmod <modnum>[,<modnum>[,...]]`::
     Runs the `uninstallmod` command followed by the `installmod`
     command
+
+`enablemod <modnum>`::
+`enablemod <modnum>=<modtype>`::
+    Enables the `arkmod_<modnum>` setting in the instance config.
+    modtype defaults to `game`.
+    Mod types:
+
+    `game`;;
+        A mod in `GameModIds`
+
+    `map`;;
+        The `MapModId` mod
+
+    `tc`;;
+    `totalconversion`;;
+        The `TotalConversionMod` mod
 
 `backup`::
     Backs up the saved world and game config files to a compressed
@@ -237,6 +281,46 @@ instances.
 
 `status`::
     Prints the status of the ARK server
+
+`install-cronjob <command>`::
+    Installs a cron job that executes the specified command.
+    This accepts any of the options the specified command accepts,
+    as well as the following options.  In order to specify an
+    argument to the command (e.g. to the `broadcast` command),
+    use the `--arg=<arg>` option.
+    Please read your `man 5 crontab` manpage to determine what
+    minute and hour values are valid, as some implementations
+    may not accept e.g. the `*/n` minute / hour specification.
+
+    `--daily`;;
+        The command should be executed daily
+
+    `--hourly`;;
+        The command should be executed hourly
+
+    `--hour=<hour>`;;
+        Specifies one or more hours when the command should execute.
+        This is the hour field of the cron job.
+	If you want to have the command execute every n hours, then
+	use `--hour='*/n'`
+	Default: `*` (i.e. all hours)
+
+    `--minute=<minute>`;;
+        Specifies one or more minutes of the hour when the command
+        should execute.  This is the minute field of the cron job.
+	If you want to have the command execute every n minutes,
+	then use `--minute='*/n'`
+	Default: `0` (i.e. the first minute of the hour)
+
+    `--enable-output`;;
+        Enables the output from the command - the cron daemon usually
+        emails this to the user specified in the cron configuration
+
+    `--arg=<arg>`;;
+        Specifies an argument to pass to the command
+
+`remove-cronjob <command>`::
+    Removes a cron job previously installed by `install-cronjob`
 
 Configuration files
 -------------------
@@ -299,6 +383,12 @@ The following options can be overridden on a per-instance basis:
     The relative path within an ARK server install to place the
     autorestart lock file
 
+`arkAlwaysRestartOnCrash`::
+    Set to `true` to enable automatically restarting even when the
+    server has not become ready for player connections.
+    Be aware that this may cause the server to enter an endless
+    crash-restart loop if the cause of the crash is not resolved.
+
 `arkAutoUpdateOnStart`::
     Set to `true` to enable updating before server startup
 
@@ -312,6 +402,16 @@ The following options can be overridden on a per-instance basis:
 `arkMaxBackupSizeMB`::
     Limits the size of the stored backups
 
+`arkPriorityBoost`::
+    Attempts to boost the priority of the ARK server.
+    Negative values give a higher priority, and positive values give a lower priority.
+    Requires `sudo` and `renice`
+
+`arkCpuAffinity`::
+    Attempts to set the CPU affinity of the ARK server.
+    Setting is a comma-delimited list of processor indices on which the server should run.
+    Requires `sudo` and `taskset`
+
 `msgWarnUpdateMinutes`::
 `msgWarnUpdateSeconds`::
 `msgWarnRestartMinutes`::
@@ -320,6 +420,32 @@ The following options can be overridden on a per-instance basis:
 `msgWarnShutdownSeconds`::
     Templated messages for warnings, where `%d` is replaced with the
     number of minutes / seconds before the update / restart / shutdown
+
+`msgWarnReason`::
+`msgTimeMinutes`::
+`msgTimeSeconds`::
+`msgReasonUpdateApp`::
+`msgReasonUpdateMod`::
+`msgReasonUpdateAppMod`::
+`msgReasonRestart`::
+`msgReasonShutdown`::
+    Alternative templated messages for warnings with the following
+    replacement parameters:
+
+    `{reason}`;;
+        Valid in `msgWarnReason`, replaced at runtime with the appropriate `msgReason*` template
+
+    `{time}`;;
+        Valid in `msgWarnReason` and `msgReason*`, replaced at runtime with the appropriate `msgTime*` template
+
+    `{modnamesupdated}`;;
+        Valid in `msgReason*Mod`, replaced at runtime with a comma-delimited list of updated mod names
+
+    `{minutes}`;;
+        Valid in `msgTimeMinutes`, replaced at runtime with minutes remaining until shutdown
+
+    `{seconds}`;;
+        Valid in `msgTimeSeconds`, replaced at runtime with seconds remaining until shutdown
 
 `logdir`::
     Specifies where to store log files
@@ -368,7 +494,7 @@ Instance config files
 
 Instance config files are stored under
 `/etc/arkmanager/instances/<instancename>.cfg`,
-`~/.local/config/arkmanager/instances/<instancename>.cfg`
+`~/.config/arkmanager/instances/<instancename>.cfg`
 or as specified in the `configfile_<instancename>` options in
 the global config.
 
@@ -400,6 +526,30 @@ the global config.
     `arkopt_StructureDestructionTag=DestroySwampSnowStructures` adds
     the `-StructureDestructionTag=DestroySwampSnowStructures`
     option.
+
+`arkmod_<modnum>=<modtype>`::
+    Specifies a mod that can be enabled or disabled using
+    `enablemod` and `disablemod`.  Note that mod ids specified
+    using these options are in addition to those specified directly
+    in the `ark_GameModIds` option, and override those specified in the
+    `ark_MapModId`, `serverMapMod` and `ark_TotalConversionMod`
+    options.  Options are processed in the order they are specified
+    in the instance config file, and `arkmod_*` options in the
+    common config file are not applied.
+    Mod types:
+
+    `game`;;
+        A mod to be specified in `GameModIds`
+
+    `map`;;
+        The mod to be specified in `MapModId`
+
+    `tc`;;
+    `totalconversion`;;
+        The mod to be specified in `TotalConversionMod`
+
+    `disabled`;;
+        A disabled mod
 
 Common ARK options
 ~~~~~~~~~~~~~~~~~~
