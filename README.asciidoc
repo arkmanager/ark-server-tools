@@ -590,7 +590,7 @@ Common ARK options
     Alternative directory under `ShooterGame/Saved` under which to
     save the world files
 
-`arkflag_UseBattlEye=true`::
-    Enables BattlEye
+`arkflag_NoBattlEye=true`::
+    Disables BattlEye
 
 
