@@ -20,7 +20,7 @@ glibc.i686
 libstdc++.i686
 ```
 
-If running under Debian, you will need the following packages installed:
+If running under Debian or Ubuntu, you will need the following packages installed:
 
 ```
 curl
