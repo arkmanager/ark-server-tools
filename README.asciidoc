@@ -9,7 +9,30 @@ Installation
 Prerequisites
 ~~~~~~~~~~~~~
 
-To install ARK Server Tools you must have already installed **SteamCMD** following this guide:
+ARK Server Tools requires certain packages be installed in order to function correctly.
+
+If running under CentOS or RHEL, you will need the following packages installed:
+```
+curl
+lsof
+perl-Compress-Zlib
+glibc.i686
+libstdc++.i686
+```
+
+If running under Debian, you will need the following packages installed:
+
+```
+curl
+lsof
+libc6-i386
+lib32gcc1
+```
+
+If using CentOS 6 or earlier, or Debian 7 or earlier, you will need to compile a newer version of glibc.
+See https://github.com/FezVrasta/ark-server-tools/wiki/Install-of-required-versions-of-glibc-and-gcc-on-RHEL-CentOS
+
+To use ARK Server Tools, you will need to install **SteamCMD** following this guide:
 
 https://developer.valvesoftware.com/wiki/SteamCMD#Linux
 
