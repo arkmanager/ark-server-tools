@@ -2119,8 +2119,10 @@ doExtractMod(){
 doInstallMod(){
   local modid
   for modid in "${1//,/ }"; do
-    if [ -f "$steamcmdroot/steamapps/workshop/appworkshop_${mod_appid}.acf" ]; then
-      sed -i "/^\\t\\t\"${modid}\"/,/^\\t\\t}/d" "$steamcmdroot/steamapps/workshop/appworkshop_${mod_appid}.acf"
+    if [[ " $* " =~ *" --validate " ]]; then
+      if [ -f "$steamcmdroot/steamapps/workshop/appworkshop_${mod_appid}.acf" ]; then
+        sed -i "/^\\t\\t\"${modid}\"/,/^\\t\\t}/d" "$steamcmdroot/steamapps/workshop/appworkshop_${mod_appid}.acf"
+      fi
     fi
 
     if doDownloadMod $modid; then
@@ -2135,7 +2137,7 @@ doInstallMod(){
 #
 doInstallAllMods(){
   for modid in $(getModIds); do
-    doInstallMod "$modid"
+    doInstallMod "$modid" "$@"
   done
 }
 
