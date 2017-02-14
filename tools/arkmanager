@@ -1591,13 +1591,23 @@ doUpdate() {
         logprint "Copying to staging directory"
         mkdir -p "$arkStagingDir"
         if [ "$(stat -c "%d" "$arkserverroot")" == "$(stat -c "%d" "$arkStagingDir")" ]; then
-          cp -al "$arkserverroot/ShooterGame/." "$arkStagingDir/ShooterGame"
-          cp -al "$arkserverroot/Engine/." "$arkStagingDir/Engine"
-          cp -al "$arkserverroot/linux64/." "$arkStagingDir/linux64"
-          cp -al "$arkserverroot/ShooterGame/Content/Mods/111111111/." "$arkStagingDir/ShooterGame/Content/Mods/111111111"
-          cp -l "$arkserverroot/ShooterGame/Content/Mods/111111111.mod" "$arkStagingDir/ShooterGame/Content/Mods/111111111.mod"
-          cp -a "$arkserverroot/steamapps/." "$arkStagingDir/steamapps"
-          cp -l "$arkserverroot/"* "$arkStagingDir" >/dev/null 2>&1
+          if [ -n "$useRefLinks" ]; then
+            cp -a --reflink=always "$arkserverroot/ShooterGame/." "$arkStagingDir/ShooterGame"
+            cp -a --reflink=always "$arkserverroot/Engine/." "$arkStagingDir/Engine"
+            cp -a --reflink=always "$arkserverroot/linux64/." "$arkStagingDir/linux64"
+            cp -a --reflink=always "$arkserverroot/ShooterGame/Content/Mods/111111111/." "$arkStagingDir/ShooterGame/Content/Mods/111111111"
+            cp --reflink=always "$arkserverroot/ShooterGame/Content/Mods/111111111.mod" "$arkStagingDir/ShooterGame/Content/Mods/111111111.mod"
+            cp --reflink=always "$arkserverroot/"* "$arkStagingDir" >/dev/null 2>&1
+            cp -a --reflink=always "$arkserverroot/steamapps/." "$arkStagingDir/steamapps"
+          else
+            cp -al "$arkserverroot/ShooterGame/." "$arkStagingDir/ShooterGame"
+            cp -al "$arkserverroot/Engine/." "$arkStagingDir/Engine"
+            cp -al "$arkserverroot/linux64/." "$arkStagingDir/linux64"
+            cp -al "$arkserverroot/ShooterGame/Content/Mods/111111111/." "$arkStagingDir/ShooterGame/Content/Mods/111111111"
+            cp -l "$arkserverroot/ShooterGame/Content/Mods/111111111.mod" "$arkStagingDir/ShooterGame/Content/Mods/111111111.mod"
+            cp -l "$arkserverroot/"* "$arkStagingDir" >/dev/null 2>&1
+            cp -a "$arkserverroot/steamapps/." "$arkStagingDir/steamapps"
+          fi
         else
           rsync -a "$arkserverroot/." "$arkStagingDir/."
         fi
@@ -1693,11 +1703,19 @@ doUpdate() {
       if [ -d "${arkStagingDir}" -a "${arkStagingDir}" != "${arkserverroot}" ]; then
         logprint "Applying update from staging directory"
         if [ "$(stat -c "%d" "$arkserverroot")" == "$(stat -c "%d" "$arkStagingDir")" ]; then
-          cp -alu --remove-destination "$arkStagingDir/ShooterGame/." "$arkserverroot/ShooterGame"
-          cp -alu --remove-destination "$arkStagingDir/Engine/." "$arkserverroot/Engine"
-          cp -alu --remove-destination "$arkStagingDir/linux64/." "$arkserverroot/linux64"
-          cp -lu --remove-destination "$arkStagingDir/"* "$arkserverroot" >/dev/null 2>&1
-          cp -au --remove-destination "$arkStagingDir/steamapps/." "$arkserverroot/steamapps"
+          if [ -n "$useRefLinks" ]; then
+            cp -au --reflink=always --remove-destination "$arkStagingDir/ShooterGame/." "$arkserverroot/ShooterGame"
+            cp -au --reflink=always --remove-destination "$arkStagingDir/Engine/." "$arkserverroot/Engine"
+            cp -au --reflink=always --remove-destination "$arkStagingDir/linux64/." "$arkserverroot/linux64"
+            cp -u --reflink=always --remove-destination "$arkStagingDir/"* "$arkserverroot" >/dev/null 2>&1
+            cp -au --reflink=always --remove-destination "$arkStagingDir/steamapps/." "$arkserverroot/steamapps"
+          else
+            cp -alu --remove-destination "$arkStagingDir/ShooterGame/." "$arkserverroot/ShooterGame"
+            cp -alu --remove-destination "$arkStagingDir/Engine/." "$arkserverroot/Engine"
+            cp -alu --remove-destination "$arkStagingDir/linux64/." "$arkserverroot/linux64"
+            cp -lu --remove-destination "$arkStagingDir/"* "$arkserverroot" >/dev/null 2>&1
+            cp -au --remove-destination "$arkStagingDir/steamapps/." "$arkserverroot/steamapps"
+          fi
         else
           rsync -a "$arkStagingDir/." "$arkserverroot"
         fi
@@ -2029,7 +2047,11 @@ doExtractMod(){
     find "$modsrcdir" -type f ! \( -name '*.z' -or -name '*.z.uncompressed_size' \) -printf "%P\n" | while read f; do
       if [ \( ! -f "$modextractdir/$f" \) -o "$modsrcdir/$f" -nt "$modextractdir/$f" ]; then
         printf "%10d  %s  " "`stat -c '%s' "$modsrcdir/$f"`" "$f"
-        cp "$modsrcdir/$f" "$modextractdir/$f"
+        if [ -n "$useRefLinks" ]; then
+          cp --reflink=auto "$modsrcdir/$f" "$modextractdir/$f"
+        else
+          cp "$modsrcdir/$f" "$modextractdir/$f"
+        fi
         echo -ne "\r\\033[K"
       fi
     done
@@ -2114,7 +2136,11 @@ doExtractMod(){
     echo "$modbranch" >"$modextractdir/__arkmanager_modbranch__.info"
 
     if [[ "$modextractdir" != "$moddestdir" ]]; then
-      cp -alu "${modextractdir}/." "${moddestdir}"
+      if [ -n "$useRefLinks" ]; then
+        cp -au --reflink=always "${modextractdir}/." "${moddestdir}"
+      else
+        cp -alu "${modextractdir}/." "${moddestdir}"
+      fi
       find "${moddestdir}" -type f ! -name '.*' -printf "%P\n" | while read f; do
         if [ ! -f "${modextractdir}/${f}" ]; then
           rm "${moddestdir}/${f}"
@@ -2125,7 +2151,11 @@ doExtractMod(){
           rmdir "$modextractdir/$d"
         fi
       done
-      cp "${modextractdir}.mod" "${moddestdir}.mod"
+      if [ -n "$useRefLinks" ]; then
+        cp -u --reflink=always "${modextractdir}.mod" "${moddestdir}.mod"
+      else
+        cp -lu "${modextractdir}.mod" "${moddestdir}.mod"
+      fi
     fi
   fi
 }
