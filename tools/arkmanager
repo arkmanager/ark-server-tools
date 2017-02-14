@@ -651,10 +651,6 @@ function getServerPID(){
       return
     fi
   fi
-
-  if [[ -z "$arkopt_clusterid" || -f "${arkserverroot}/${arkoldautorestartfile}" ]]; then
-    ps -ef | grep "$arkserverroot/$arkserverexec" | grep -v grep | awk '{print $2}'
-  fi
 }
 
 #
