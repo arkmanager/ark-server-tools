@@ -7,28 +7,31 @@
 arkstGithubRepo="FezVrasta/ark-server-tools"
 
 steamcmd_user="$1"
-channel=${2:-master} # if defined by 2nd argument install the defined version, otherwise install master
-shift
 shift
 
+args=()
 output=/dev/null
-
-if [ "$1" = "--verbose" ]; then
-  output=/dev/fd/1
-  shift
-elif [[ "$1" =~ ^--output= ]]; then
-  output="${1#--output=}"
-  shift
-fi
-
 unstable=
-if [ "$1" = "--unstable" ]; then
-  unstable=1
-fi
-
 userinstall=
-if [ "$1" = "--perform-user-install" ]; then
-  userinstall=yes
+
+for arg in "$@"; do
+  case "$arg" in
+    --verbose) output=/dev/fd/1; ;;
+    --output=*) output="${1#--output=}"; ;;
+    --unstable) unstable=1; ;;
+    --perform-user-install) userinstall=yes; ;;
+    *)
+      if [ -n "$channel" ]; then
+        args+="$arg"
+      else
+        channel="$arg"
+      fi
+    ;;
+  esac
+done
+
+if [ -z "$channel" ]; then
+  channel="master"
 fi
 
 if [[ "$steamcmd_user" == "--me" && -z "$userinstall" ]]; then
