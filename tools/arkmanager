@@ -1594,16 +1594,17 @@ doUpdate() {
           cp -al "$arkserverroot/ShooterGame/." "$arkStagingDir/ShooterGame"
           cp -al "$arkserverroot/Engine/." "$arkStagingDir/Engine"
           cp -al "$arkserverroot/linux64/." "$arkStagingDir/linux64"
+          cp -al "$arkserverroot/ShooterGame/Content/Mods/111111111/." "$arkStagingDir/ShooterGame/Content/Mods/111111111"
+          cp -l "$arkserverroot/ShooterGame/Content/Mods/111111111.mod" "$arkStagingDir/ShooterGame/Content/Mods/111111111.mod"
           cp -a "$arkserverroot/steamapps/." "$arkStagingDir/steamapps"
-	  cp -l "$arkserverroot/"* "$arkStagingDir" >/dev/null 2>&1
+          cp -l "$arkserverroot/"* "$arkStagingDir" >/dev/null 2>&1
         else
           rsync -a "$arkserverroot/." "$arkStagingDir/."
         fi
         rm -rf "$arkStagingDir/ShooterGame/Content/Mods/"*
         rm -rf "$arkStagingDir/ShooterGame/Saved/"*
         rm -rf "$arkStagingDir/Engine/Binaries/ThirdParty/SteamCMD/Linux/steamapps"
-	cp -al "$arkserverroot/ShooterGame/Content/Mods/111111111/." "$arkStagingDir/ShooterGame/Content/Mods/111111111"
-	cp -l "$arkserverroot/ShooterGame/Content/Mods/111111111.mod" "$arkStagingDir/ShooterGame/Content/Mods/111111111.mod"
+        rm "$arkStagingDir/Binaries/Linux/"*.txt
       fi
 
       if [ -z "$nodownload" ]; then
@@ -1695,14 +1696,14 @@ doUpdate() {
           cp -alu --remove-destination "$arkStagingDir/ShooterGame/." "$arkserverroot/ShooterGame"
           cp -alu --remove-destination "$arkStagingDir/Engine/." "$arkserverroot/Engine"
           cp -alu --remove-destination "$arkStagingDir/linux64/." "$arkserverroot/linux64"
-	  cp -lu --remove-destination "$arkStagingDir/"* "$arkserverroot" >/dev/null 2>&1
+          cp -lu --remove-destination "$arkStagingDir/"* "$arkserverroot" >/dev/null 2>&1
           cp -au --remove-destination "$arkStagingDir/steamapps/." "$arkserverroot/steamapps"
         else
           rsync -a "$arkStagingDir/." "$arkserverroot"
         fi
         cd "$arkserverroot"
         find Engine ShooterGame linux64 -depth -print |
-          grep -v '^ShooterGame/\(Saved\|Content/Mods\)' |
+          grep -v '^\(ShooterGame/\(Saved\|Content/Mods\|Binaries/Linux/.*\.txt\)\|Engine/Binaries/ThirdParty/SteamCMD/Linux/steamapps\)' |
           while read f; do
             if [ ! -e "${arkStagingDir}/${f}" ]; then
               if [ -f "$f" ]; then
