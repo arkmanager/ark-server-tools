@@ -57,7 +57,7 @@ doUpgradeToolsFromCommit(){
   if [ ! -f "install.sh" ]; then echo "install.sh not found in $PWD"; exit 1; fi
   sed -i -e "s|^arkstCommit='.*'|arkstCommit='${commit}'|" \
          -e "s|^arkstTag='.*'|arkstTag='${tagname}'|" \
-	 -e "s|^arkstRootUseEnv='.*'|arkstRootUseEnv='${arkstRootUseEnv}'|" \
+         -e "s|^arkstRootUseEnv='.*'|arkstRootUseEnv='${arkstRootUseEnv}'|" \
          arkmanager
   echo "Running install.sh"
   $sudo bash install.sh "$steamcmd_user" "${reinstall_args[@]}"
@@ -1003,14 +1003,14 @@ doRun() {
             # Exit the server check loop
             break
           fi
-	fi
+        fi
       else
         echo "`timestamp`: Bad PID '$pid'; expected '$serverpid'"
         if [ "$pid" != "" ]; then
-	  # Another instance must be running - disable autorestart
-	  restartserver=0
-	fi
-	break
+          # Another instance must be running - disable autorestart
+          restartserver=0
+        fi
+        break
       fi
       sleep 5
     done
@@ -1558,7 +1558,7 @@ doUpdate() {
       local lockpid="$(<"${arkserverroot}/${arkupdatelockfile}")"
       if [ -n "$lockpid" ] && [ "$lockpid" != "${BASHPID}" ] && kill -0 "$lockpid" 2>/dev/null; then
         logprint "Update already in progress (PID: $lockpid)"
-	rm -f "${arkserverroot}/${arkupdatelockfile}.${BASHPID}" 2>/dev/null
+        rm -f "${arkserverroot}/${arkupdatelockfile}.${BASHPID}" 2>/dev/null
         return 1
       fi
       rm -f "${arkserverroot}/${arkupdatelockfile}"
@@ -1609,14 +1609,14 @@ doUpdate() {
 
       if [ -z "$nodownload" ]; then
         echo -n "Downloading ARK update"
-	logprint "Downloading ARK update" >/dev/null
-	doDownloadSteamCMD
+        logprint "Downloading ARK update" >/dev/null
+        doDownloadSteamCMD
         cd "$steamcmdroot"
         if runSteamCMDAppUpdate "$arkStagingDir" $validate; then
-	  rm -rf "${arkStagingDir}/steamapps/downloading/${appid}"
-	fi
+          rm -rf "${arkStagingDir}/steamapps/downloading/${appid}"
+        fi
 
-	if [ -d "${arkStagingDir}/steamapps/downloading/${appid}" ]; then
+        if [ -d "${arkStagingDir}/steamapps/downloading/${appid}" ]; then
           logprint "Update download interrupted"
           return 1
         fi
@@ -1720,10 +1720,10 @@ doUpdate() {
         done
       else
         echo -n "Performing ARK update"
-	logprint "Performing ARK update" >/dev/null
-	doDownloadSteamCMD
+        logprint "Performing ARK update" >/dev/null
+        doDownloadSteamCMD
         cd "$steamcmdroot"
-	runSteamCMDAppUpdate "$arkserverroot" $validate
+        runSteamCMDAppUpdate "$arkserverroot" $validate
       fi
       # the current version should be the last version. We set our version
       instver="$(getCurrentVersion)"
@@ -2430,9 +2430,9 @@ doBackup(){
       sort -n -r |
       cut -f2-3 |
       (sz=0; while read fsz f; do
-	if (( sz / 1048576 > arkMaxBackupSizeMB )); then
-	  rm "$f"
-	fi
+        if (( sz / 1048576 > arkMaxBackupSizeMB )); then
+          rm "$f"
+        fi
         (( sz += fsz ))
       done)
   fi
@@ -2624,7 +2624,7 @@ doPrintConfig(){
       val="$(source "$cfgfile"; echo "${!v}")"
       if [[ "$val" = "${vals[$v]}" && -z "${vars[$v]}" ]]; then
         vars["$v"]="$cfgfile"
-	echo "${cfgfile} => ${v}"
+        echo "${cfgfile} => ${v}"
       fi
     done < <(sed -n 's/^[[:space:]]*\([A-Za-z_][A-Za-z0-9_]*\)=.*/\1/p' <"$cfgfile")
   done
@@ -2882,11 +2882,11 @@ main(){
     case "$command" in
       install-cronjob)
         doInstallCronJob "${args[@]}" "${options[@]}" "$@"
-	exit
+        exit
       ;;
       remove-cronjob)
         doRemoveCronJob "${args[@]}"
-	exit
+        exit
       ;;
     esac
 
@@ -2940,9 +2940,9 @@ main(){
         installmods)
           doInstallAllMods
         ;;
-	uninstallmods)
-	  doUninstallAllMods
-	;;
+        uninstallmods)
+          doUninstallAllMods
+        ;;
         uninstallmod)
           doUninstallMod "${args[@]}"
         ;;
