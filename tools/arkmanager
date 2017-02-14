@@ -1975,7 +1975,12 @@ doExtractMod(){
   local modid=$1
   local modsrcdir="$steamcmdroot/steamapps/workshop/content/$mod_appid/$modid"
   local moddestdir="$arkserverroot/ShooterGame/Content/Mods/$modid"
+  local modextractdir="$moddestdir"
   local modbranch="${mod_branch:-Windows}"
+
+  if [[ -n "$arkStagingDir" && -d "$arkStagingDir" ]]; then
+    modextractdir="$arkStagingDir/Mods/$modid"
+  fi
 
   # Bypass the 111111111 modid used by Primitive+
   if [ "$modid" = "111111111" ]; then
@@ -1992,45 +1997,45 @@ doExtractMod(){
     fi
   done
 
-  if [ -f "$moddestdir/.modbranch" ]; then
-    mv "$moddestdir/.modbranch" "$moddestdir/__arkmanager_modbranch__.info"
+  if [ -f "$modextractdir/.modbranch" ]; then
+    mv "$modextractdir/.modbranch" "$modextractdir/__arkmanager_modbranch__.info"
   fi
 
-  if [ \( ! -f "$moddestdir/__arkmanager_modbranch__.info" \) ] || [ "$(<"$moddestdir/__arkmanager_modbranch__.info")" != "$modbranch" ]; then
-    rm -rf "$moddestdir"
+  if [ \( ! -f "$modextractdir/__arkmanager_modbranch__.info" \) ] || [ "$(<"$modextractdir/__arkmanager_modbranch__.info")" != "$modbranch" ]; then
+    rm -rf "$modextractdir"
   fi
 
   if [ -f "$modsrcdir/mod.info" ]; then
-    echo "Copying files to $moddestdir"
+    echo "Copying files to $modextractdir"
 
     if [ -f "$modsrcdir/${modbranch}NoEditor/mod.info" ]; then
       modsrcdir="$modsrcdir/${modbranch}NoEditor"
     fi
 
-    find "$modsrcdir" -type d -printf "$moddestdir/%P\0" | xargs -0 -r mkdir -p
+    find "$modsrcdir" -type d -printf "$modextractdir/%P\0" | xargs -0 -r mkdir -p
 
-    find "$moddestdir" -type f ! -name '.*' -printf "%P\n" | while read f; do
+    find "$modextractdir" -type f ! -name '.*' -printf "%P\n" | while read f; do
       if [ \( ! -f "$modsrcdir/$f" \) -a \( ! -f "$modsrcdir/${f}.z" \) ]; then
-        rm "$moddestdir/$f"
+        rm "$modextractdir/$f"
       fi
     done
 
-    find "$moddestdir" -depth -type d -printf "%P\n" | while read d; do
+    find "$modextractdir" -depth -type d -printf "%P\n" | while read d; do
       if [ ! -d "$modsrcdir/$d" ]; then
-        rmdir "$moddestdir/$d"
+        rmdir "$modextractdir/$d"
       fi
     done
 
     find "$modsrcdir" -type f ! \( -name '*.z' -or -name '*.z.uncompressed_size' \) -printf "%P\n" | while read f; do
-      if [ \( ! -f "$moddestdir/$f" \) -o "$modsrcdir/$f" -nt "$moddestdir/$f" ]; then
+      if [ \( ! -f "$modextractdir/$f" \) -o "$modsrcdir/$f" -nt "$modextractdir/$f" ]; then
         printf "%10d  %s  " "`stat -c '%s' "$modsrcdir/$f"`" "$f"
-        cp "$modsrcdir/$f" "$moddestdir/$f"
+        cp "$modsrcdir/$f" "$modextractdir/$f"
         echo -ne "\r\\033[K"
       fi
     done
 
     find "$modsrcdir" -type f -name '*.z' -printf "%P\n" | while read f; do
-      if [ \( ! -f "$moddestdir/${f%.z}" \) -o "$modsrcdir/$f" -nt "$moddestdir/${f%.z}" ]; then
+      if [ \( ! -f "$modextractdir/${f%.z}" \) -o "$modsrcdir/$f" -nt "$modextractdir/${f%.z}" ]; then
         printf "%10d  %s  " "`stat -c '%s' "$modsrcdir/$f"`" "${f%.z}"
         perl -M'Compress::Raw::Zlib' -e '
           my $sig;
@@ -2065,16 +2070,16 @@ doExtractMod(){
             }
             print $output;
           }
-        ' <"$modsrcdir/$f" >"$moddestdir/${f%.z}"
-        touch -c -r "$modsrcdir/$f" "$moddestdir/${f%.z}"
+        ' <"$modsrcdir/$f" >"$modextractdir/${f%.z}"
+        touch -c -r "$modsrcdir/$f" "$modextractdir/${f%.z}"
         echo -ne "\r\\033[K"
       fi
     done
 
     modname="$(curl -s "http://steamcommunity.com/sharedfiles/filedetails/?id=${modid}" | sed -n 's|^.*<div class="workshopItemTitle">\([^<]*\)</div>.*|\1|p')"
 
-    if [ -f "${moddestdir}/.mod" ]; then
-      rm "${moddestdir}/.mod"
+    if [ -f "${modextractdir}/.mod" ]; then
+      rm "${modextractdir}/.mod"
     fi
 
     perl -e '
@@ -2098,15 +2103,30 @@ doExtractMod(){
         $pos = $pos + 4 + $mapfilelen;
       }
       print "\x33\xFF\x22\xFF\x02\x00\x00\x00\x01";
-    ' $modid "$modname" <"$moddestdir/mod.info" >"${moddestdir}.mod"
+    ' $modid "$modname" <"$modextractdir/mod.info" >"${modextractdir}.mod"
 
-    if [ -f "$moddestdir/modmeta.info" ]; then
-      cat "$moddestdir/modmeta.info" >>"${moddestdir}.mod"
+    if [ -f "$modextractdir/modmeta.info" ]; then
+      cat "$modextractdir/modmeta.info" >>"${modextractdir}.mod"
     else
-      echo -ne '\x01\x00\x00\x00\x08\x00\x00\x00ModType\x00\x02\x00\x00\x001\x00' >>"${moddestdir}.mod"
+      echo -ne '\x01\x00\x00\x00\x08\x00\x00\x00ModType\x00\x02\x00\x00\x001\x00' >>"${modextractdir}.mod"
     fi
 
-    echo "$modbranch" >"$moddestdir/__arkmanager_modbranch__.info"
+    echo "$modbranch" >"$modextractdir/__arkmanager_modbranch__.info"
+
+    if [[ "$modextractdir" != "$moddestdir" ]]; then
+      cp -alu "${modextractdir}/." "${moddestdir}"
+      find "${moddestdir}" -type f ! -name '.*' -printf "%P\n" | while read f; do
+        if [ ! -f "${modextractdir}/${f}" ]; then
+          rm "${moddestdir}/${f}"
+        fi
+      done
+      find "$modextractdir" -depth -type d -printf "%P\n" | while read d; do
+        if [ ! -d "$modsrcdir/$d" ]; then
+          rmdir "$modextractdir/$d"
+        fi
+      done
+      cp "${modextractdir}.mod" "${moddestdir}.mod"
+    fi
   fi
 }
 
