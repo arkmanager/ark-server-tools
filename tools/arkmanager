@@ -620,6 +620,97 @@ function getAvailableVersion(){
 }
 
 #
+# Gets the server map name
+#
+function getServerMapName(){
+  local mapname="${serverMap}"
+
+  # extract the map name from the active map mod
+  if [ -n "$serverMapModId" ]; then
+    mapname="$(perl -e '
+      my $data;
+      { local $/; $data = <>; }
+      my $mapnamelen = unpack("@0 L<", $data);
+      my $mapname = substr($data, 4, $mapnamelen - 1);
+      $mapnamelen += 4;
+      my $mapfilelen = unpack("@" . ($mapnamelen + 4) . " L<", $data);
+      my $mapfile = substr($data, $mapnamelen + 8, $mapfilelen - 1);
+      print $mapfile;
+    ' <"${arkserverroot}/ShooterGame/Content/Mods/${serverMapModId}/mod.info")"
+  fi
+
+  echo "${mapname##*/}"
+}
+
+#
+# Gets the server map filename
+#
+function getServerMapFilename(){
+  local mapname="$1"
+  local savedir="$2"
+
+  # Take into account screwed up casing of saved ark files
+  # in some environments
+  local mapfile="$(find "${savedir}" -iname "${mapname}.ark" | head -n1)"
+
+  if [ -z "$mapfile" ]; then
+    sleep 2
+    mapfile="$(find "${savedir}" -iname "${mapname}.ark" | head -n1)"
+  fi
+
+  # If both attempts fail, server may have
+  # crashed between unlink and rename
+  if [ -z "$mapfile" ]; then
+    mapfile="$(find "${savedir}" -iname "${mapname}.tmp" | head -n1)"
+  fi
+
+  # If neither the ark nor the tmp file exists, then the
+  # map name may be incorrect.  Try to get any ark or tmp
+  # file in the saved arks directory
+  if [ -z "$mapfile" ]; then
+    mapfile="$(find "${savedir}" -iname "*.ark" | head -n1)"
+
+    if [ -z "$mapfile" ]; then
+      mapfile="$(find "${savedir}" -iname "*.tmp" | head -n1)"
+    fi
+  fi
+
+  echo "${mapfile}"
+}
+
+#
+# Gets the saved worlds directory
+#
+function getSavedArksDirectory(){
+  local savedir="SavedArks"
+  local saverootdir="$1"
+
+  # Get save directory name
+  if [ -n "${ark_AltSaveDirectoryName}" ]; then
+    savedir="${ark_AltSaveDirectoryName}"
+  fi
+
+  savedir="${saverootdir}/${savedir}"
+
+  # Check for the (unlikely) case that the case of the
+  # saved ark directory is screwed up
+  if [ ! -d "${savedir}" ]; then
+    cisavedir="$(find "${arkserverroot}" -ipath "${savedir}" | head -n1)"
+
+    if [ -n "$cisavedir" ]; then
+      echo -e "  ${NORMAL}[  ${YELLOW}WARN${NORMAL}  ] Saved arks directory capitalization is inconsistent" >&2
+      savedir="${cisavedir}"
+    else
+      echo -e "  ${NORMAL}[ ${RED}ERROR${NORMAL}  ] Saved arks directory does not exist" >&2
+      echo ""
+      return 1
+    fi
+  fi
+
+  echo "${savedir}"
+}
+
+#
 # Check if the update manifest matches the current manifest
 #
 function checkUpdateManifests(){
@@ -1668,11 +1759,31 @@ doUpdate() {
 
     if isTheServerRunning; then
       if [ "$updatetype" == "safe" ]; then
-        while [ ! `find $arkserverroot/ShooterGame/Saved/SavedArks -mmin -1 -name ${serverMap##*/}.ark` ]; do
-          logprint "Save file older than 1 minute. Delaying update."
-          sleep 30s
-        done
-        logprint "Save file newer than 1 minute. Performing an update."
+        saverootdir="${arkserverroot}/ShooterGame/Saved"
+        savedir="$(getSavedArksDirectory "${saverootdir}")"
+        mapname="$(getServerMapName)"
+        maxwait=30
+
+        if [ -z "$savedir" ]; then
+          logprint "Unable to find saved arks directory"
+        else
+          mapfile="$(getServerMapFilename "${mapname}" "${savedir}")"
+
+          if [ ! -f "${mapfile}" ]; then
+            logprint "Unable to find saved ark file"
+          elif [ "${mapfile##*.}" == ".tmp" ]; then
+            logprint "Map file doesn't exist, but temporary file does"
+          else
+            for (( i = 0; i < maxwait; i++ )); do
+              if [ "$(find "${mapfile}" -mmin -1)" ]; then
+                break
+              fi
+              logprint "Save file older than 1 minute. Delaying update."
+              sleep 30s
+            done
+            logprint "Save file newer than 1 minute. Performing an update."
+          fi
+        fi
       elif [ "$updatetype" == "warn" ]; then
         if ! doWarn update; then
           return 1
@@ -2275,83 +2386,29 @@ doBackup(){
   local daystamp=`date +"%Y-%m-%d"`
   local backupdir="${arkbackupdir}/${datestamp}"
   local backupdirdaily="${arkbackupdir}/${daystamp}"
-  local savedir="SavedArks"
+  local saverootdir="${arkserverroot}/ShooterGame/Saved"
+  local savedcfgdir="${saverootdir}/Config/LinuxServer"
+  local savedir="$(getSavedArksDirectory "${saverootdir}")"
+  local mapname="$(getServerMapName)"
   mkdir -p "$backupdir"
   mkdir -p "$backupdirdaily"
-  
-  # extract the map name from the active map mod
-  if [ -n "$serverMapModId" ]; then
-    serverMap="$(perl -e '
-      my $data;
-      { local $/; $data = <>; }
-      my $mapnamelen = unpack("@0 L<", $data);
-      my $mapname = substr($data, 4, $mapnamelen - 1);
-      $mapnamelen += 4;
-      my $mapfilelen = unpack("@" . ($mapnamelen + 4) . " L<", $data);
-      my $mapfile = substr($data, $mapnamelen + 8, $mapfilelen - 1);
-      print $mapfile;
-    ' <"${arkserverroot}/ShooterGame/Content/Mods/${serverMapModId}/mod.info")"
-  fi
 
-  # Get save directory name
-  if [ -n "${ark_AltSaveDirectoryName}" ]; then
-    savedir="${ark_AltSaveDirectoryName}"
-  fi
-
-  saverootdir="${arkserverroot}/ShooterGame/Saved"
-  savedcfgdir="${saverootdir}/Config/LinuxServer"
-  savedir="${saverootdir}/${savedir}"
-
-  # Check for the (unlikely) case that the case of the
-  # saved ark directory is screwed up
-  if [ ! -d "${savedir}" ]; then
-    cisavedir="$(find "${arkserverroot}" -ipath "${savedir}" | head -n1)"
-
-    if [ -n "$cisavedir" ]; then
-      echo -e "  ${NORMAL}[  ${YELLOW}WARN${NORMAL}  ] Saved arks directory capitalization is inconsistent"
-      savedir="${cisavedir}"
-    else
-      echo -e "  ${NORMAL}[ ${RED}ERROR${NORMAL}  ] Saved arks directory does not exist"
-      return 1
-    fi
+  if [[ -z "$savedir" ]]; then
+    return 1
   fi
 
   echo "${NORMAL} Saved arks directory is ${savedir}"
 
   # ARK server uses Write-Unlink-Rename
-  echo -ne "${NORMAL} Copying ARK world file (${serverMap}) "
+  echo -ne "${NORMAL} Copying ARK world file (${mapname}) "
 
-  # Take into account screwed up casing of saved ark files
-  # in some environments
-  mapfile="$(find "${savedir}" -iname "${serverMap##*/}.ark" | head -n1)"
-
-  if [ -z "$mapfile" ]; then
-    sleep 2
-    mapfile="$(find "${savedir}" -iname "${serverMap##*/}.ark" | head -n1)"
-  fi
-
-  # If both attempts fail, server may have
-  # crashed between unlink and rename
-  if [ -z "$mapfile" ]; then
-    mapfile="$(find "${savedir}" -iname "${serverMap##*/}.tmp" | head -n1)"
-  fi
-
-  # If neither the ark nor the tmp file exists, then the
-  # map name may be incorrect.  Try to get any ark or tmp
-  # file in the saved arks directory
-  if [ -z "$mapfile" ]; then
-    mapfile="$(find "${savedir}" -iname "*.ark" | head -n1)"
-
-    if [ -z "$mapfile" ]; then
-      mapfile="$(find "${savedir}" -iname "*.tmp" | head -n1)"
-    fi
-  fi
+  local mapfile="$(getServerMapFilename "${mapname}" "${savedir}")"
 
   if [ -f "${mapfile}" ]; then
-    cp -p "${mapfile}" "${backupdir}/${serverMap##*/}.ark"
+    cp -p "${mapfile}" "${backupdir}/${mapname}.ark"
   fi
 
-  if [ -f "${backupdir}/${serverMap##*/}.ark" ]; then
+  if [ -f "${backupdir}/${mapname}.ark" ]; then
     echo -e "${NORMAL}\e[68G[   ${GREEN}OK${NORMAL}   ]"
   else
     echo -e "${NORMAL}\e[68G[ ${RED}FAILED${NORMAL} ]"
