@@ -307,6 +307,10 @@ else
 
     # Copy example instance config
     cp instance.cfg.example "${INSTALL_ROOT}${INSTANCEDIR}/instance.cfg.example"
+    chown "$steamcmd_user" "${INSTALL_ROOT}${INSTANCEDIR}/instance.cfg.example"
+    # Change the defaults in the new instance config template
+    sed -i -e "s|\"/home/steam|\"/home/$steamcmd_user|" \
+           "${INSTALL_ROOT}${INSTANCEDIR}/instance.cfg.example"
 
     # Copy arkmanager bash_completion into /etc/bash_completion.d/
     cp bash_completion/arkmanager "${INSTALL_ROOT}/etc/bash_completion.d/arkmanager"
