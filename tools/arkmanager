@@ -2248,9 +2248,9 @@ doExtractMod(){
 
     if [[ "$modextractdir" != "$moddestdir" ]]; then
       if [ -n "$useRefLinks" ]; then
-        cp -au --reflink=always "${modextractdir}/." "${moddestdir}"
+        cp -au --reflink=always --remove-destination "${modextractdir}/." "${moddestdir}"
       else
-        cp -alu "${modextractdir}/." "${moddestdir}"
+        cp -alu --remove-destination "${modextractdir}/." "${moddestdir}"
       fi
       find "${moddestdir}" -type f ! -name '.*' -printf "%P\n" | while read f; do
         if [ ! -f "${modextractdir}/${f}" ]; then
