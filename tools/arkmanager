@@ -2265,7 +2265,7 @@ doExtractMod(){
       if [ -n "$useRefLinks" ]; then
         cp -u --reflink=always "${modextractdir}.mod" "${moddestdir}.mod"
       else
-        cp -lu "${modextractdir}.mod" "${moddestdir}.mod"
+        cp -u "${modextractdir}.mod" "${moddestdir}.mod"
       fi
     fi
   fi
