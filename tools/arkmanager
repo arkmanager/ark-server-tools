@@ -2871,6 +2871,8 @@ main(){
       installmod) nrarg=1; ;;
       uninstallmod) nrarg=1; ;;
       reinstallmod) nrarg=1; ;;
+      enablemod) nrarg=1; ;;
+      disablemod) nrarg=1; ;;
       broadcast) nrarg=1; ;;
       rconcmd) nrarg=1; ;;
       useconfig) nrarg=1; ;;
