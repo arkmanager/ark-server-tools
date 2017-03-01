@@ -95,6 +95,12 @@ To specify a dash-option with an argument (e.g. `-StructureDestructionTag=Destro
 
 You can override or add variables for a specific system user creating a file called `.arkmanager.cfg` in the home directory of the system user.
 
+Each server instance must have its own set of ports.
+These ports are specified using the `ark_Port`, `ark_QueryPort` and `ark_RCONPort` settings in the instance configuration.
+If the QueryPort or Port settings are shared between multiple instances, then the server will often either crash or hang
+without being able to be queried.
+If the RCONPort setting is shared between multiple instances, the server will hang at 0/0 players.
+
 See <<Configuration files>> for more options.
 
 Install ARK Server
