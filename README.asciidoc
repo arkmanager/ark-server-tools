@@ -597,27 +597,29 @@ Common ARK options
     Enabled RCON
 
 `ark_RCONPort=<portnum>`::
-    The port on which the server listens for RCON commands
+    The port on which the server listens for RCON commands.  Must be unique on the host.
 
 `ark_Port=<portnum>`::
-    The port on which the server listens for client connections
+    The port on which the server listens for client connections.  Must be unique on the host.
 
 `ark_QueryPort=<portnum>`::
-    The port on which the server listens for queries
+    The port on which the server listens for queries.  Must be unique on the host.
 
 `ark_ServerPassword="<password>"`::
     Specifies the password needed to connect to the server
 
 `ark_ServerAdminPassword="<password>"`::
     Specifies the server admin password, which is also the RCON
-    password
+    password.  Use of this option is discouraged - please store
+    the password in the GameUserSettings.ini file instead.
 
 `ark_MaxPlayers=<numplayers>`::
     The maximum number of players allowed to connect to the server
 
 `ark_AltSaveDirectoryName="<dirname>"`::
     Alternative directory under `ShooterGame/Saved` under which to
-    save the world files
+    save the world files.  If multiple instances run from the same directory, this
+    must be unique between these instances.
 
 `arkflag_NoBattlEye=true`::
     Disables BattlEye
