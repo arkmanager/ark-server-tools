@@ -2782,6 +2782,28 @@ useConfig() {
   arkupdatelockfile="${arkupdatelockfile:-ShooterGame/Saved/.ark-update.lock}"
 }
 
+addArkOpt() {
+  local optname="${1%%=*}"
+  local optval="${1#*=}"
+  local optdash="${optname:0:1}"
+  
+  optname="${optname#-}"
+  optname="${optname//[^A-Za-z0-9_]/_}"
+  
+  if [[ "${optval}" == "${optname}" ]]; then
+    optval=""
+  fi
+  if [[ "${optdash}" == "-" ]]; then
+    if [[ -z "${optval}" ]]; then
+      IFS="" read -r "arkflag_${optname}" <<<"true"
+    else
+      IFS="" read -r "arkopt_${optname}" <<<"${optval}"
+    fi
+  else
+    IFS="" read -r "ark_${optname}" <<<"${optval}"
+  fi
+}
+
 showUsage() {
   echo -e "Usage: arkmanager [Commands]\n"
   echo "Commands can be followed by one or more @instance arguments"
@@ -2899,6 +2921,9 @@ main(){
         ;;
         --spinner)
           progressDisplayType=spinner
+        ;;
+        --arkopt,*)
+          addArkOpt "${1#--arkopt,}"
         ;;
         --*)
           options+=( "$1" )
