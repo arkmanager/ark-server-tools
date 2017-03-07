@@ -2158,7 +2158,7 @@ doExtractMod(){
     find "$modsrcdir" -type f ! \( -name '*.z' -or -name '*.z.uncompressed_size' \) -printf "%P\n" | while read f; do
       if [ \( ! -f "$modextractdir/$f" \) -o "$modsrcdir/$f" -nt "$modextractdir/$f" ]; then
         printf "%10d  %s  " "`stat -c '%s' "$modsrcdir/$f"`" "$f"
-        if [ -n "$useRefLinks" ]; then
+        if [[ -n "$useRefLinks" && "$(stat -c "%d" "$modsrcdir")" == "$(stat -c "%d" "$modextractdir")" ]]; then
           cp --reflink=auto "$modsrcdir/$f" "$modextractdir/$f"
         else
           cp "$modsrcdir/$f" "$modextractdir/$f"
@@ -2247,10 +2247,14 @@ doExtractMod(){
     echo "$modbranch" >"$modextractdir/__arkmanager_modbranch__.info"
 
     if [[ "$modextractdir" != "$moddestdir" ]]; then
-      if [ -n "$useRefLinks" ]; then
-        cp -au --reflink=always --remove-destination "${modextractdir}/." "${moddestdir}"
+      if [ "$(stat -c "%d" "$modextractdir")" == "$(stat -c "%d" "$moddestdir")" ]; then
+        if [ -n "$useRefLinks" ]; then
+          cp -au --reflink=always --remove-destination "${modextractdir}/." "${moddestdir}"
+        else
+          cp -alu --remove-destination "${modextractdir}/." "${moddestdir}"
+        fi
       else
-        cp -alu --remove-destination "${modextractdir}/." "${moddestdir}"
+        cp -au --remove-destination "${modextractdir}/." "${moddestdir}"
       fi
       find "${moddestdir}" -type f ! -name '.*' -printf "%P\n" | while read f; do
         if [ ! -f "${modextractdir}/${f}" ]; then
@@ -2262,7 +2266,7 @@ doExtractMod(){
           rmdir "$modextractdir/$d"
         fi
       done
-      if [ -n "$useRefLinks" ]; then
+      if [[ -n "$useRefLinks" && "$(stat -c "%d" "$modextractdir")" == "$(stat -c "%d" "$moddestdir")" ]]; then
         cp -u --reflink=always "${modextractdir}.mod" "${moddestdir}.mod"
       else
         cp -u "${modextractdir}.mod" "${moddestdir}.mod"
