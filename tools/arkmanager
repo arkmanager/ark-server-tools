@@ -1706,7 +1706,7 @@ doUpdate() {
         rm -rf "$arkStagingDir/ShooterGame/Saved/"*
         rm -rf "$arkStagingDir/Engine/Binaries/ThirdParty/SteamCMD/Linux/steamapps"
       fi
-      rm "$arkStagingDir/Binaries/Linux/"*.txt
+      rm -f "$arkStagingDir/Binaries/Linux/"*.txt
 
       if [ -z "$nodownload" ]; then
         echo -n "Downloading ARK update"
