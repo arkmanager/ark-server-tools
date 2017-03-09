@@ -2625,6 +2625,7 @@ doRemoveCronJob(){
 printStatus(){
   if isTheServerRunning ;then
     echo -e "$NORMAL" "Server running: " "$GREEN" "Yes" "$NORMAL"
+    echo -e "$NORMAL" "Server PID: " "$GREEN" "$(getServerPID)" "$NORMAL"
   else
     echo -e "$NORMAL" "Server running: " "$RED" "No" "$NORMAL"
   fi
@@ -3105,6 +3106,9 @@ main(){
         ;;
         status)
           printStatus
+        ;;
+        getpid)
+          echo `getServerPID`
         ;;
         *)
           echo -n "arkmanager v${arkstVersion}: unknown command '$command' specified"
