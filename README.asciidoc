@@ -18,6 +18,7 @@ lsof
 perl-Compress-Zlib
 glibc.i686
 libstdc++.i686
+bzip2
 ```
 
 If running under Debian or Ubuntu, you will need the following packages installed:
