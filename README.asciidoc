@@ -13,9 +13,9 @@ ARK Server Tools requires certain packages be installed in order to function cor
 
 If running under CentOS or RHEL, you will need the following packages installed:
 ```
+perl-Compress-Zlib
 curl
 lsof
-perl-Compress-Zlib
 glibc.i686
 libstdc++.i686
 bzip2
@@ -24,10 +24,23 @@ bzip2
 If running under Debian or Ubuntu, you will need the following packages installed:
 
 ```
+perl-modules
 curl
 lsof
 libc6-i386
 lib32gcc1
+bzip2
+```
+
+Common prerequisites which should normally already be installed are:
+```
+>=bash-4.0
+>=coreutils-7.6
+findutils
+perl
+rsync
+sed
+tar
 ```
 
 If using CentOS 6 or earlier, or Debian 7 or earlier, you will need to compile a newer version of glibc.
