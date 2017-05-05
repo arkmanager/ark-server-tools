@@ -2247,6 +2247,9 @@ doExtractMod(){
     echo "$modbranch" >"$modextractdir/__arkmanager_modbranch__.info"
 
     if [[ "$modextractdir" != "$moddestdir" ]]; then
+      if [ ! -d "${moddestdir}" ]; then
+        mkdir -p "${moddestdir}"
+      fi
       if [ "$(stat -c "%d" "$modextractdir")" == "$(stat -c "%d" "$moddestdir")" ]; then
         if [ -n "$useRefLinks" ]; then
           cp -au --reflink=always --remove-destination "${modextractdir}/." "${moddestdir}"
