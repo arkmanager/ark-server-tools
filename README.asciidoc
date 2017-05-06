@@ -89,7 +89,12 @@ Configuration
 
 Stored in `/etc/arkmanager/arkmanager.cfg` and `/etc/arkmanager/instances/<instancename>.cfg` you can find the variables needed to start the server, like the port numbers, the system environment variables and so on.
 
-Also, in this file, you can specify any parameter you want to add to the startup command of ARK server.
+You will need to modify these files with any options you wish to give to the server, and any
+paths that are non-standard in your environment (e.g. one common one is the path to the appinfo cache).
+
+See <<Configuration files>> for options.
+
+Also, in these files, you can specify any parameter you want to add to the startup command of ARK server.
 These parameters must be prefixed by the `ark_` string, some example could be:
 
 [source,sh]
@@ -408,7 +413,16 @@ The following options can be overridden on a per-instance basis:
     The `steamcmd.sh` executable
 
 `steamcmd_appinfocache`::
-    The appinfo cache directory used by SteamCMD
+    The path to the Steam appinfo cache file.
+    Most systems will have this in `$HOME/Steam/appcache/appinfo.vdf`, 
+    but some systems have this instead in `$HOME/.steam/appcache/appinfo.vdf`.
+    You will need to modify this setting if this is the case.
+
+`steamcmd_workshoplog`::
+    The path to the Steam workshop log file.
+    Most systems will have this in `$HOME/Steam/logs/workshop_log.txt`,
+    but some systems have this instead in `$HOME/.steam/logs/workshop_log.txt`.
+    You will need to modify this setting if this is the case.
 
 `arkserverexec`::
     The relative path within an ARK server install where the
