@@ -427,6 +427,7 @@ The following options can be overridden on a per-instance basis:
 `arkserverexec`::
     The relative path within an ARK server install where the
     ARK server executable can be found.
+    For the standard ARK server, this should be `ShooterGame/Binaries/Linux/ShooterGameServer`
 
 `arkbackupdir`::
     The directory in which to store backups.  Can be overridden in
