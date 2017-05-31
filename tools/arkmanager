@@ -17,7 +17,7 @@ arkstUserCfgFile='.arkmanager.cfg'
 
 doUpgradeTools() {
   local sudo=sudo
-  if [ "$UID" == 0 -o "$steamcmd_user" == "--me" ]; then
+  if [ $(id -u) == 0 -o "$steamcmd_user" == "--me" ]; then
     sudo=
   fi
 
@@ -43,7 +43,7 @@ doUpgradeTools() {
 
 doUpgradeToolsFromCommit(){
   local sudo=sudo
-  if [ "$UID" == 0 -o "$steamcmd_user" == "--me" ]; then
+  if [ $(id -u) == 0 -o "$steamcmd_user" == "--me" ]; then
     sudo=
   fi
 
@@ -138,7 +138,7 @@ doUpgradeToolsFromRelease(){
 
 doUninstallTools() {
   local sudo=sudo
-  if [ "$UID" == 0 -o "$steamcmd_user" == "--me" ]; then
+  if [ $(id -u) == 0 -o "$steamcmd_user" == "--me" ]; then
     sudo=
   fi
 
