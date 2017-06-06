@@ -556,7 +556,6 @@ function checkForUpdate(){
 # Return 0 if update is needed, else return 1
 #
 function isUpdateNeeded(){
-  # instver="$(getCurrentVersion)"
   bnumber="$(getAvailableVersion)"
   if [[ -z "$bnumber" || "$bnumber" -eq "$instver" ]]; then
     return 1   # no update needed
