@@ -1747,7 +1747,7 @@ doUpdate() {
     fi
   fi
 
-  if [[ -f "$arkserverroot/$arkautorestartfile" && "$arkserverroot/$arkautorestartfile" -ot "${arkserverroot}/steamapps/appmanifest_${appid}.acf" ]]; then
+  if [[ -f "$arkserverroot/$arkmanagerpidfile" && "$arkserverroot/$arkmanagerpidfile" -ot "${arkserverroot}/steamapps/appmanifest_${appid}.acf" ]]; then
     logprint "Server was updated while it was running"
     bgupdate=1
   fi
