@@ -1747,7 +1747,7 @@ doUpdate() {
     fi
   fi
 
-  if [[ -f "$arkserverroot/$arkmanagerpidfile" && "$arkserverroot/$arkmanagerpidfile" -ot "${arkserverroot}/steamapps/appmanifest_${appid}.acf" ]]; then
+  if [[ -f "$arkserverroot/$arkmanagerpidfile" && "$arkserverroot/$arkmanagerpidfile" -ot "${arkserverroot}/${arkupdatetimefile}" ]]; then
     logprint "Server was updated while it was running"
     bgupdate=1
   fi
@@ -1879,7 +1879,7 @@ doUpdate() {
       done
     fi
     if [ -z "$bgupdate" ]; then
-      touch "${arkserverroot}/steamapps/appmanifest_${appid}.acf"
+      touch "${arkserverroot}/${arkupdatetimefile}"
     fi
   else
     logprint "Your server is already up to date! The most recent version is ${bnumber}."
@@ -2798,6 +2798,7 @@ useConfig() {
   arkwarnlockfile="${arkwarnlockfile:-ShooterGame/Saved/.ark-warn-${1}.lock}"
   # This is linked to the directory, not to the instance
   arkupdatelockfile="${arkupdatelockfile:-ShooterGame/Saved/.ark-update.lock}"
+  arkupdatetimefile="${arkupdatetimefile:-ShooterGame/Saved/.ark-update.time}"
 }
 
 addArkOpt() {
