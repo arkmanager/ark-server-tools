@@ -228,6 +228,8 @@ RED="\\033[1;31m"
 YELLOW="\\e[0;33m"
 NORMAL="\\033[0;39m"
 maxOpenFiles=100000
+instver="$(getCurrentVersion)" # Needed here to restart @all instaces after update.
+
 
 # Set TERM to "dumb" if TERM is not set
 export TERM=${TERM:-dumb}
@@ -554,7 +556,6 @@ function checkForUpdate(){
 # Return 0 if update is needed, else return 1
 #
 function isUpdateNeeded(){
-  instver="$(getCurrentVersion)"
   bnumber="$(getAvailableVersion)"
   if [[ -z "$bnumber" || "$bnumber" -eq "$instver" ]]; then
     return 1   # no update needed
