@@ -1524,42 +1524,47 @@ doWarn(){
 
       local warnintervals=( 90 60 45 30 20 15 10 5 4 3 2 )
 
-      for warninterval in "${warnintervals[@]}"; do
-        if [ "`getServerPID`" != "$pid" ]; then
-          echo "Server has stopped.  Aborting $1"
-          rm -f "${arkserverroot}/${arkwarnlockfile}"
-          return 1
-        fi
-        if (( warnminutes >= warninterval )); then
-          sleep 1m &
-          sleeppid=$!
-          printWarnMessage "$1" "$2" "minutes" "$warnminutes"
-          for (( min = warnminutes; min >= warninterval; min-- )); do
-            numplayers=$(numPlayersConnected)
-            echo "There are ${numplayers} players connected"
-            if [[ "numplayers" == "-1" ]]; then
-              echo "Server is not running.  Shutting down immediately"
-              return 0
-            elif (( (numplayers + 0) == 0 )); then
-              doBroadcastWithEcho "Nobody is connected.  Shutting down immediately"
-              rm -f "${arkserverroot}/${arkwarnlockfile}"
-              return 0
-            fi
-            if isUpdateCancelRequested; then
-              doBroadcastWithEcho "Restart cancelled by player request"
-              return 1
-            fi
-            wait $sleeppid
-            if (( $min > $warninterval )); then
-              sleep 1m &
-              sleeppid=$!
-            fi
-          done
-          warnminutes=$(( warninterval - 1 ))
-        fi
-      done
+      if (( warnminutes > 2 )); then
+        for warninterval in "${warnintervals[@]}"; do
+          if [ "`getServerPID`" != "$pid" ]; then
+            echo "Server has stopped.  Aborting $1"
+            rm -f "${arkserverroot}/${arkwarnlockfile}"
+            return 1
+          fi
+          if (( warnminutes >= warninterval )); then
+            sleep 1m &
+            sleeppid=$!
+            printWarnMessage "$1" "$2" "minutes" "$warnminutes"
+            for (( min = warnminutes; min >= warninterval; min-- )); do
+              numplayers=$(numPlayersConnected)
+              echo "There are ${numplayers} players connected"
+              if [[ "numplayers" == "-1" ]]; then
+                echo "Server is not running.  Shutting down immediately"
+                return 0
+              elif (( (numplayers + 0) == 0 )); then
+                doBroadcastWithEcho "Nobody is connected.  Shutting down immediately"
+                rm -f "${arkserverroot}/${arkwarnlockfile}"
+                return 0
+              fi
+              if isUpdateCancelRequested; then
+                doBroadcastWithEcho "Restart cancelled by player request"
+                return 1
+              fi
+              wait $sleeppid
+              if (( $min > $warninterval )); then
+                sleep 1m &
+                sleeppid=$!
+              fi
+            done
+            warnminutes=$(( warninterval - 1 ))
+          fi
+        done
+      fi
 
       local warnseconds=120
+      if (( warnminutes == 1 )); then
+        warnseconds = 60
+      fi
       warnintervals=( 90 60 45 30 20 15 10 5 0 )
       for warninterval in "${warnintervals[@]}"; do
         sleep $(( warnseconds - warninterval ))s &
