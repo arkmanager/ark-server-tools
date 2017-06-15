@@ -1531,11 +1531,11 @@ doWarn(){
             rm -f "${arkserverroot}/${arkwarnlockfile}"
             return 1
           fi
-          if (( warnminutes >= warninterval )); then
+          if (( warnminutes > warninterval )); then
             sleep 1m &
             sleeppid=$!
             printWarnMessage "$1" "$2" "minutes" "$warnminutes"
-            for (( min = warnminutes; min >= warninterval; min-- )); do
+            for (( min = warnminutes - 1; min >= warninterval; min-- )); do
               numplayers=$(numPlayersConnected)
               echo "There are ${numplayers} players connected"
               if [[ "numplayers" == "-1" ]]; then
@@ -1556,16 +1556,17 @@ doWarn(){
                 sleeppid=$!
               fi
             done
-            warnminutes=$(( warninterval - 1 ))
+            warnminutes=$warninterval
           fi
         done
       fi
 
       local warnseconds=120
+      warnintervals=( 90 60 45 30 20 15 10 5 0 )
       if (( warnminutes == 1 )); then
         warnseconds = 60
+        warnintervals=( 45 30 20 15 10 5 0 )
       fi
-      warnintervals=( 90 60 45 30 20 15 10 5 0 )
       for warninterval in "${warnintervals[@]}"; do
         sleep $(( warnseconds - warninterval ))s &
         sleeppid=$!
