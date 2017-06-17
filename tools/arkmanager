@@ -1122,6 +1122,14 @@ doRun() {
   done
 }
 
+doRunBG(){
+  for fd in $(ls /proc/$BASHPID/fd/); do
+    [[ $fd -gt 2 && $fd != 255 ]] && exec {fd}<&-
+  done
+
+  doRun "$@" > >(while read -r l; do printf "%s: [%s] %s\n" "$(timestamp)" "${instance}" "${l}"; done) 2>&1
+}
+
 #
 # start function
 #
@@ -1165,7 +1173,7 @@ doStart() {
       doRun "$@"
       return
     elif [[ -n "$arkPriorityBoost" || -n "$arkCpuAffinity" ]]; then
-      doRun --wait </dev/null > >(while read -r l; do printf "%s: [%s] %s\n" "$(timestamp)" "${instance}" "${l}" >>"$logdir/$arkserverLog"; done) 2>&1 & # output of this command is logged
+      doRunBG --wait </dev/null >>"$logdir/$arkserverLog" 2>&1 & # output of this command is logged
       local pid="$!"
 
       # Wait for monitor process to suspend itself
@@ -1183,7 +1191,7 @@ doStart() {
 
       kill -CONT "$pid"
     else
-      doRun </dev/null > >(while read -r l; do printf "%s: [%s] %s\n" "$(timestamp)" "${instance}" "${l}" >>"$logdir/$arkserverLog"; done) 2>&1 & # output of this command is logged
+      doRunBG </dev/null >>"$logdir/$arkserverLog" 2>&1 & # output of this command is logged
     fi
     tput rc; tput ed;
     logprint "The server is now running, and should be up within 10 minutes"
