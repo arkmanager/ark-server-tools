@@ -1925,6 +1925,26 @@ doUpdate() {
 }
 
 #
+# Check if any mod update is available
+#
+checkForModUpdate(){
+  local updateavail=
+
+  for modid in $(getModIds); do
+    if isModUpdateAvailable $modid || isModUpdateNeeded $modid; then
+      printf "Mod %d [%s] update needed\n" "$modid" "$(getModName $modid)"
+      updateavail=1
+    fi
+  done
+
+  if [ -n "$updateavail" ]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+#
 # Get the Mod IDs of the installed mods and the requested mods
 #
 getModIds(){
@@ -3102,6 +3122,9 @@ main(){
         checkupdate)
           checkForUpdate
         ;;
+	checkmodupdate)
+	  checkForModUpdate
+	;;
         installmod)
           doInstallMod "${args[@]}"
         ;;
