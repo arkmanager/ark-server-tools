@@ -1325,6 +1325,9 @@ doInstall() {
   # install the server
   doDownloadSteamCMD
   runSteamCMDAppUpdate "$arkserverroot" validate
+  if [ $? -eq 5 ]; then
+    echo "User ${steamlogin:-anonymous} login failed - please login to steamcmd manually"
+  fi
   # the current version should be the last version. We set our version
   instver="$(getCurrentVersion)"
 }
@@ -1737,8 +1740,11 @@ doUpdate() {
         logprint "Downloading ARK update" >/dev/null
         doDownloadSteamCMD
         cd "$steamcmdroot"
-        if runSteamCMDAppUpdate "$arkStagingDir" $validate; then
+        runSteamCMDAppUpdate "$arkStagingDir" $validate
+        if [ $? -eq 0 ]; then
           rm -rf "${arkStagingDir}/steamapps/downloading/${appid}"
+        elif [ $? -eq 5 ]; then
+          echo "User ${steamlogin:-anonymous} login failed - please login to steamcmd manually"
         fi
 
         if [ -d "${arkStagingDir}/steamapps/downloading/${appid}" ]; then
@@ -1877,6 +1883,9 @@ doUpdate() {
         doDownloadSteamCMD
         cd "$steamcmdroot"
         runSteamCMDAppUpdate "$arkserverroot" $validate
+        if [ $? -eq 5 ]; then
+          echo "User ${steamlogin:-anonymous} login failed - please login to steamcmd manually"
+        fi
       fi
       # the current version should be the last version. We set our version
       instver="$(getCurrentVersion)"
@@ -2005,6 +2014,9 @@ doDownloadMod(){
     if [ $result -eq 0 ]; then
       modsrcdir="$(echo "$output" | sed -n 's@^Success. Downloaded item [0-9][0-9]* to "\([^"]*\)" .*@\1@p')"
       break
+    elif [ $result -eq 5 ]; then
+      echo "User ${steamlogin:-anonymous} login failed - please login to steamcmd manually"
+      return 1
     else
       echo
       failedmod="$(tail -n 20 "${steamcmd_workshoplog}" | sed -n 's|.* Download item \([0-9]*\) result : \(.*\)|\1\t\2|p' | grep -v $'\tOK' | tail -n1 | cut -f1)"
@@ -3122,9 +3134,9 @@ main(){
         checkupdate)
           checkForUpdate
         ;;
-	checkmodupdate)
-	  checkForModUpdate
-	;;
+        checkmodupdate)
+          checkForModUpdate
+        ;;
         installmod)
           doInstallMod "${args[@]}"
         ;;
