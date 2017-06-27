@@ -2974,6 +2974,8 @@ showUsage() {
 main(){
   # check the configuration and throw errors or warnings if needed
   checkConfig
+  
+  status=0
 
   while true; do
     options=( )
