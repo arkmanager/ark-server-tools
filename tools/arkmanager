@@ -1942,10 +1942,11 @@ checkForModUpdate(){
   local availmft=
   local modname=
   local steamdataroot="${steamdataroot:-${steamcmdroot}}"
+  local steamworkshopdir="${steamworkshopdir:-${steamdataroot}/steamapps/workshop"
   local cancheckmodavail=1
   
-  if [ ! -f "$steamdataroot/steamapps/workshop/appworkshop_${mod_appid}.acf" ]; then
-    echo "Error: appworkshop_${mod_appid}.acf not found at $steamdataroot/steamapps/workshop"
+  if [ ! -f "${steamworkshopdir}/appworkshop_${mod_appid}.acf" ]; then
+    echo "Error: appworkshop_${mod_appid}.acf not found at ${steamworkshopdir}"
     return 1
   fi
 
@@ -2001,8 +2002,9 @@ getModIds(){
 getLocalModManifest(){
   local modid="$1"
   local steamdataroot="${steamdataroot:-${steamcmdroot}}"
-  if [ ! -f "$steamdataroot/steamapps/workshop/appworkshop_${mod_appid}.acf" ]; then return 0; fi
-  local instmft="$(sed -n '/^\t"WorkshopItemsInstalled"$/,/^\t[}]$/{/^\t\t"'"${modid}"'"$/,/^\t\t[}]$/{s|^\t\t\t"manifest"\t\t"\(.*\)"$|\1|p}}' <"$steamdataroot/steamapps/workshop/appworkshop_${mod_appid}.acf")"}
+  local steamworkshopdir="${steamworkshopdir:-${steamdataroot}/steamapps/workshop"
+  if [ ! -f "${steamworkshopdir}/appworkshop_${mod_appid}.acf" ]; then return 0; fi
+  local instmft="$(sed -n '/^\t"WorkshopItemsInstalled"$/,/^\t[}]$/{/^\t\t"'"${modid}"'"$/,/^\t\t[}]$/{s|^\t\t\t"manifest"\t\t"\(.*\)"$|\1|p}}' <"${steamworkshopdir}/appworkshop_${mod_appid}.acf")"}
   echo "$instmft"
 }
 
@@ -2022,7 +2024,8 @@ isModUpdateAvailable(){
   local instmft="$(getLocalModManifest "$modid")"
   local remmft="$(getAvailModManifest "$modid")"
   local steamdataroot="${steamdataroot:-${steamcmdroot}}"
-  if [ ! -f "$steamdataroot/steamapps/workshop/appworkshop_${mod_appid}.acf" ]; then return 0; fi
+  local steamworkshopdir="${steamworkshopdir:-${steamdataroot}/steamapps/workshop"
+  if [ ! -f "${steamworkshopdir}/appworkshop_${mod_appid}.acf" ]; then return 0; fi
   if [[ -n "${remmft}" && "${instmft}" != "${remmft}" ]]; then
     return 0 # true
   fi
@@ -2040,8 +2043,9 @@ doDownloadMod(){
   fi
   doDownloadSteamCMD
   local steamdataroot="${steamdataroot:-${steamcmdroot}}"
-  local modsrcdir="$steamdataroot/steamapps/workshop/content/$mod_appid/$modid"
-  local moddldir="$steamdataroot/steamapps/workshop/downloads/$mod_appid"
+  local steamworkshopdir="${steamworkshopdir:-${steamdataroot}/steamapps/workshop"
+  local modsrcdir="${steamworkshopdir}/content/$mod_appid/$modid"
+  local moddldir="${steamworkshopdir}/downloads/$mod_appid"
   cd "$steamcmdroot"
   retries=10
 
@@ -2113,7 +2117,8 @@ doDownloadAllMods(){
 isModUpdateNeeded(){
   local modid=$1
   local steamdataroot="${steamdataroot:-${steamcmdroot}}"
-  local modsrcdir="$steamdataroot/steamapps/workshop/content/$mod_appid/$modid"
+  local steamworkshopdir="${steamworkshopdir:-${steamdataroot}/steamapps/workshop"
+  local modsrcdir="${steamworkshopdir}/content/$mod_appid/$modid"
   local moddestdir="$arkserverroot/ShooterGame/Content/Mods/$modid"
   local modbranch="${mod_branch:-Windows}"
 
@@ -2161,7 +2166,8 @@ isModUpdateNeeded(){
 getModName(){
   local modid=$1
   local steamdataroot="${steamdataroot:-${steamcmdroot}}"
-  local modsrcdir="$steamdataroot/steamapps/workshop/content/$mod_appid/$modid"
+  local steamworkshopdir="${steamworkshopdir:-${steamdataroot}/steamapps/workshop"
+  local modsrcdir="${steamworkshopdir}/content/$mod_appid/$modid"
 
   if [ -n "${modsrcdirs[$modid]}" ]; then
     modsrcdir="${modsrcdirs[$modid]}"
@@ -2207,7 +2213,8 @@ isAnyModUpdateNeeded(){
 doExtractMod(){
   local modid=$1
   local steamdataroot="${steamdataroot:-${steamcmdroot}}"
-  local modsrcdir="$steamdataroot/steamapps/workshop/content/$mod_appid/$modid"
+  local steamworkshopdir="${steamworkshopdir:-${steamdataroot}/steamapps/workshop"
+  local modsrcdir="${steamworkshopdir}/content/$mod_appid/$modid"
   local moddestdir="$arkserverroot/ShooterGame/Content/Mods/$modid"
   local modextractdir="$moddestdir"
   local modbranch="${mod_branch:-Windows}"
@@ -2389,10 +2396,11 @@ doExtractMod(){
 doInstallMod(){
   local modid
   local steamdataroot="${steamdataroot:-${steamcmdroot}}"
+  local steamworkshopdir="${steamworkshopdir:-${steamdataroot}/steamapps/workshop"
   for modid in "${1//,/ }"; do
     if [[ " $* " =~ *" --validate " ]]; then
-      if [ -f "$steamdataroot/steamapps/workshop/appworkshop_${mod_appid}.acf" ]; then
-        sed -i "/^\\t\\t\"${modid}\"/,/^\\t\\t}/d" "$steamdataroot/steamapps/workshop/appworkshop_${mod_appid}.acf"
+      if [ -f "${steamworkshopdir}/appworkshop_${mod_appid}.acf" ]; then
+        sed -i "/^\\t\\t\"${modid}\"/,/^\\t\\t}/d" "${steamworkshopdir}/appworkshop_${mod_appid}.acf"
       fi
     fi
 
@@ -2477,17 +2485,18 @@ doDisableMod(){
 doRemoveMods(){
   local modid
   local steamdataroot="${steamdataroot:-${steamcmdroot}}"
+  local steamworkshopdir="${steamworkshopdir:-${steamdataroot}/steamapps/workshop"
   for modid in ${1//,/ }; do
-    if [ -f "$steamdataroot/steamapps/workshop/appworkshop_${mod_appid}.acf" ]; then
-      sed -i "/^\\t\\t\"${modid}\"/,/^\\t\\t}/d" "$steamdataroot/steamapps/workshop/appworkshop_${mod_appid}.acf"
+    if [ -f "${steamworkshopdir}/appworkshop_${mod_appid}.acf" ]; then
+      sed -i "/^\\t\\t\"${modid}\"/,/^\\t\\t}/d" "${steamworkshopdir}/appworkshop_${mod_appid}.acf"
     fi
 
-    if [ -d "$steamdataroot/steamapps/workshop/content/${mod_appid}/${modid}" ]; then
-      rm -rf "$steamdataroot/steamapps/workshop/content/${mod_appid}/${modid}"
+    if [ -d "${steamworkshopdir}/content/${mod_appid}/${modid}" ]; then
+      rm -rf "${steamworkshopdir}/content/${mod_appid}/${modid}"
     fi
 
-    if [ -d "$steamdataroot/steamapps/workshop/downloads/${mod_appid}/${modid}" ]; then
-      rm -rf "$steamdataroot/steamapps/workshop/downloads/${mod_appid}/${modid}"
+    if [ -d "${steamworkshopdir}/downloads/${mod_appid}/${modid}" ]; then
+      rm -rf "${steamworkshopdir}/downloads/${mod_appid}/${modid}"
     fi
   done
 }
