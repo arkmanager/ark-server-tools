@@ -1942,7 +1942,7 @@ checkForModUpdate(){
   local availmft=
   local modname=
   local steamdataroot="${steamdataroot:-${steamcmdroot}}"
-  local steamworkshopdir="${steamworkshopdir:-${steamdataroot}/steamapps/workshop"
+  local steamworkshopdir="${steamworkshopdir:-${steamdataroot}/steamapps/workshop}"
   local cancheckmodavail=1
   
   if [ ! -f "${steamworkshopdir}/appworkshop_${mod_appid}.acf" ]; then
@@ -2002,7 +2002,7 @@ getModIds(){
 getLocalModManifest(){
   local modid="$1"
   local steamdataroot="${steamdataroot:-${steamcmdroot}}"
-  local steamworkshopdir="${steamworkshopdir:-${steamdataroot}/steamapps/workshop"
+  local steamworkshopdir="${steamworkshopdir:-${steamdataroot}/steamapps/workshop}"
   if [ ! -f "${steamworkshopdir}/appworkshop_${mod_appid}.acf" ]; then return 0; fi
   local instmft="$(sed -n '/^\t"WorkshopItemsInstalled"$/,/^\t[}]$/{/^\t\t"'"${modid}"'"$/,/^\t\t[}]$/{s|^\t\t\t"manifest"\t\t"\(.*\)"$|\1|p}}' <"${steamworkshopdir}/appworkshop_${mod_appid}.acf")"}
   echo "$instmft"
@@ -2024,7 +2024,7 @@ isModUpdateAvailable(){
   local instmft="$(getLocalModManifest "$modid")"
   local remmft="$(getAvailModManifest "$modid")"
   local steamdataroot="${steamdataroot:-${steamcmdroot}}"
-  local steamworkshopdir="${steamworkshopdir:-${steamdataroot}/steamapps/workshop"
+  local steamworkshopdir="${steamworkshopdir:-${steamdataroot}/steamapps/workshop}"
   if [ ! -f "${steamworkshopdir}/appworkshop_${mod_appid}.acf" ]; then return 0; fi
   if [[ -n "${remmft}" && "${instmft}" != "${remmft}" ]]; then
     return 0 # true
@@ -2043,7 +2043,7 @@ doDownloadMod(){
   fi
   doDownloadSteamCMD
   local steamdataroot="${steamdataroot:-${steamcmdroot}}"
-  local steamworkshopdir="${steamworkshopdir:-${steamdataroot}/steamapps/workshop"
+  local steamworkshopdir="${steamworkshopdir:-${steamdataroot}/steamapps/workshop}"
   local modsrcdir="${steamworkshopdir}/content/$mod_appid/$modid"
   local moddldir="${steamworkshopdir}/downloads/$mod_appid"
   cd "$steamcmdroot"
@@ -2117,7 +2117,7 @@ doDownloadAllMods(){
 isModUpdateNeeded(){
   local modid=$1
   local steamdataroot="${steamdataroot:-${steamcmdroot}}"
-  local steamworkshopdir="${steamworkshopdir:-${steamdataroot}/steamapps/workshop"
+  local steamworkshopdir="${steamworkshopdir:-${steamdataroot}/steamapps/workshop}"
   local modsrcdir="${steamworkshopdir}/content/$mod_appid/$modid"
   local moddestdir="$arkserverroot/ShooterGame/Content/Mods/$modid"
   local modbranch="${mod_branch:-Windows}"
@@ -2166,7 +2166,7 @@ isModUpdateNeeded(){
 getModName(){
   local modid=$1
   local steamdataroot="${steamdataroot:-${steamcmdroot}}"
-  local steamworkshopdir="${steamworkshopdir:-${steamdataroot}/steamapps/workshop"
+  local steamworkshopdir="${steamworkshopdir:-${steamdataroot}/steamapps/workshop}"
   local modsrcdir="${steamworkshopdir}/content/$mod_appid/$modid"
 
   if [ -n "${modsrcdirs[$modid]}" ]; then
@@ -2213,7 +2213,7 @@ isAnyModUpdateNeeded(){
 doExtractMod(){
   local modid=$1
   local steamdataroot="${steamdataroot:-${steamcmdroot}}"
-  local steamworkshopdir="${steamworkshopdir:-${steamdataroot}/steamapps/workshop"
+  local steamworkshopdir="${steamworkshopdir:-${steamdataroot}/steamapps/workshop}"
   local modsrcdir="${steamworkshopdir}/content/$mod_appid/$modid"
   local moddestdir="$arkserverroot/ShooterGame/Content/Mods/$modid"
   local modextractdir="$moddestdir"
@@ -2396,7 +2396,7 @@ doExtractMod(){
 doInstallMod(){
   local modid
   local steamdataroot="${steamdataroot:-${steamcmdroot}}"
-  local steamworkshopdir="${steamworkshopdir:-${steamdataroot}/steamapps/workshop"
+  local steamworkshopdir="${steamworkshopdir:-${steamdataroot}/steamapps/workshop}"
   for modid in "${1//,/ }"; do
     if [[ " $* " =~ *" --validate " ]]; then
       if [ -f "${steamworkshopdir}/appworkshop_${mod_appid}.acf" ]; then
@@ -2485,7 +2485,7 @@ doDisableMod(){
 doRemoveMods(){
   local modid
   local steamdataroot="${steamdataroot:-${steamcmdroot}}"
-  local steamworkshopdir="${steamworkshopdir:-${steamdataroot}/steamapps/workshop"
+  local steamworkshopdir="${steamworkshopdir:-${steamdataroot}/steamapps/workshop}"
   for modid in ${1//,/ }; do
     if [ -f "${steamworkshopdir}/appworkshop_${mod_appid}.acf" ]; then
       sed -i "/^\\t\\t\"${modid}\"/,/^\\t\\t}/d" "${steamworkshopdir}/appworkshop_${mod_appid}.acf"
