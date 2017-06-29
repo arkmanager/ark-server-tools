@@ -429,10 +429,16 @@ The following options can be overridden on a per-instance basis:
 
 `steamdataroot`::
     The path to the SteamCMD data.
-    Defaults to equal `$steamcmdroot`
+    Defaults to `$steamcmdroot`
     Some SteamCMD installations store downloaded files (workshop
     files, etc.) in /home/.steam instead of in the steamcmd
     directory.
+
+`steamworkshopdir`::
+    The path to the SteamCMD workshop directory.
+    Defaults to `$steamdataroot/steamapps/workshop`
+    Some SteamCMD installations use `SteamApps` as the steamapps directory
+    instead of `steamapps`
 
 `arkserverexec`::
     The relative path within an ARK server install where the
