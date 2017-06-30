@@ -2397,7 +2397,7 @@ doInstallMod(){
   local modid
   local steamdataroot="${steamdataroot:-${steamcmdroot}}"
   local steamworkshopdir="${steamworkshopdir:-${steamdataroot}/steamapps/workshop}"
-  for modid in "${1//,/ }"; do
+  for modid in ${1//,/ }; do
     if [[ " $* " =~ *" --validate " ]]; then
       if [ -f "${steamworkshopdir}/appworkshop_${mod_appid}.acf" ]; then
         sed -i "/^\\t\\t\"${modid}\"/,/^\\t\\t}/d" "${steamworkshopdir}/appworkshop_${mod_appid}.acf"
@@ -2436,7 +2436,7 @@ doUninstallAllMods(){
 #
 doUninstallMod(){
   local modid
-  for modid in "${1//,/ }"; do
+  for modid in ${1//,/ }; do
     local moddir="$arkserverroot/ShooterGame/Content/Mods/$modid"
     local modfile="$arkserverroot/ShooterGame/Content/Mods/${modid}.mod"
     if [ -d "${moddir}" ]; then
