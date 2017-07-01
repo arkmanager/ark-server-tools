@@ -2933,49 +2933,100 @@ addArkOpt() {
 
 showUsage() {
   echo -e "Usage: arkmanager [Commands]\n"
-  echo "Commands can be followed by one or more @instance arguments"
-  echo "The special '@all' instance selects all instances"
-  echo "Commands may also be followed by zero or more --options"
-  echo
-  echo "Commands that take no instances:"
-  echo "Command               Description"
-  echo "upgrade-tools         Check for a new ARK Server Tools version and upgrades it if needed"
-  echo "uninstall-tools       Uninstall the ARK Server Tools"
-  echo "useconfig <name>      Sets the default instance for the commands that follow"
-  echo "list-instances        Lists all available instances"
-  echo "--help                Show this help"
-  echo "--version             Show the version info of ARK Server Tools"
-  echo
-  echo "Commands that take one or more instances:"
-  echo "Command               Description"
-  echo "backup                Saves a backup of your server inside the backup directory"
-  echo "broadcast <msg>       Sends a message to all users connected to server"
-  echo "saveworld             Saves the game world to disk"
-  echo "rconcmd <cmd>         Execute RCON command on server"
-  echo "checkupdate           Check for a new ARK server version"
-  echo "install               Install the ARK server files from steamcmd"
-  echo "installmod <modid>    Installs a mod from the Steam workshop"
-  echo "uninstallmod <modid>  Removes the mod from the Mods directory"
-  echo "reinstallmod <modid>  Removes and re-installs a mod in the Mods directory"
-  echo "install-cronjob <cmd> Adds a cron job using the specified command"
-  echo "remove-cronjob <cmd>  Removes a cron job that used the specified command"
-  echo "restart               Stops the server and then starts it"
-  echo "run                   Runs the server without daemonizing"
-  echo "start                 Starts the server"
-  echo "stop                  Stops the server"
-  echo "status                Returns the status of the current ARK server instance"
-  echo "update                Check for a new ARK server version, if needed, stops the server, updates it, and starts it again"
-  echo
-  echo "Update command takes the below options:"
-  echo "   --force            Apply update without checking the current version"
-  echo "   --safe             Wait for server to perform world save and update."
-  echo "   --warn             Warn players before updating server"
-  echo "   --validate         Validates all ARK server files"
-  echo "   --saveworld        Saves world before update"
-  echo "   --update-mods      Updates installed and requested mods"
-  echo "   --backup           Takes a backup of the save files before updating"
-  echo "   --downloadonly     Download the mod and/or server update without applying it"
-  echo "                      Requires arkStagingDir be set to a staging directory on the same filesystem as the server"
+  cat <<-EOE
+	Commands can be followed by one or more @instance arguments
+	The special '@all' instance selects all instances
+	Commands may also be followed by zero or more --options
+
+	Commands that take no instances:
+	Command               Description
+	upgrade-tools         Check for a new ARK Server Tools version and upgrades it if needed
+	uninstall-tools       Uninstall the ARK Server Tools
+	useconfig <name>      Sets the default instance for the commands that follow
+	remove-mods <modid>   Remove one or more mods from the steamcmd workshop directory
+	list-instances        Lists all available instances
+	--help                Show this help
+	--version             Show the version info of ARK Server Tools
+
+	Commands that take one or more instances:
+	Command               Description
+	backup                Saves a backup of your server inside the backup directory
+	broadcast <msg>       Sends a message to all users connected to server
+	saveworld             Saves the game world to disk
+	rconcmd <cmd>         Execute RCON command on server
+	checkupdate           Check for a new ARK server version
+	checkmodupdate        Checks for any mods needing updates
+	install               Install the ARK server files from steamcmd
+	installmod <modid>    Installs a mod from the Steam workshop
+	uninstallmod <modid>  Removes the mod from the Mods directory
+	reinstallmod <modid>  Removes and re-installs a mod in the Mods directory
+	enablemod <modid>     Enables a mod in the config
+	disablemod <modid>    Disables a mod in the config
+	installmods           Installs all enabled mods
+	uninstallmods         Removes all installed mods from the Mods directory
+	install-cronjob <cmd> Adds a cron job using the specified command
+	remove-cronjob <cmd>  Removes a cron job that used the specified command
+	restart               Stops the server and then starts it
+	run                   Runs the server without daemonizing
+	start                 Starts the server
+	stop                  Stops the server
+	cancelshutdown        Aborts a running stop --warn or update --warn
+	status                Returns the status of the current ARK server instance
+	printconfig           Displays which settings are sourced from which config file
+	getpid                Gets the running server PID
+	update                Check for a new ARK server version, if needed, stops the server, updates it, and starts it again
+
+	Commands which invoke steamcmd take the following options:
+	   --verbose          Show steamcmd output
+	   --spinner          Use a spinner for progress (default)
+	   --dots             Use dots for progress
+
+	Update command takes the following options:
+	   --force            Apply update without checking the current version
+	   --safe             Wait for server to perform world save and update (deprecated, use --saveworld)
+	   --warn             Warn players before updating server
+	   --ifempty          Apply the update only if no players are connected
+	   --validate         Validates all ARK server files
+	   --saveworld        Saves world before update
+	   --update-mods      Updates installed and requested mods
+	   --backup           Takes a backup of the save files before updating
+	   --downloadonly     Download the mod and/or server update without applying it
+	                      Requires arkStagingDir be set to a staging directory on the same filesystem as the server
+	   --no-download      Applies an already downloaded update from the staging directory
+	   --systemd          Use the SystemD arkmanager@instance.service to restart the server
+	   --service          Use the sysv-init arkmanager service to restart the server
+	   --upstart          Use the Upstart arkmanager service to restart the server
+	   --no-autostart     Don't start the server after updating
+	   --warnreason=...   Specify an update reason other than the default
+
+	Stop and restart commands take the following options:
+	   --saveworld        Saves world before shutdown
+	   --warn             Warn players before stopping server
+	   --warnreason=...   Specify a shutdown reason other than the default
+
+	Start and restart commands take the following options:
+	   --noautoupdate     Disable any automatic update that may be enabled in the config
+	   --alwaysrestart    Always restart server on crash, even if it did not finish starting
+	   --no-background    Run the server without going into the background
+	   --arkopt,opt=val   Add an ARK option:
+	      -opt=val        Equivalent to adding arkopt_opt=val to config for this run
+	      -opt            Equivalent to adding arkflag_opt=true to config for this run
+	      opt=val         Equivalent to adding ark_opt=val to config for this run
+
+        installmod command takes the following options:
+	   --validate         Forcibly re-download the mod from the steam workshop
+
+	install-cronjob command takes the following options:
+	   --daily            Run once a day (default)
+	   --hourly           Run once an hour
+	   --hour=<hour>      Hour of the day to run command
+	   --minute=<min>     Minute of the hour to run command
+	   --enable-output    Don't redirect the output of the command
+	   --arg=option       Option to pass to command
+
+	list-instances command takes the following options:
+	   --brief            Only list instance names
+EOE
 }
 
 #---------------------
