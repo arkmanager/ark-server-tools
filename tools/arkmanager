@@ -804,9 +804,9 @@ function isTheServerUp(){
 #
 function isTheServerOnline(){
   if [ -n "$ark_MultiHome" ]; then
-    publicip="$(curl --interface "${ark_MultiHome}" -s https://api.ipify.org/)"
+    publicip="$(curl --interface "${ark_MultiHome}" -s http://api.ipify.org/)"
   else
-    publicip="$(curl -s https://api.ipify.org/)"
+    publicip="$(curl -s http://api.ipify.org/)"
   fi
   local serverresp
 
