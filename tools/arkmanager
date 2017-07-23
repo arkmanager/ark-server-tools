@@ -1992,7 +1992,9 @@ getModIds(){
         echo "${v#arkmod_}"
       fi
     done
-    find "${arkserverroot}/ShooterGame/Content/Mods" -maxdepth 1 -type d -printf "%P\n"
+    if [ -z "$ignoreInstalledMods" ]; then
+      find "${arkserverroot}/ShooterGame/Content/Mods" -maxdepth 1 -type d -printf "%P\n"
+    fi
   ) | sort | uniq | grep '^[1-9][0-9]*$' | grep -v '^111111111$'
 }
 
