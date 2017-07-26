@@ -276,6 +276,21 @@ instances.
 
 `checkmodupdate`::
     Checks if any mods need updating on the server
+    
+    `--revstatus`;;
+        Reverses the exit code, and adds extra codes for failures
+
+    Exit status;;
+        - 0: An update is available, or workshop files are missing
+        - 1: No update is available
+        - 2: One or more mods is missing from the workshop
+    
+    Reversed status codes;;
+        - 0: No update is avaibale
+        - 1: An update is available
+        - 2: One or more mods is missing from the workshop
+        - 3: appworkshop_346110.acf is missing
+        - 4: SteamCMD workshop dir does not exist
 
 `installmods`::
     Installs all mods specified in the instance config into the
