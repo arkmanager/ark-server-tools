@@ -1944,26 +1944,41 @@ checkForModUpdate(){
   local steamdataroot="${steamdataroot:-${steamcmdroot}}"
   local steamworkshopdir="${steamworkshopdir:-${steamdataroot}/steamapps/workshop}"
   local cancheckmodavail=1
+  local modmissing=
+  local revstatcode=
+
+  if [[ " $* " =~ " --revstatus " ]]; then
+    revstatcode=1
+  fi
   
+  if [ ! -d "${steamworkshopdir}" ]; then
+    echo "Error: ${steamworkshopdir} does not exist"
+    if [ -n "$revstatcode" ]; then return 4; else return 0; fi
+  fi
+
   if [ ! -f "${steamworkshopdir}/appworkshop_${mod_appid}.acf" ]; then
     echo "Error: appworkshop_${mod_appid}.acf not found at ${steamworkshopdir}"
-    return 1
+    cancheckmodavail=
   fi
 
   for modid in $(getModIds); do
-    instmft="$(getLocalModManifest "$modid")"
     availmft="$(getAvailModManifest "$modid")"
     modname="$(getModName $modid)"
     if [ -z "$availmft" ]; then
       printf "Mod %d doesn't exist in the steam workshop\n" "$modid"
-    elif [ -z "$instmft" ]; then
-      printf "Mod %d [%s] has not been downloaded\n" "$modid" "$modname"
-      updateavail=1
-    elif [ "$availmft" != "$instmft" ]; then
-      printf "Mod %d [%s] has been updated on the Steam workshop\n" "$modid" "$modname"
-      printf "Local manifest: %s\nSteam manifest: %s\n" "$instmft" "$availmft"
-      updateavail=1
-    elif [ ! -d "$arkserverroot/ShooterGame/Content/Mods/$modid" ]; then
+      modmissing=1
+    elif [ -n "$cancheckmodavail" ]; then
+      instmft="$(getLocalModManifest "$modid")"
+      if [ -z "$instmft" ]; then
+        printf "Mod %d [%s] has not been downloaded\n" "$modid" "$modname"
+        updateavail=1
+      elif [ "$availmft" != "$instmft" ]; then
+        printf "Mod %d [%s] has been updated on the Steam workshop\n" "$modid" "$modname"
+        printf "Local manifest: %s\nSteam manifest: %s\n" "$instmft" "$availmft"
+        updateavail=1
+      fi
+    fi
+    if [ ! -d "$arkserverroot/ShooterGame/Content/Mods/$modid" ]; then
       printf "Mod %d [%s] is not installed\n" "$modid" "$modname"
       updateavail=1
     elif isModUpdateNeeded $modid; then
@@ -1973,9 +1988,13 @@ checkForModUpdate(){
   done
 
   if [ -n "$updateavail" ]; then
-    return 0
+    if [ -n "$revstatcode" ]; then return 1; else return 0; fi
+  elif [ -z "$cancheckmodavail" ]; then
+    if [ -n "$revstatcode" ]; then return 3; else return 0; fi
+  elif [ -n "$modmissing" ]; then
+    return 2
   else
-    return 1
+    if [ -n "$revstatcode" ]; then return 0; else return 1; fi
   fi
 }
 
@@ -3243,7 +3262,7 @@ main(){
           checkForUpdate
         ;;
         checkmodupdate)
-          checkForModUpdate
+          checkForModUpdate "${options[@]}"
         ;;
         installmod)
           doInstallMod "${args[@]}"
