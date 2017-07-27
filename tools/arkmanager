@@ -178,6 +178,7 @@ runAsRoot(){
   install_libexecdir="$(getConfigVar install_libexecdir "${install_bindir%/*}/libexec/arkmanager")"
   install_datadir="$(getConfigVar install_datadir "${install_bindir%/*}/share/arkmanager")"
   steamcmd_user="$(getConfigVar steamcmd_user "steam")"
+  steamcmd_user_shellexec="$(getConfigVar steamcmd_user_shellexec "${BASH:-/bin/bash}")"
 
   if ! getent passwd "$steamcmd_user" >/dev/null 2>&1; then
     echo "Invalid steamcmd_user in config file"
@@ -189,7 +190,7 @@ runAsRoot(){
   elif [ "$1" == "uninstall-tools" ]; then
     doUninstallTools
   else
-    su "$steamcmd_user" -c "$(printf "%q" "$0")$(printf " %q" "$@")"
+    su "$steamcmd_user" -s "$steamcmd_user_shellexec" -c "$(printf "%q" "$0")$(printf " %q" "$@")"
     exit 1
   fi
 }
