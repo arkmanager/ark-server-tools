@@ -298,7 +298,7 @@ checkConfig() {
 
     # SavedArks directory
     if [ -n "$arkserverroot" ]; then
-      local savedarksdir="${arkserverroot}/ShooterGame/Saved/${ark_AltSaveDirectoryName:-SavedArks}"
+      local savedarksdir="${arkserverroot}/${arkserverdir}/Saved/${ark_AltSaveDirectoryName:-SavedArks}"
       mkdir -p "${savedarksdir}"
       if [ ! -w "${savedarksdir}" ]; then
         echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tThe ARK SavedArks directory is not writable, and saveworld will fail"
@@ -307,9 +307,9 @@ checkConfig() {
 
     if [ "$1" != "installmod" ] && [ "$1" != "installmods" ]; then
       # Warn if any mods are requested but not installed
-      if [ -n "$arkserverroot" -a -d "${arkserverroot}/ShooterGame/Content/Mods" ]; then
+      if [ -n "$arkserverroot" -a -d "${arkserverroot}/${arkserverdir}/Content/Mods" ]; then
         for modid in $(getModIds); do
-          if [ ! -f "${arkserverroot}/ShooterGame/Content/Mods/${modid}/mod.info" ]; then
+          if [ ! -f "${arkserverroot}/${arkserverdir}/Content/Mods/${modid}/mod.info" ]; then
             echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tMod ${modid} is requested but not installed.  Run 'arkmanager installmod ${modid}' to install this mod."
           fi
         done
@@ -339,7 +339,7 @@ getArkServerSetting() {
   if [ -n "${!varname}" ]; then
     echo "${!varname}"
   else
-    local val="$(tr -d '\0\376\377' <"${arkserverroot}/ShooterGame/Saved/Config/LinuxServer/GameUserSettings.ini" | sed -n '/^\[ServerSettings\]/,/^\[.*\]/{s/^'"$1"'[[:space:]]*=[[:space:]]*//p;}' )"
+    local val="$(tr -d '\0\376\377' <"${arkserverroot}/${arkserverdir}/Saved/Config/LinuxServer/GameUserSettings.ini" | sed -n '/^\[ServerSettings\]/,/^\[.*\]/{s/^'"$1"'[[:space:]]*=[[:space:]]*//p;}' )"
     if [ -n "$val" ]; then
       echo "$val"
     else
@@ -637,7 +637,7 @@ function getServerMapName(){
       my $mapfilelen = unpack("@" . ($mapnamelen + 4) . " L<", $data);
       my $mapfile = substr($data, $mapnamelen + 8, $mapfilelen - 1);
       print $mapfile;
-    ' <"${arkserverroot}/ShooterGame/Content/Mods/${serverMapModId}/mod.info")"
+    ' <"${arkserverroot}/${arkserverdir}/Content/Mods/${serverMapModId}/mod.info")"
   fi
 
   echo "${mapname##*/}"
@@ -930,7 +930,7 @@ doRun() {
       my $mapfilelen = unpack("@" . ($mapnamelen + 4) . " L<", $data);
       my $mapfile = substr($data, $mapnamelen + 8, $mapfilelen - 1);
       print $mapfile;
-    ' <"${arkserverroot}/ShooterGame/Content/Mods/${serverMapModId}/mod.info")"
+    ' <"${arkserverroot}/${arkserverdir}/Content/Mods/${serverMapModId}/mod.info")"
     arkserveropts="${serverMap}?MapModID=${serverMapModId}"
   fi
 
@@ -1471,7 +1471,7 @@ printWarnMessage(){
 isUpdateCancelRequested(){
   if [ -n "$chatCommandRestartCancel" ]; then
     local canceltime="$(
-      find "${arkserverroot}/ShooterGame/Saved/Logs" -name 'ServerGame.*.log' -mmin -5 -print0 | 
+      find "${arkserverroot}/${arkserverdir}/Saved/Logs" -name 'ServerGame.*.log' -mmin -5 -print0 | 
         xargs -0 grep -F -e "${chatCommandRestartCancel}" | 
         sed 's@^[[]\(....\)\.\(..\)\.\(..\)-\(..\)\.\(..\)\.\(..\):.*@\1-\2-\3 \4:\5:\6 UTC@' | 
         head -n1)"
@@ -1706,35 +1706,35 @@ doUpdate() {
     appupdate=1
 
     if [ -n "${arkStagingDir}" -a "${arkStagingDir}" != "${arkserverroot}" ]; then
-      if [ ! -d "$arkStagingDir/ShooterGame" ]; then
+      if [ ! -d "$arkStagingDir/${arkserverdir}" ]; then
         logprint "Copying to staging directory"
         mkdir -p "$arkStagingDir"
         if [ "$(stat -c "%d" "$arkserverroot")" == "$(stat -c "%d" "$arkStagingDir")" ]; then
           if [ -n "$useRefLinks" ]; then
-            cp -a --reflink=always "$arkserverroot/ShooterGame/." "$arkStagingDir/ShooterGame"
+            cp -a --reflink=always "$arkserverroot/${arkserverdir}/." "$arkStagingDir/${arkserverdir}"
             cp -a --reflink=always "$arkserverroot/Engine/." "$arkStagingDir/Engine"
             cp -a --reflink=always "$arkserverroot/linux64/." "$arkStagingDir/linux64"
-            cp -a --reflink=always "$arkserverroot/ShooterGame/Content/Mods/111111111/." "$arkStagingDir/ShooterGame/Content/Mods/111111111"
-            cp --reflink=always "$arkserverroot/ShooterGame/Content/Mods/111111111.mod" "$arkStagingDir/ShooterGame/Content/Mods/111111111.mod"
+            cp -a --reflink=always "$arkserverroot/${arkserverdir}/Content/Mods/111111111/." "$arkStagingDir/${arkserverdir}/Content/Mods/111111111"
+            cp --reflink=always "$arkserverroot/${arkserverdir}/Content/Mods/111111111.mod" "$arkStagingDir/${arkserverdir}/Content/Mods/111111111.mod"
             cp --reflink=always "$arkserverroot/"* "$arkStagingDir" >/dev/null 2>&1
             cp -a --reflink=always "$arkserverroot/steamapps/." "$arkStagingDir/steamapps"
           else
-            cp -al "$arkserverroot/ShooterGame/." "$arkStagingDir/ShooterGame"
+            cp -al "$arkserverroot/${arkserverdir}/." "$arkStagingDir/${arkserverdir}"
             cp -al "$arkserverroot/Engine/." "$arkStagingDir/Engine"
             cp -al "$arkserverroot/linux64/." "$arkStagingDir/linux64"
-            cp -al "$arkserverroot/ShooterGame/Content/Mods/111111111/." "$arkStagingDir/ShooterGame/Content/Mods/111111111"
-            cp -l "$arkserverroot/ShooterGame/Content/Mods/111111111.mod" "$arkStagingDir/ShooterGame/Content/Mods/111111111.mod"
+            cp -al "$arkserverroot/${arkserverdir}/Content/Mods/111111111/." "$arkStagingDir/${arkserverdir}/Content/Mods/111111111"
+            cp -l "$arkserverroot/${arkserverdir}/Content/Mods/111111111.mod" "$arkStagingDir/${arkserverdir}/Content/Mods/111111111.mod"
             cp -l "$arkserverroot/"* "$arkStagingDir" >/dev/null 2>&1
             cp -a "$arkserverroot/steamapps/." "$arkStagingDir/steamapps"
           fi
         else
           rsync -a "$arkserverroot/." "$arkStagingDir/."
         fi
-        rm -rf "$arkStagingDir/ShooterGame/Content/Mods/"*
-        rm -rf "$arkStagingDir/ShooterGame/Saved/"*
+        rm -rf "$arkStagingDir/${arkserverdir}/Content/Mods/"*
+        rm -rf "$arkStagingDir/${arkserverdir}/Saved/"*
         rm -rf "$arkStagingDir/Engine/Binaries/ThirdParty/SteamCMD/Linux/steamapps"
       fi
-      rm -f "$arkStagingDir/ShooterGame/Binaries/Linux/"*.txt
+      rm -f "$arkStagingDir/${arkserverdir}/Binaries/Linux/"*.txt
 
       if [ -z "$nodownload" ]; then
         echo -n "Downloading ARK update"
@@ -1790,7 +1790,7 @@ doUpdate() {
 
     if isTheServerRunning; then
       if [ "$updatetype" == "safe" ]; then
-        saverootdir="${arkserverroot}/ShooterGame/Saved"
+        saverootdir="${arkserverroot}/${arkserverdir}/Saved"
         savedir="$(getSavedArksDirectory "${saverootdir}")"
         mapname="$(getServerMapName)"
         maxwait=30
@@ -1846,13 +1846,13 @@ doUpdate() {
         logprint "Applying update from staging directory"
         if [ "$(stat -c "%d" "$arkserverroot")" == "$(stat -c "%d" "$arkStagingDir")" ]; then
           if [ -n "$useRefLinks" ]; then
-            cp -au --reflink=always --remove-destination "$arkStagingDir/ShooterGame/." "$arkserverroot/ShooterGame"
+            cp -au --reflink=always --remove-destination "$arkStagingDir/${arkserverdir}/." "$arkserverroot/${arkserverdir}"
             cp -au --reflink=always --remove-destination "$arkStagingDir/Engine/." "$arkserverroot/Engine"
             cp -au --reflink=always --remove-destination "$arkStagingDir/linux64/." "$arkserverroot/linux64"
             cp -u --reflink=always --remove-destination "$arkStagingDir/"* "$arkserverroot" >/dev/null 2>&1
             cp -au --reflink=always --remove-destination "$arkStagingDir/steamapps/." "$arkserverroot/steamapps"
           else
-            cp -alu --remove-destination "$arkStagingDir/ShooterGame/." "$arkserverroot/ShooterGame"
+            cp -alu --remove-destination "$arkStagingDir/${arkserverdir}/." "$arkserverroot/${arkserverdir}"
             cp -alu --remove-destination "$arkStagingDir/Engine/." "$arkserverroot/Engine"
             cp -alu --remove-destination "$arkStagingDir/linux64/." "$arkserverroot/linux64"
             cp -lu --remove-destination "$arkStagingDir/"* "$arkserverroot" >/dev/null 2>&1
@@ -1862,8 +1862,8 @@ doUpdate() {
           rsync -a "$arkStagingDir/." "$arkserverroot"
         fi
         cd "$arkserverroot"
-        find Engine ShooterGame linux64 -depth -print |
-          grep -v '^\(ShooterGame/\(Saved\|Content/Mods\|Binaries/Linux/.*\.txt\)\|Engine/Binaries/ThirdParty/SteamCMD/Linux/steamapps\)' |
+        find Engine ${arkserverdir} linux64 -depth -print |
+          grep -v '^\('"${arkserverdir}"'/\(Saved\|Content/Mods\|Binaries/Linux/.*\.txt\)\|Engine/Binaries/ThirdParty/SteamCMD/Linux/steamapps\)' |
           while read f; do
             if [ ! -e "${arkStagingDir}/${f}" ]; then
               if [ -f "$f" ]; then
@@ -1979,7 +1979,7 @@ checkForModUpdate(){
         updateavail=1
       fi
     fi
-    if [ ! -d "$arkserverroot/ShooterGame/Content/Mods/$modid" ]; then
+    if [ ! -d "$arkserverroot/${arkserverdir}/Content/Mods/$modid" ]; then
       printf "Mod %d [%s] is not installed\n" "$modid" "$modname"
       updateavail=1
     elif isModUpdateNeeded $modid; then
@@ -2013,7 +2013,7 @@ getModIds(){
       fi
     done
     if [ -z "$ignoreInstalledMods" ]; then
-      find "${arkserverroot}/ShooterGame/Content/Mods" -maxdepth 1 -type d -printf "%P\n"
+      find "${arkserverroot}/${arkserverdir}/Content/Mods" -maxdepth 1 -type d -printf "%P\n"
     fi
   ) | sort | uniq | grep '^[1-9][0-9]*$' | grep -v '^111111111$'
 }
@@ -2141,7 +2141,7 @@ isModUpdateNeeded(){
   local steamdataroot="${steamdataroot:-${steamcmdroot}}"
   local steamworkshopdir="${steamworkshopdir:-${steamdataroot}/steamapps/workshop}"
   local modsrcdir="${steamworkshopdir}/content/$mod_appid/$modid"
-  local moddestdir="$arkserverroot/ShooterGame/Content/Mods/$modid"
+  local moddestdir="$arkserverroot/${arkserverdir}/Content/Mods/$modid"
   local modbranch="${mod_branch:-Windows}"
 
   # Bypass the 111111111 modid used by Primitive+
@@ -2237,7 +2237,7 @@ doExtractMod(){
   local steamdataroot="${steamdataroot:-${steamcmdroot}}"
   local steamworkshopdir="${steamworkshopdir:-${steamdataroot}/steamapps/workshop}"
   local modsrcdir="${steamworkshopdir}/content/$mod_appid/$modid"
-  local moddestdir="$arkserverroot/ShooterGame/Content/Mods/$modid"
+  local moddestdir="$arkserverroot/${arkserverdir}/Content/Mods/$modid"
   local modextractdir="$moddestdir"
   local modbranch="${mod_branch:-Windows}"
 
@@ -2356,12 +2356,12 @@ doExtractMod(){
       my $mapname = substr($data, 4, $mapnamelen - 1);
       my $nummaps = unpack("@" . ($mapnamelen + 4) . " L<", $data);
       my $pos = $mapnamelen + 8;
-      my $modname = ($ARGV[1] || $mapname) . "\x00";
+      my $modname = ($ARGV[2] || $mapname) . "\x00";
       my $modnamelen = length($modname);
-      my $modpath = "../../../ShooterGame/Content/Mods/" . $ARGV[0] . "\x00";
+      my $modpath = "../../../" . $ARGV[0] . "/Content/Mods/" . $ARGV[1] . "\x00";
       my $modpathlen = length($modpath);
       print pack("L< L< L< Z$modnamelen L< Z$modpathlen L<",
-        $ARGV[0], 0, $modnamelen, $modname, $modpathlen, $modpath,
+        $ARGV[1], 0, $modnamelen, $modname, $modpathlen, $modpath,
         $nummaps);
       for (my $mapnum = 0; $mapnum < $nummaps; $mapnum++){
         my $mapfilelen = unpack("@" . ($pos) . " L<", $data);
@@ -2370,7 +2370,7 @@ doExtractMod(){
         $pos = $pos + 4 + $mapfilelen;
       }
       print "\x33\xFF\x22\xFF\x02\x00\x00\x00\x01";
-    ' $modid "$modname" <"$modextractdir/mod.info" >"${modextractdir}.mod"
+    ' "$arkserverdir" "$modid" "$modname" <"$modextractdir/mod.info" >"${modextractdir}.mod"
 
     if [ -f "$modextractdir/modmeta.info" ]; then
       cat "$modextractdir/modmeta.info" >>"${modextractdir}.mod"
@@ -2459,8 +2459,8 @@ doUninstallAllMods(){
 doUninstallMod(){
   local modid
   for modid in ${1//,/ }; do
-    local moddir="$arkserverroot/ShooterGame/Content/Mods/$modid"
-    local modfile="$arkserverroot/ShooterGame/Content/Mods/${modid}.mod"
+    local moddir="$arkserverroot/${arkserverdir}/Content/Mods/$modid"
+    local modfile="$arkserverroot/${arkserverdir}/Content/Mods/${modid}.mod"
     if [ -d "${moddir}" ]; then
       rm -rf "${moddir}"
     fi
@@ -2531,7 +2531,7 @@ doBackup(){
   local daystamp=`date +"%Y-%m-%d"`
   local backupdir="${arkbackupdir}/${datestamp}"
   local backupdirdaily="${arkbackupdir}/${daystamp}"
-  local saverootdir="${arkserverroot}/ShooterGame/Saved"
+  local saverootdir="${arkserverroot}/${arkserverdir}/Saved"
   local savedcfgdir="${saverootdir}/Config/LinuxServer"
   local savedir="$(getSavedArksDirectory "${saverootdir}")"
   local mapname="$(getServerMapName)"
@@ -2918,15 +2918,16 @@ useConfig() {
     echo "Error: arkserverroot not set"
     exit 1
   fi
-  arkautorestartfile="${arkautorestartfile:-ShooterGame/Saved/.autorestart-${1}}"
-  arkoldautorestartfile="ShooterGame/Saved/.autorestart"
-  arkserverpidfile="${arkserverpidfile:-ShooterGame/Saved/.arkserver-${1}.pid}"
-  arkserveroldpidfile="ShooterGame/Saved/.arkserver.pid"
-  arkmanagerpidfile="${arkmanagerpidfile:-ShooterGame/Saved/.arkmanager-${1}.pid}"
-  arkwarnlockfile="${arkwarnlockfile:-ShooterGame/Saved/.ark-warn-${1}.lock}"
+  arkserverdir="${arkserverdir:-ShooterGame}"
+  arkautorestartfile="${arkautorestartfile:-${arkserverdir}/Saved/.autorestart-${1}}"
+  arkoldautorestartfile="${arkserverdir}/Saved/.autorestart"
+  arkserverpidfile="${arkserverpidfile:-${arkserverdir}/Saved/.arkserver-${1}.pid}"
+  arkserveroldpidfile="${arkserverdir}/Saved/.arkserver.pid"
+  arkmanagerpidfile="${arkmanagerpidfile:-${arkserverdir}/Saved/.arkmanager-${1}.pid}"
+  arkwarnlockfile="${arkwarnlockfile:-${arkserverdir}/Saved/.ark-warn-${1}.lock}"
   # This is linked to the directory, not to the instance
-  arkupdatelockfile="${arkupdatelockfile:-ShooterGame/Saved/.ark-update.lock}"
-  arkupdatetimefile="${arkupdatetimefile:-ShooterGame/Saved/.ark-update.time}"
+  arkupdatelockfile="${arkupdatelockfile:-${arkserverdir}/Saved/.ark-update.lock}"
+  arkupdatetimefile="${arkupdatetimefile:-${arkserverdir}/Saved/.ark-update.time}"
 }
 
 addArkOpt() {
