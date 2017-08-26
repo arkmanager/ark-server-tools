@@ -3346,7 +3346,7 @@ main(){
 
 # Only execute main function if script is not being sourced
 # by another script
-if [[ "$(caller)" =~ ^0 ]]; then
+if [[ "$0" = "${BASH_SOURCE[0]}" || -z "${BASH_SOURCE}" ]]; then
   main "$@"
 fi
 
