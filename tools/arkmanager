@@ -2019,6 +2019,42 @@ getModIds(){
 }
 
 #
+# Get the Mod details of the installed mods and the requested mods
+#
+listMods(){
+  local modlist
+  local modid moddir moddesc
+  declare -A modlist
+  if [ -n "${serverMapModId}" ]; then
+    modlist[${serverMapModId}]="serverMapModId"
+  fi
+  if [ -n "${ark_TotalConversionMod}" ]; then
+    modlist[${ark_TotalConversionMod}]="ark_TotalConversionMod"
+  fi
+  if [ -n "${ark_GameModIds}" ]; then
+    for modid in ${ark_GameModIds//,/ }; do
+      modlist[${modid}]="ark_GameModIds"
+    done
+  fi
+  for modid in "${!arkmod_@}"; do
+    if [ "${!modid}" != "disabled" ]; then
+      modlist[${modid#arkmod_}]="${modid}"
+    fi
+  done
+  if [ -z "$ignoreInstalledMods" ]; then
+    for moddir in "${arkserverroot}/${arkserverdir}/Content/Mods"/*; do
+      modid="${moddir##*/}"
+      if [[ "${modid}" =~ ^[1-9][0-9]*$ && "${modid}" != "111111111" ]]; then
+        modlist[${moddir##*/}]="Content/Mods"
+      fi
+    done
+  fi
+  for modid in "${!modlist[@]}"; do
+    printf "  %10d: %-20s %s\n" "$modid" "[${modlist[$modid]}]" "$(getModName $modid 2>/dev/null)"
+  done
+}
+
+#
 # Gets local mod manifest ID
 #
 getLocalModManifest(){
@@ -3288,6 +3324,9 @@ main(){
           doUninstallMod "${args[@]}"
           doInstallMod "${args[@]}"
         ;;
+	list-mods)
+	  listMods
+	;;
         backup)
           doBackup
         ;;
