@@ -1639,11 +1639,12 @@ doUpdate() {
   local use_service=
   local use_upstart=
   local force=
+  local safeupdate=
 
   for arg in "$@"; do
     case "$arg" in
       --force) appupdate=1; force=1; ;;
-      --safe) updatetype=safe; ;;
+      --safe) safeupdate=1; ;;
       --warn) updatetype=warn; ;;
       --ifempty) updatetype=ifempty; ;;
       --warnreason=*) warnreason="${arg#--warnreason=}"; updatetype=warn; ;;
@@ -1789,7 +1790,21 @@ doUpdate() {
     fi
 
     if isTheServerRunning; then
-      if [ "$updatetype" == "safe" ]; then
+      if [ "$updatetype" == "warn" ]; then
+        if ! doWarn update; then
+          return 1
+        fi
+      elif [ "$updatetype" == "ifempty" ]; then
+        numplayers=$(( $(numPlayersConnected) + 0 ))
+        if (( numplayers != 0 )); then
+          logprint "${numplayers} players are still connected"
+          return 1
+        fi
+      fi
+      if [ -n "$safeupdate" ]; then
+        logprint "Saving world"
+        doSaveWorld
+
         saverootdir="${arkserverroot}/${arkserverdir}/Saved"
         savedir="$(getSavedArksDirectory "${saverootdir}")"
         mapname="$(getServerMapName)"
@@ -1814,16 +1829,6 @@ doUpdate() {
             done
             logprint "Save file newer than 1 minute. Performing an update."
           fi
-        fi
-      elif [ "$updatetype" == "warn" ]; then
-        if ! doWarn update; then
-          return 1
-        fi
-      elif [ "$updatetype" == "ifempty" ]; then
-        numplayers=$(( $(numPlayersConnected) + 0 ))
-        if (( numplayers != 0 )); then
-          logprint "${numplayers} players are still connected"
-          return 1
         fi
       fi
     fi
