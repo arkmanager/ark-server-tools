@@ -335,16 +335,25 @@ checkConfig() {
 # $2 is the default
 #
 getArkServerSetting() {
-  local varname="ark_$1"
-  if [ -n "${!varname}" ]; then
-    echo "${!varname}"
-  else
-    local val="$(tr -d '\0\376\377' <"${arkserverroot}/${arkserverdir}/Saved/Config/LinuxServer/GameUserSettings.ini" | sed -n '/^\[ServerSettings\]/,/^\[.*\]/{s/^'"$1"'[[:space:]]*=[[:space:]]*//p;}' )"
-    if [ -n "$val" ]; then
-      echo "$val"
-    else
-      echo "$2"
+  local lcname="$(tr 'A-Z' 'a-z' <<<"${1}")"
+  local varname
+  for varname in "${!ark_@}"; do
+    if [ "$(tr 'A-Z' 'a-z' <<<"$varname")" == "ark_${lcname}" ]; then
+      echo "${!varname}"
+      return
     fi
+  done
+  for varname in "${!arkopt_@}"; do
+    if [ "$(tr 'A-Z' 'a-z' <<<"$varname")" == "arkopt_${lcname}" ]; then
+      echo "${!varname}"
+      return
+    fi
+  done
+  local val="$(tr -d '\0\376\377' <"${arkserverroot}/${arkserverdir}/Saved/Config/LinuxServer/GameUserSettings.ini" | sed -n '/^\[ServerSettings\]/,/^\[.*\]/{s/^'"$1"'[[:space:]]*=[[:space:]]*//ip;}' )"
+  if [ -n "$val" ]; then
+    echo "$val"
+  else
+    echo "$2"
   fi
 }
 
@@ -360,6 +369,13 @@ getAdminPassword() {
 #
 getRconPort() {
   getArkServerSetting "RCONPort" "32330"
+}
+
+#
+# Gets server bind IP
+#
+getMultiHome() {
+  getArkServerSetting "MultiHome" "${1:-127.0.0.1}"
 }
 
 #
@@ -429,7 +445,7 @@ rconcmd() {
     } else {
       print "\"", $rcvbody, "\"\n";
     }
-    ' "$(getRconPort)" "${ark_MultiHome:-127.0.0.1}" "$adminpass" "$1"
+    ' "$(getRconPort)" "$(getMultiHome)" "$adminpass" "$1"
 }
 
 #
@@ -761,9 +777,10 @@ function isTheServerRunning(){
 #
 #
 function isTheServerUp(){
+  local ip="$(getMultiHome "")"
   result=1
   if [ ! -x "$lsof" ]; then
-    "$lsof" -i "${ark_MultiHome:+udp@}${ark_MultiHome}:$(getGamePort)" > /dev/null
+    "$lsof" -i "${ip:+udp@}${ip}:$(getGamePort)" > /dev/null
     result=$?
   fi
   if [ $result -ne 0 ]; then
@@ -787,7 +804,7 @@ function isTheServerUp(){
       } else {
         exit(1);
       }
-      ' "$(getQueryPort)" "${ark_MultiHome:-127.0.0.1}"
+      ' "$(getQueryPort)" "$(getMultiHome)"
     result=$?
   fi
   # In this case, the result is:
@@ -804,8 +821,8 @@ function isTheServerUp(){
 # Check if the server is visible in the steam server list
 #
 function isTheServerOnline(){
-  if [ -n "$ark_MultiHome" ]; then
-    publicip="$(curl --interface "${ark_MultiHome}" -s http://api.ipify.org/)"
+  if [ -n "$(getMultiHome "")" ]; then
+    publicip="$(curl --interface "$(getMultiHome)" -s http://api.ipify.org/)"
   else
     publicip="$(curl -s http://api.ipify.org/)"
   fi
@@ -856,7 +873,7 @@ function numPlayersConnected(){
         }
       }
       print "$active\n";
-      ' "$(getQueryPort)" "${ark_MultiHome:-127.0.0.1}"
+      ' "$(getQueryPort)" "$(getMultiHome)"
   else
     perl -MSocket -e '
       my $port = int($ARGV[0]);
@@ -869,7 +886,7 @@ function numPlayersConnected(){
       my ($servername, $mapname, $game, $fullname, $rest) = split(/\x00/, substr($data, 6), 5);
       my $players = ord(substr($rest, 2, 1));
       print "$players\n";
-      ' "$(getQueryPort)" "${ark_MultiHome:-127.0.0.1}"
+      ' "$(getQueryPort)" "$(getMultiHome)"
   fi
 }
 
@@ -2851,7 +2868,7 @@ printStatus(){
         }
       }
       print "Active Players: $active\n";
-      ' "$(getQueryPort)" "${ark_MultiHome:-127.0.0.1}"
+      ' "$(getQueryPort)" "$(getMultiHome)"
 
     if isTheServerOnline; then
       echo -e "$NORMAL" "Server online: " "$GREEN" "Yes" "$NORMAL"
