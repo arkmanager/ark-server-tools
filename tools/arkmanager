@@ -1593,7 +1593,7 @@ doWarn(){
       local warnseconds=120
       warnintervals=( 90 60 45 30 20 15 10 5 0 )
       if (( warnminutes == 1 )); then
-        warnseconds = 60
+        warnseconds=60
         warnintervals=( 45 30 20 15 10 5 0 )
       fi
       for warninterval in "${warnintervals[@]}"; do
