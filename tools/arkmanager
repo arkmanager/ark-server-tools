@@ -643,7 +643,7 @@ function getServerMapName(){
   local mapname="${serverMap}"
 
   # extract the map name from the active map mod
-  if [ -n "$serverMapModId" ]; then
+  if [[ ( -z "$mapname" || "$mapname" == "TheIsland" ) && -n "$serverMapModId" ]]; then
     mapname="$(perl -e '
       my $data;
       { local $/; $data = <>; }
@@ -937,7 +937,7 @@ doRun() {
     esac
   done < <(sed -n 's/^\(arkmod_[^= ]*\)=.*/\1/p' <"$configfile")
 
-  if [ -n "$serverMapModId" ]; then
+  if [[ ( -z "$serverMap" || "$serverMap" == "TheIsland" ) && -n "$serverMapModId" ]]; then
     serverMap="$(perl -e '
       my $data;
       { local $/; $data = <>; }
