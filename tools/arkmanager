@@ -1320,7 +1320,7 @@ doStopAll(){
 # install / update / download update
 #
 runSteamCMDAppUpdate(){
-  runSteamCMDspinner +force_install_dir "$1" +app_update $appid $2
+  runSteamCMDspinner +force_install_dir "$1" +app_update $appid $steamcmd_appextraopts $2
 }
 
 #
