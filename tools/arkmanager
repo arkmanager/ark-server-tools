@@ -633,7 +633,7 @@ function getStagingVersion(){
 #
 function getAvailableVersion(){
   rm -f "$steamcmd_appinfocache"
-  runSteamCMD +app_info_update 1 +app_info_print "$appid" +quit | while read name val; do if [ "${name}" == "{" ]; then parseSteamACF ".depots.branches.public" "buildid"; break; fi; done
+  runSteamCMD +app_info_update 1 +app_info_print "$appid" +quit | while read name val; do if [ "${name}" == "{" ]; then parseSteamACF ".depots.branches.${appbranch:-public}" "buildid"; break; fi; done
 }
 
 #
@@ -733,7 +733,10 @@ function getSavedArksDirectory(){
 function checkUpdateManifests(){
   appinfo="$(runSteamCMD +app_info_print "$appid" +quit)"
   while read depot manifest <&3; do
-    newmanifest="$(echo "${appinfo}" | while read name val; do if [ "${name}" == "{" ]; then parseSteamACF ".depots.${depot}.manifests" "public"; break; fi; done)"
+    newmanifest="$(echo "${appinfo}" | while read name val; do if [ "${name}" == "{" ]; then parseSteamACF ".depots.${depot}.manifests" "${appbranch:-public}"; break; fi; done)"
+    if [[ -z "${newmanifest}" && "${appbranch:-public}" != "public" ]]; then
+      newmanifest="$(echo "${appinfo}" | while read name val; do if [ "${name}" == "{" ]; then parseSteamACF ".depots.${depot}.manifests" "public"; break; fi; done)"
+    fi
     if [ "${newmanifest}" != "${manifest}" ]; then
       return 1
     fi
