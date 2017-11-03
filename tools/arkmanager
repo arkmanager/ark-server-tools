@@ -3118,6 +3118,7 @@ showUsage() {
 	   --upstart          Use the Upstart arkmanager service to restart the server
 	   --no-autostart     Don't start the server after updating
 	   --warnreason=...   Specify an update reason other than the default
+	   --beta=...         Specify a beta to install (use --beta=public to reset)
 
 	Stop and restart commands take the following options:
 	   --saveworld        Saves world before shutdown

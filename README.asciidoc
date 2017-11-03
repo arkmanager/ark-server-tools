@@ -267,6 +267,14 @@ instances.
         Downloads the update but does not apply it.  Only has effect
         if a staging directory is set.
 
+    `--beta=<betaname>`;;
+        Select the beta to install (use `--beta=public` to reset
+        to the `public` branch.  Note that `--validate` is required
+	when switching branches.
+
+    `--betapassword=<password>`;;
+        Use password to unlock beta (for password-locked betas).
+
 `cancelshutdown`::
     Cancels a pending update / shutdown / restart that was run with
     the `--warn` option
