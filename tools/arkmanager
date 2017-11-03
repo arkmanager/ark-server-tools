@@ -637,7 +637,7 @@ function getStagingVersion(){
 #
 function getCurrentBranch(){
   if [ -f "${arkserverroot}/steamapps/appmanifest_${appid}.acf" ]; then
-    while read name val; do if [ "${name}" == "{" ]; then parseSteamACF "UserConfig" "betakey"; break; fi; done <"${arkserverroot}/steamapps/appmanifest_${appid}.acf"
+    while read name val; do if [ "${name}" == "{" ]; then parseSteamACF ".UserConfig" "betakey"; break; fi; done <"${arkserverroot}/steamapps/appmanifest_${appid}.acf"
   fi
 }
 
@@ -646,7 +646,7 @@ function getCurrentBranch(){
 #
 function getCurrentBranch(){
   if [ -f "${arkStagingDir}/steamapps/appmanifest_${appid}.acf" ]; then
-    while read name val; do if [ "${name}" == "{" ]; then parseSteamACF "UserConfig" "betakey"; break; fi; done <"${arkStagingDir}/steamapps/appmanifest_${appid}.acf"
+    while read name val; do if [ "${name}" == "{" ]; then parseSteamACF ".UserConfig" "betakey"; break; fi; done <"${arkStagingDir}/steamapps/appmanifest_${appid}.acf"
   fi
 }
 
@@ -1351,7 +1351,9 @@ doStopAll(){
 # install / update / download update
 #
 runSteamCMDAppUpdate(){
-  runSteamCMDspinner +force_install_dir "$1" +app_update $appid $steamcmd_appextraopts $2
+  local installdir="$1"
+  shift
+  runSteamCMDspinner +force_install_dir "$installdir" +app_update $appid $steamcmd_appextraopts "$@"
 }
 
 #
