@@ -1664,6 +1664,8 @@ doUpdate() {
   local use_upstart=
   local force=
   local safeupdate=
+  local appbeta=
+  local appbetapass=
 
   for arg in "$@"; do
     case "$arg" in
@@ -1683,6 +1685,8 @@ doUpdate() {
       --systemd) use_systemd=1; ;;
       --service) use_service=1; ;;
       --upstart) use_upstart=1; ;;
+      --beta=*) appbeta="${arg#--beta=}"; ;;
+      --betapassword=*) appbetapass="${arg#--betapassword=}"; ;;
       *)
         echo "Unrecognized option $arg"
         echo "Try 'arkmanager -h' or 'arkmanager --help' for more information."
@@ -1766,7 +1770,7 @@ doUpdate() {
         logprint "Downloading ARK update" >/dev/null
         doDownloadSteamCMD
         cd "$steamcmdroot"
-        runSteamCMDAppUpdate "$arkStagingDir" $validate
+        runSteamCMDAppUpdate "$arkStagingDir" ${appbeta:+-beta} $appbeta ${appbetapass:+-betapassword} $appbetapass $validate
         if [ $? -eq 0 ]; then
           rm -rf "${arkStagingDir}/steamapps/downloading/${appid}"
         elif [ $? -eq 5 ]; then
@@ -1912,7 +1916,7 @@ doUpdate() {
         logprint "Performing ARK update" >/dev/null
         doDownloadSteamCMD
         cd "$steamcmdroot"
-        runSteamCMDAppUpdate "$arkserverroot" $validate
+        runSteamCMDAppUpdate "$arkserverroot" ${appbeta:+-beta} $appbeta ${appbetapass:+-betapassword} $appbetapass $validate
         if [ $? -eq 5 ]; then
           echo "User ${steamlogin:-anonymous} login failed - please login to steamcmd manually"
         fi
