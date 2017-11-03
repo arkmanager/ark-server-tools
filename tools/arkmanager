@@ -375,6 +375,10 @@ getRconPort() {
 # Gets server bind IP
 #
 getMultiHome() {
+  getArkServerSetting "MultiHome" "${1}"
+}
+
+getMultiHomeIP() {
   getArkServerSetting "MultiHome" "${1:-127.0.0.1}"
 }
 
@@ -445,7 +449,7 @@ rconcmd() {
     } else {
       print "\"", $rcvbody, "\"\n";
     }
-    ' "$(getRconPort)" "$(getMultiHome)" "$adminpass" "$1"
+    ' "$(getRconPort)" "$(getMultiHomeIP)" "$adminpass" "$1"
 }
 
 #
@@ -780,7 +784,7 @@ function isTheServerRunning(){
 #
 #
 function isTheServerUp(){
-  local ip="$(getMultiHome "")"
+  local ip="$(getMultiHome)"
   result=1
   if [ ! -x "$lsof" ]; then
     "$lsof" -i "${ip:+udp@}${ip}:$(getGamePort)" > /dev/null
@@ -807,7 +811,7 @@ function isTheServerUp(){
       } else {
         exit(1);
       }
-      ' "$(getQueryPort)" "$(getMultiHome)"
+      ' "$(getQueryPort)" "$(getMultiHomeIP)"
     result=$?
   fi
   # In this case, the result is:
@@ -824,8 +828,8 @@ function isTheServerUp(){
 # Check if the server is visible in the steam server list
 #
 function isTheServerOnline(){
-  if [ -n "$(getMultiHome "")" ]; then
-    publicip="$(curl --interface "$(getMultiHome)" -s http://api.ipify.org/)"
+  if [ -n "$(getMultiHome)" ]; then
+    publicip="$(curl --interface "$(getMultiHomeIP)" -s http://api.ipify.org/)"
   else
     publicip="$(curl -s http://api.ipify.org/)"
   fi
@@ -876,7 +880,7 @@ function numPlayersConnected(){
         }
       }
       print "$active\n";
-      ' "$(getQueryPort)" "$(getMultiHome)"
+      ' "$(getQueryPort)" "$(getMultiHomeIP)"
   else
     perl -MSocket -e '
       my $port = int($ARGV[0]);
@@ -889,7 +893,7 @@ function numPlayersConnected(){
       my ($servername, $mapname, $game, $fullname, $rest) = split(/\x00/, substr($data, 6), 5);
       my $players = ord(substr($rest, 2, 1));
       print "$players\n";
-      ' "$(getQueryPort)" "$(getMultiHome)"
+      ' "$(getQueryPort)" "$(getMultiHomeIP)"
   fi
 }
 
@@ -2871,7 +2875,7 @@ printStatus(){
         }
       }
       print "Active Players: $active\n";
-      ' "$(getQueryPort)" "$(getMultiHome)"
+      ' "$(getQueryPort)" "$(getMultiHomeIP)"
 
     if isTheServerOnline; then
       echo -e "$NORMAL" "Server online: " "$GREEN" "Yes" "$NORMAL"
