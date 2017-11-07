@@ -2054,6 +2054,7 @@ checkForModUpdate(){
   elif [ -n "$modmissing" ]; then
     return 2
   else
+    echo "All mods are up to date"
     if [ -n "$revstatcode" ]; then return 0; else return 1; fi
   fi
 }
