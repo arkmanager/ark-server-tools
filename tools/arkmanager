@@ -2023,7 +2023,7 @@ checkForModUpdate(){
   local availmft=
   local modname=
   local steamworkshopdir="$(getSteamWorkshopDir)"
-  local cancheckmodavail=1
+  local cancheckmodavail=
   local modmissing=
   local revstatcode=
 
@@ -2044,7 +2044,7 @@ checkForModUpdate(){
   for modid in $(getModIds); do
     availmft="$(getAvailModManifest "$modid")"
     modname="$(getModName $modid)"
-    if [ -z "$availmft" ]; then
+    if false || [ -z "$availmft" ]; then
       printf "Mod %d doesn't exist in the steam workshop\n" "$modid"
       modmissing=1
     elif [ -n "$cancheckmodavail" ]; then
@@ -2235,7 +2235,7 @@ doDownloadAllMods(){
   local fail=0
   local success=0
   for modid in $(getModIds); do
-    if isModUpdateAvailable $modid; then
+    if true || isModUpdateAvailable $modid; then
       if doDownloadMod $modid; then
         success=1
       else
