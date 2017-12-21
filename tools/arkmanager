@@ -2023,7 +2023,7 @@ checkForModUpdate(){
   local availmft=
   local modname=
   local steamworkshopdir="$(getSteamWorkshopDir)"
-  local cancheckmodavail=
+  local cancheckmodavail=1
   local modmissing=
   local revstatcode=
 
@@ -2042,19 +2042,19 @@ checkForModUpdate(){
   fi
 
   for modid in $(getModIds); do
-    availmft="$(getAvailModManifest "$modid")"
+    availupd="$(getAvailModLastUpdated "$modid")"
     modname="$(getModName $modid)"
-    if false || [ -z "$availmft" ]; then
+    if [ -z "$availupd" ]; then
       printf "Mod %d doesn't exist in the steam workshop\n" "$modid"
       modmissing=1
     elif [ -n "$cancheckmodavail" ]; then
-      instmft="$(getLocalModManifest "$modid")"
-      if [ -z "$instmft" ]; then
+      instupd="$(getLocalModLastUpdated "$modid")"
+      if [ -z "$instupd" ]; then
         printf "Mod %d [%s] has not been downloaded\n" "$modid" "$modname"
         updateavail=1
-      elif [ "$availmft" != "$instmft" ]; then
+      elif [ "$availupd" != "$instupd" ]; then
         printf "Mod %d [%s] has been updated on the Steam workshop\n" "$modid" "$modname"
-        printf "Local manifest: %s\nSteam manifest: %s\n" "$instmft" "$availmft"
+        printf "Local last updated: %s\nSteam last updated: %s\n" "$(date --date="@$instupd")" "$(date --date="@$availupd")"
         updateavail=1
       fi
     fi
@@ -2137,32 +2137,32 @@ listMods(){
 #
 # Gets local mod manifest ID
 #
-getLocalModManifest(){
+getLocalModLastUpdated(){
   local modid="$1"
   local steamworkshopdir="$(getSteamWorkshopDir)"
   if [ ! -f "${steamworkshopdir}/appworkshop_${mod_appid}.acf" ]; then return 0; fi
-  local instmft="$(sed -n '/^\t"WorkshopItemsInstalled"$/,/^\t[}]$/{/^\t\t"'"${modid}"'"$/,/^\t\t[}]$/{s|^\t\t\t"manifest"\t\t"\(.*\)"$|\1|p}}' <"${steamworkshopdir}/appworkshop_${mod_appid}.acf")"
-  echo "$instmft"
+  local instupd="$(sed -n '/^\t"WorkshopItemsInstalled"$/,/^\t[}]$/{/^\t\t"'"${modid}"'"$/,/^\t\t[}]$/{s|^\t\t\t"timeupdated"\t\t"\(.*\)"$|\1|p}}' <"${steamworkshopdir}/appworkshop_${mod_appid}.acf")"
+  echo "$instupd"
 }
 
 #
 # Gets available mod manifest ID
 #
-getAvailModManifest(){
+getAvailModLastUpdated(){
   local modid="$1"
-  local remmft="$(curl -s -d "itemcount=1&publishedfileids[0]=${modid}" http://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1 | sed -n 's|^[[:space:]]*"hcontent_file": "\(.*\)",|\1|p')"
-  echo "$remmft"
+  local remupd="$(curl -s -d "itemcount=1&publishedfileids[0]=${modid}" http://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1 | sed -n 's|^[[:space:]]*"time_updated": \(.*\),|\1|p')"
+  echo "$remupd"
 }
 
 #
 # Checks if a mod update is available before trying to download it
 isModUpdateAvailable(){
   local modid="$1"
-  local instmft="$(getLocalModManifest "$modid")"
-  local remmft="$(getAvailModManifest "$modid")"
+  local instupd="$(getLocalModLastUpdated "$modid")"
+  local remupd="$(getAvailModLastUpdated "$modid")"
   local steamworkshopdir="$(getSteamWorkshopDir)"
   if [ ! -f "${steamworkshopdir}/appworkshop_${mod_appid}.acf" ]; then return 0; fi
-  if [[ -n "${remmft}" && "${instmft}" != "${remmft}" ]]; then
+  if [[ -n "${remupd}" && "${instupd}" != "${remupd}" ]]; then
     return 0 # true
   fi
   return 1 # false
@@ -2235,7 +2235,7 @@ doDownloadAllMods(){
   local fail=0
   local success=0
   for modid in $(getModIds); do
-    if true || isModUpdateAvailable $modid; then
+    if isModUpdateAvailable $modid; then
       if doDownloadMod $modid; then
         success=1
       else
