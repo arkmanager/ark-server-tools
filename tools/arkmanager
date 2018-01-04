@@ -704,42 +704,6 @@ function getServerMapName(){
 }
 
 #
-# Gets the server map filename
-#
-function getServerMapFilename(){
-  local mapname="$1"
-  local savedir="$2"
-
-  # Take into account screwed up casing of saved ark files
-  # in some environments
-  local mapfile="$(find "${savedir}" -iname "${mapname}.ark" | head -n1)"
-
-  if [ -z "$mapfile" ]; then
-    sleep 2
-    mapfile="$(find "${savedir}" -iname "${mapname}.ark" | head -n1)"
-  fi
-
-  # If both attempts fail, server may have
-  # crashed between unlink and rename
-  if [ -z "$mapfile" ]; then
-    mapfile="$(find "${savedir}" -iname "${mapname}.tmp" | head -n1)"
-  fi
-
-  # If neither the ark nor the tmp file exists, then the
-  # map name may be incorrect.  Try to get any ark or tmp
-  # file in the saved arks directory
-  if [ -z "$mapfile" ]; then
-    mapfile="$(find "${savedir}" -iname "*.ark" | head -n1)"
-
-    if [ -z "$mapfile" ]; then
-      mapfile="$(find "${savedir}" -iname "*.tmp" | head -n1)"
-    fi
-  fi
-
-  echo "${mapfile}"
-}
-
-#
 # Gets the saved worlds directory
 #
 function getSavedArksDirectory(){
@@ -1713,6 +1677,7 @@ doUpdate() {
   local safeupdate=
   local appbeta=
   local appbetapass=
+  local mapfile=
 
   for arg in "$@"; do
     case "$arg" in
@@ -1888,12 +1853,18 @@ doUpdate() {
         if [ -z "$savedir" ]; then
           logprint "Unable to find saved arks directory"
         else
-          mapfile="$(getServerMapFilename "${mapname}" "${savedir}")"
+          mapfile="${savedir}/${mapname}.ark"
+  
+          if [ ! -f "${mapfile}" ]; then
+            sleep 2
+          fi
 
           if [ ! -f "${mapfile}" ]; then
-            logprint "Unable to find saved ark file"
-          elif [ "${mapfile##*.}" == ".tmp" ]; then
-            logprint "Map file doesn't exist, but temporary file does"
+            if [ -f "${mapfile%.ark}.tmp" ]; then
+              logprint "Saved ark file doesn't exist, but temporary file does"
+            else
+              logprint "Unable to find saved ark file"
+            fi
           else
             for (( i = 0; i < maxwait; i++ )); do
               if [ "$(find "${mapfile}" -mmin -1)" ]; then
@@ -2655,16 +2626,35 @@ doBackup(){
   # ARK server uses Write-Unlink-Rename
   echo -ne "${NORMAL} Copying ARK world file (${mapname}) "
 
-  local mapfile="$(getServerMapFilename "${mapname}" "${savedir}")"
-
-  if [ -f "${mapfile}" ]; then
+  local mapfile="${savedir}/${mapname}.ark"
+  
+  cp -p "${mapfile}" "${backupdir}/${mapname}.ark"
+  if [ ! -f "${backupdir}/${mapname}.ark" ]; then
+    sleep 2
     cp -p "${mapfile}" "${backupdir}/${mapname}.ark"
   fi
-
-  if [ -f "${backupdir}/${mapname}.ark" ]; then
-    echo -e "${NORMAL}\e[68G[   ${GREEN}OK${NORMAL}   ]"
+  if [ ! -f "${backupdir}/${mapname}.ark" ]; then
+    cp -p "${mapfile%.ark}.tmp" "${backupdir}/${mapname}.ark"
+    if [ -f "${backupdir}/${mapname}.ark" ]; then
+      echo "${NORMAL}\e[68G[  ${YELLOW}WARN${NORMAL}  ]"
+      logprint "Saved ark file not found, but temporary file was"
+    else
+      echo "${NORMAL}\e[68G[ ${RED}FAILED${NORMAL} ]"
+      cimapfile="$(find "${savedir}" -maxdepth 1 -iname "${mapname}.ark" -or -iname "${mapname}.tmp" | head -n1)"
+      if [ -n "${mapfile}" ]; then
+        logprint "Inconsistent casing in map name - ${mapname}.ark does not exist, but ${cimapfile##*/} does"
+      else
+        logprint "Saved ark file could not be found"
+        logprint "Candidates:"
+        for f in "${savedir}"/*.ark; do
+          if [ "${f}" == "${f%_??.??.????_??.??.??.ark}" ]; then # Exclude auto-backups
+            logprint "  Saved ARK ${f}"
+          fi
+        fi
+      fi
+    fi
   else
-    echo -e "${NORMAL}\e[68G[ ${RED}FAILED${NORMAL} ]"
+    echo -e "${NORMAL}\e[68G[   ${GREEN}OK${NORMAL}   ]"
   fi
 
   # ARK server uses Lock-Truncate-Write-Unlock
