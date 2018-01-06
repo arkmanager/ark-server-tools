@@ -2650,7 +2650,7 @@ doBackup(){
           if [ "${f}" == "${f%_??.??.????_??.??.??.ark}" ]; then # Exclude auto-backups
             logprint "  Saved ARK ${f}"
           fi
-        fi
+        done
       fi
     fi
   else
