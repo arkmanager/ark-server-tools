@@ -2761,15 +2761,15 @@ doBackup(){
 
   echo -ne "${NORMAL} Compressing Backup "
 
-  tar -jcf "${arkbackupdir}/${daystamp}/${datestamp}.tar.bz2" -C "${arkbackupdir}" "${datestamp}"
+  tar -jcf "${arkbackupdir}/${daystamp}/${instance}.${datestamp}.tar.bz2" -C "${arkbackupdir}" "${datestamp}"
   rm -rf ${backupdir}
 
-  if [ -f "${arkbackupdir}/${daystamp}/${datestamp}.tar.bz2" ]; then
+  if [ -f "${arkbackupdir}/${daystamp}/${instance}.${datestamp}.tar.bz2" ]; then
    echo -e "${NORMAL}\e[68G[   ${GREEN}OK${NORMAL}   ]"
   else
     echo -e "${NORMAL}\e[68G[ ${RED}FAILED${NORMAL} ]"
   fi
-  echo -e "${NORMAL} Created Backup: ${GREEN} ${datestamp}.tar.bz2${NORMAL}"
+  echo -e "${NORMAL} Created Backup: ${GREEN} ${instance}.${datestamp}.tar.bz2${NORMAL}"
 
   if [ -n "$arkMaxBackupSizeGB" ] && (( arkMaxBackupSizeGB >= 1 )); then
     (( arkMaxBackupSizeMB = arkMaxBackupSizeGB * 1024 ))
