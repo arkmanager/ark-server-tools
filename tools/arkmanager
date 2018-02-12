@@ -677,7 +677,7 @@ function getAvailableVersion(){
   if [ -z "$appbranch" ]; then
     appbranch="$(getCurrentBranch)"
   fi
-  runSteamCMD +app_info_update 1 +app_info_print "$appid" +quit | while read name val; do if [ "${name}" == "{" ]; then parseSteamACF ".depots.branches.${appbranch:-public}" "buildid"; break; fi; done
+  runSteamCMD +app_info_update 1 +app_info_print "$appid" | while read name val; do if [ "${name}" == "{" ]; then parseSteamACF ".depots.branches.${appbranch:-public}" "buildid"; break; fi; done
 }
 
 #
@@ -739,7 +739,7 @@ function getSavedArksDirectory(){
 # Check if the update manifest matches the current manifest
 #
 function checkUpdateManifests(){
-  appinfo="$(runSteamCMD +app_info_print "$appid" +quit)"
+  appinfo="$(runSteamCMD +app_info_print "$appid")"
   if [ -z "$appbranch" ]; then
     appbranch="$(getCurrentBranch)"
   fi
