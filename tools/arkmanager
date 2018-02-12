@@ -744,6 +744,8 @@ function checkUpdateManifests(){
     appbranch="$(getCurrentBranch)"
   fi
   while read depot manifest <&3; do
+    depot="${depot//\"/}"
+    manifest="${manifest//\"/}"
     newmanifest="$(echo "${appinfo}" | while read name val; do if [ "${name}" == "{" ]; then parseSteamACF ".depots.${depot}.manifests" "${appbranch:-public}"; break; fi; done)"
     if [[ -z "${newmanifest}" && "${appbranch:-public}" != "public" ]]; then
       newmanifest="$(echo "${appinfo}" | while read name val; do if [ "${name}" == "{" ]; then parseSteamACF ".depots.${depot}.manifests" "public"; break; fi; done)"
