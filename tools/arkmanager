@@ -2921,6 +2921,7 @@ printStatus(){
     if isTheServerOnline; then
       echo -e "$NORMAL" "Server online: " "$GREEN" "Yes" "$NORMAL"
       echo -e "$NORMAL" "ARKServers link: " "$GREEN" "http://arkservers.net/server/${publicip}:$(getQueryPort)" "$NORMAL"
+      echo -e "$NORMAL" "Steam connect link: " "$GREEN" "steam://connect/${publicip}:$(getQueryPort)" "$NORMAL"
     else
       echo -e "$NORMAL" "Server online: " "$RED" "No" "$NORMAL"
     fi
