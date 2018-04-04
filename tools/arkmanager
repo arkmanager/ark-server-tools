@@ -844,9 +844,9 @@ function isTheServerUp(){
 #
 function isTheServerOnline(){
   if [ -n "$(getMultiHome)" ]; then
-    publicip="$(curl --interface "$(getMultiHomeIP)" -s http://api.ipify.org/)"
+    publicip="$(curl --interface "$(getMultiHomeIP)" -s https://api.ipify.org/)"
   else
-    publicip="$(curl -s http://api.ipify.org/)"
+    publicip="$(curl -s https://api.ipify.org/)"
   fi
   local serverresp
 
@@ -856,7 +856,7 @@ function isTheServerOnline(){
 
   # If the Steam server response contains "addr": "$ip:$port",
   # then the server has registered with the Steam master server
-  if [[ "$serverresp" =~ "\"addr\": \""([^\"]*):([0-9]*)"\"" ]]; then
+  if [[ "$serverresp" =~ \"addr\":[[:space:]]*\"([^\"]*):([0-9]*)\" ]]; then
     return 0
   else
     return 1
@@ -2129,7 +2129,11 @@ getLocalModLastUpdated(){
 #
 getAvailModLastUpdated(){
   local modid="$1"
-  local remupd="$(curl -s -d "itemcount=1&publishedfileids[0]=${modid}" http://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1 | sed -n 's|^[[:space:]]*"time_updated": \(.*\),|\1|p')"
+  local serverresp="$(curl -s -d "itemcount=1&publishedfileids[0]=${modid}" "http://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1")"
+  local remupd=
+  if [[ "$serverresp" =~ \"time_updated\":[[:space:]]*([^,]*) ]]; then
+    remupd="${BASH_REMATCH[1]}"
+  fi
   echo "$remupd"
 }
 
