@@ -1819,8 +1819,11 @@ doUpdate() {
   fi
 
   if [[ -f "$arkserverroot/$arkmanagerpidfile" && "$arkserverroot/$arkmanagerpidfile" -ot "${arkserverroot}/${arkupdatetimefile}" ]]; then
-    logprint "Server was updated while it was running"
-    bgupdate=1
+    local mgrpid="$(<"$arkserverroot/$arkmanagerpidfile")"
+    if (( mgrpid != 0 )); then
+      logprint "Server was updated while it was running"
+      bgupdate=1
+    fi
   fi
 
   if [ -n "$downloadonly" ]; then
