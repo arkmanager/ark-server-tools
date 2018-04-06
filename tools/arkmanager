@@ -1781,9 +1781,9 @@ doUpdate() {
         fi
         rm -rf "$arkStagingDir/${arkserverdir}/Content/Mods/"*
         rm -rf "$arkStagingDir/${arkserverdir}/Saved/"*
-        rm "$arkStagingDir/${arkserverdir}/Saved/".[^.]*
         rm -rf "$arkStagingDir/Engine/Binaries/ThirdParty/SteamCMD/Linux/steamapps"
       fi
+      rm -f "$arkStagingDir/${arkserverdir}/Saved/".[^.]*
       rm -f "$arkStagingDir/${arkserverdir}/Binaries/Linux/"*.txt
 
       if [ -z "$nodownload" ]; then
