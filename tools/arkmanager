@@ -507,7 +507,7 @@ function notifyDiscord(){
   if [ -n "$discordWebhookURL" ]; then
     local msg="$(echo -n "${msg}" | tr '\n' '\001' | sed 's/\001/\\n/g;s/["\\]/\\\0/g')"
     local json="{\"content\":\"${msg}\"}"
-    curl -H "Content-Type: application/json" -d "${json}" "$discordWebhookURL" >/dev/null
+    curl -s -H "Content-Type: application/json" -d "${json}" "$discordWebhookURL" >/dev/null
   fi
 }
 
