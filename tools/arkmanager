@@ -498,7 +498,6 @@ doBroadcast(){
 doBroadcastWithEcho(){
   echo "$1"
   doBroadcast "$1"
-  notify "$1"
 }
 
 #
@@ -508,8 +507,7 @@ function notifyDiscord(){
   if [ -n "$discordWebhookURL" ]; then
     local msg="$(echo -n "${msg}" | tr '\n' '\001' | sed 's/\001/\\n/g;s/["\\]/\\\0/g')"
     local json="{\"content\":\"${msg}\"}"
-    echo "Sending ${json} to Discord"
-    curl -H "Content-Type: application/json" -d "${json}" "$discordWebhookURL"
+    curl -H "Content-Type: application/json" -d "${json}" "$discordWebhookURL" >/dev/null
   fi
 }
 
@@ -524,13 +522,15 @@ function notifyOverride(){
 # Notification wrapper
 #
 function notify(){
-  local msg
-  msg="${notifyTemplate:-Message from instance \`{instance\}\` on server \`{server\}\`: {msg\}}"
-  msg="${msg//\{msg\}/${1}}"
-  msg="${msg//\{instance\}/${instance}}"
-  msg="${msg//\{server\}/${HOSTNAME}}"
-  notifyDiscord "$msg"
-  notifyOverride "$msg"
+  if [ -n "$1" ]; then
+    local msg
+    msg="${notifyTemplate:-Message from instance \`{instance\}\` on server \`{server\}\`: {msg\}}"
+    msg="${msg//\{msg\}/${1}}"
+    msg="${msg//\{instance\}/${instance}}"
+    msg="${msg//\{server\}/${HOSTNAME}}"
+    notifyDiscord "$msg"
+    notifyOverride "$msg"
+  fi
 }
 
 #
@@ -1433,6 +1433,7 @@ doCancelShutdown(){
 #
 printWarnMessage(){
   local msg
+  local usenotify="$5"
   if [ -n "$msgWarnReason" ]; then
     local reason
     local msgtime
@@ -1544,6 +1545,9 @@ printWarnMessage(){
   fi
 
   doBroadcastWithEcho "$msg"
+  if [ -n "$usenotify" ]; then
+    notify "$msg"
+  fi
 }
 
 #
@@ -1598,6 +1602,7 @@ doWarn(){
         msg="Shutdown cancelled by operator ($1)"
       fi
       doBroadcastWithEcho "${msg}"
+      notify "${msg}"
       exit 1
     }
 
@@ -1608,6 +1613,7 @@ doWarn(){
 
     local pid=`getServerPID`
     local sleeppid
+    local usenotify=1
     if [ -n "$pid" ]; then
       local warnmsg
       local warnminutes=$(( arkwarnminutes ))
@@ -1627,20 +1633,24 @@ doWarn(){
           if (( warnminutes > warninterval )); then
             sleep 1m &
             sleeppid=$!
-            printWarnMessage "$1" "$2" "minutes" "$warnminutes"
+            printWarnMessage "$1" "$2" "minutes" "$warnminutes" "$usenotify"
+            usenotify=
             for (( min = warnminutes - 1; min >= warninterval; min-- )); do
               numplayers=$(numPlayersConnected)
               echo "There are ${numplayers} players connected"
               if [[ "numplayers" == "-1" ]]; then
                 echo "Server is not running.  Shutting down immediately"
+                notify "${notifyMsgServerNotRunning:-Server is not running.  Shutting down immediately}"
                 return 0
               elif (( (numplayers + 0) == 0 )); then
                 doBroadcastWithEcho "Nobody is connected.  Shutting down immediately"
+                notify "${notifyMsgNobodyConnected:-Nobody is connected.  Shutting down immediately}"
                 rm -f "${arkserverroot}/${arkwarnlockfile}"
                 return 0
               fi
               if isUpdateCancelRequested; then
                 doBroadcastWithEcho "Restart cancelled by player request"
+                notify "${notifyMsgRestartCancelled:-Restart cancelled by player request}"
                 return 1
               fi
               wait $sleeppid
@@ -1668,20 +1678,24 @@ doWarn(){
           rm -f "${arkserverroot}/${arkwarnlockfile}"
           return 1
         fi
-        printWarnMessage "$1" "$2" "seconds" "$warnseconds"
+        printWarnMessage "$1" "$2" "seconds" "$warnseconds" "$usenotify"
+        usenotify=
         if (( warnseconds >= 20 )); then
           numplayers=$(numPlayersConnected)
           echo "There are ${numplayers} players connected"
           if [[ "numplayers" == "-1" ]]; then
             echo "Server is not running.  Shutting down immediately"
+            notify "${notifyMsgServerNotRunning:-Server is not running.  Shutting down immediately}"
             return 0
           elif (( (numplayers + 0) == 0 )); then
             doBroadcastWithEcho "Nobody is connected.  Shutting down immediately"
+            notify "${notifyMsgNobodyConnected:-Nobody is connected.  Shutting down immediately}"
             rm -f "${arkserverroot}/${arkwarnlockfile}"
             return 0
           fi
           if isUpdateCancelRequested; then
             doBroadcastWithEcho "Restart cancelled by player request"
+            notify "${notifyMsgRestartCancelled:-Restart cancelled by player request}"
             return 1
           fi
         fi
