@@ -353,6 +353,10 @@ instances.
     Sends the specified RCON command to the server and prints its
     response
 
+`notify "message"`::
+    Sends the specified message using the configured Discord
+    webhook
+
 `status`::
     Prints the status of the ARK server
 
@@ -543,6 +547,38 @@ The following options can be overridden on a per-instance basis:
 
     `{seconds}`;;
         Valid in `msgTimeSeconds`, replaced at runtime with seconds remaining until shutdown
+
+`discordWebhookURL`::
+    Discord Webhook URL - server status messages and update warning messages will be sent through
+    this if specified
+
+`notifyTemplate`::
+    Template to use for sending messages through Discord webhook, with
+    the following replacement parameters:
+
+    `{instance}`;;
+        Instance name
+
+    `{server}`;;
+        Server hostname
+
+    `{msg}`;;
+        Message
+
+`notifyMsgShuttingDown`::
+    Message to be sent when shutting down
+
+`notifyMsgStarting`::
+    Message to be sent when starting
+
+`notifyMsgServerUp`::
+    Message to be sent when server starts listening
+
+`notifyMsgStoppedListening`::
+    Message to be sent when server has stopped listening for more than 1 minute
+
+`notifyMsgServerTerminated`::
+    Message to be sent when server has crashed and is being restarted
 
 `logdir`::
     Specifies where to store log files

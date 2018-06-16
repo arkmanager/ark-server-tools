@@ -498,6 +498,39 @@ doBroadcast(){
 doBroadcastWithEcho(){
   echo "$1"
   doBroadcast "$1"
+  notify "$1"
+}
+
+#
+# Discord Webhook notifier
+#
+function notifyDiscord(){
+  if [ -n "$discordWebhookURL" ]; then
+    local msg="$(echo -n "${msg}" | tr '\n' '\001' | sed 's/\001/\\n/g;s/["\\]/\\\0/g')"
+    local json="{\"content\":\"${msg}\"}"
+    echo "Sending ${json} to Discord"
+    curl -H "Content-Type: application/json" -d "${json}" "$discordWebhookURL"
+  fi
+}
+
+#
+# Overridable notifier
+#
+function notifyOverride(){
+  :
+}
+
+#
+# Notification wrapper
+#
+function notify(){
+  local msg
+  msg="${notifyTemplate:-Message from instance \`{instance\}\` on server \`{server\}\`: {msg\}}"
+  msg="${msg//\{msg\}/${1}}"
+  msg="${msg//\{instance\}/${instance}}"
+  msg="${msg//\{server\}/${HOSTNAME}}"
+  notifyDiscord "$msg"
+  notifyOverride "$msg"
 }
 
 #
@@ -1067,6 +1100,7 @@ doRun() {
   # Shutdown the server when we are terminated
   shutdown_server(){
     restartserver=0
+    notify "${notifyMsgShuttingDown:-Shutting down}"
     rm -f "$arkserverroot/$arkautorestartfile"
     if [ "$serverpid" -ne 0 ]; then
       kill -INT $serverpid >/dev/null 2>&1
@@ -1079,6 +1113,7 @@ doRun() {
   # Auto-restart loop
   while [ $restartserver -ne 0 ]; do
     echo -n "`timestamp`: Running"
+    notify "${notifyMsgStarting:-Starting}"
     printf " %q" "$arkserverroot/$arkserverexec" "$arkserveropts" "${arkextraopts[@]}"
     echo
     # Put the server process into the background so we can monitor it
@@ -1109,6 +1144,7 @@ doRun() {
           if ! isTheServerUp; then
             # Enable auto-restart if the server is up
             echo "`timestamp`: server is up"
+            notify "${notifyMsgServerUp:-Server is up}"
             touch "$arkserverroot/$arkautorestartfile"
             restartserver=1
           fi
@@ -1119,6 +1155,7 @@ doRun() {
             # Server has not been listening for 60 seconds, so restart it.
             echo "`timestamp`: The server has stopped listening"
             echo "`timestamp`: Restarting server"
+            notify "${notifyMsgStoppedListening:-Server has stopped listening - restarting}"
             for (( i = 0; i < 5; i++ )); do
               if ! kill -0 "$serverpid"; then
                 break
@@ -1157,6 +1194,7 @@ doRun() {
     fi
 
     if [ "$restartserver" -ne 0 ]; then
+      notify "${notifyMsgServerTerminated:-Server exited - restarting}"
       echo "`timestamp`: restarting server"
     fi
   done
@@ -3220,6 +3258,7 @@ main(){
       disablemod) nrarg=1; ;;
       broadcast) nrarg=1; ;;
       rconcmd) nrarg=1; ;;
+      notify) nrarg=1; ;;
       useconfig) nrarg=1; ;;
       install-cronjob) nrarg=1; ;;
       remove-cronjob) nrarg=1; ;;
@@ -3418,6 +3457,9 @@ main(){
         ;;
         broadcast)
           doBroadcast "${args[@]}"
+        ;;
+        notify)
+          notify "${args[@]}"
         ;;
         saveworld)
           doSaveWorld
