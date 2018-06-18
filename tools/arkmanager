@@ -522,7 +522,7 @@ function notifyOverride(){
 # Notification wrapper
 #
 function notify(){
-  if [ -n "$1" ]; then
+  if [[ -n "$1" && "$1" != "-" ]]; then
     local msg
     msg="${notifyTemplate:-Message from instance \`{instance\}\` on server \`{server\}\`: {msg\}}"
     msg="${msg//\{msg\}/${1}}"
