@@ -1614,6 +1614,9 @@ doWarn(){
     local pid=`getServerPID`
     local sleeppid
     local usenotify=1
+    if [ -n "$noNotifyWarn" ]; then
+      usenotify=
+    fi
     if [ -n "$pid" ]; then
       local warnmsg
       local warnminutes=$(( arkwarnminutes ))
