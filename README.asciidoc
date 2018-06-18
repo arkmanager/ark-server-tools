@@ -566,19 +566,22 @@ The following options can be overridden on a per-instance basis:
         Message
 
 `notifyMsgShuttingDown`::
-    Message to be sent when shutting down
+    Message to be sent when shutting down. Use `-` to disable.
 
 `notifyMsgStarting`::
-    Message to be sent when starting
+    Message to be sent when starting. Use `-` to disable.
 
 `notifyMsgServerUp`::
-    Message to be sent when server starts listening
+    Message to be sent when server starts listening. Use `-` to disable.
 
 `notifyMsgStoppedListening`::
-    Message to be sent when server has stopped listening for more than 1 minute
+    Message to be sent when server has stopped listening for more than 1 minute. Use `-` to disable.
 
 `notifyMsgServerTerminated`::
-    Message to be sent when server has crashed and is being restarted
+    Message to be sent when server has crashed and is being restarted. Use `-` to disable.
+
+`noNotifyWarn`::
+    Disable notification at start of shutdown warning period
 
 `logdir`::
     Specifies where to store log files
