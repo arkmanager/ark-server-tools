@@ -214,7 +214,15 @@ if [ -f "${HOME}/${arkstUserCfgFile}" ]; then
     source "${HOME}/${arkstUserCfgFile}"
 fi
 
-cd "$HOME"
+if [ -n "${serverbasedir}" && -d "${serverbasedir}" ]; then
+    cd "${serverbasedir}"
+elif [ -d "${HOME}" ]; then
+    cd "${HOME}"
+elif [ -d "${steamcmdroot}" ]; then
+    cd "${steamcmdroot}"
+elif [[ ! -d "${PWD}" || ! -r "${PWD}" || ! -x "${PWD}" ]]; then
+    cd /
+fi
 
 lsof=lsof
 if [ -x /usr/sbin/lsof ]; then
