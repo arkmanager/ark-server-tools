@@ -6,6 +6,9 @@
 # Maintainer:           FezVrasta
 # Contributors:         Sispheor, Atriusftw, klightspeed, lexat, puseidr
 
+#disable exportall so options are no exported under Debian et al.
+set +o allexport
+
 # Script version
 arkstVersion='1.6'
 arkstTag=''
