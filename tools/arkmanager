@@ -1167,7 +1167,24 @@ doRunBG(){
     [[ $fd -gt 2 && $fd != 255 ]] && exec {fd}<&-
   done
 
-  doRun "$@" > >(while read -r l; do printf "%s: [%s] %s\n" "$(timestamp)" "${instance}" "${l}"; done) 2>&1
+  if [ -n "$server_runas" ]; then
+    sudo -u "$server_runas" "$0" --run-instance "$instance" <(cat "${arkstGlobalCfgFile}" "${HOME}/${arkstUserCfgFile}" 2>/dev/null; if [ -z "arkSingleInstance" && -n "$configfile" ]; then cat "$configfile" 2>/dev/null; fi) > >(while read -r l; do printf "%s: [%s] %s\n" "$(timestamp)" "${instance}" "${l}"; done) 2>&1
+  else
+    doRun "$@" > >(while read -r l; do printf "%s: [%s] %s\n" "$(timestamp)" "${instance}" "${l}"; done) 2>&1
+  fi
+}
+
+doRunInstance(){
+  instance="$1"
+  
+  if [[ -n "$2" && -r "$2" ]]; then
+    . "$2"
+  fi
+
+  shift
+  shift
+
+  doRun "$@"
 }
 
 #
@@ -3140,11 +3157,11 @@ useConfig() {
 
 loadGlobalConfig() {
   if [ -f "${arkstGlobalCfgFile}" ]; then
-      source "${arkstGlobalCfgFile}"
+    source "${arkstGlobalCfgFile}"
   fi
 
   if [ -f "${HOME}/${arkstUserCfgFile}" ]; then
-      source "${HOME}/${arkstUserCfgFile}"
+    source "${HOME}/${arkstUserCfgFile}"
   fi
 
   lsof=lsof
@@ -3316,6 +3333,13 @@ EOE
 #---------------------
 
 main(){
+  # Handle special --run-instance command
+  if [ "$1" == "--run-instance" ]; then
+    shift
+    doRunInstance "$@"
+    exit
+  fi
+  
   # Global variables
   loadGlobalConfig
 
