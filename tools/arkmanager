@@ -1125,6 +1125,7 @@ doRun() {
     # Disable auto-restart so we don't get caught in a restart loop
     rm -f "$arkserverroot/$arkautorestartfile"
     restartserver=0
+    serveronline=0
     if [ -n "$arkAlwaysRestartOnCrash" ]; then
       restartserver=1
       touch "$arkserverroot/$arkautorestartfile"
@@ -1139,14 +1140,17 @@ doRun() {
       local pid="`getServerPID`"
       if [ "$pid" == "$serverpid" ]; then
         serverdowntries=0
-        if [ "$restartserver" -eq 0 ]; then
+        if [ "$serveronline" -eq 0 ]; then
           # Check if the server has fully started
           if ! isTheServerUp; then
             # Enable auto-restart if the server is up
             echo "`timestamp`: server is up"
             notify "${notifyMsgServerUp:-Server is up}"
-            touch "$arkserverroot/$arkautorestartfile"
-            restartserver=1
+	    if [ "$restartserver" -eq 0 ]; then
+              touch "$arkserverroot/$arkautorestartfile"
+              restartserver=1
+	    fi
+	    serveronline=1
           fi
         elif isTheServerUp; then
           (( serverdowntries++ ))
