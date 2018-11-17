@@ -2732,6 +2732,15 @@ doBackup(){
     echo -e "${NORMAL}\e[68G[   ${GREEN}OK${NORMAL}   ]"
   fi
 
+  # Copy other world files
+  if [ -n "$backupAllMaps" ]; then
+    for f in "${savedir}/"*.ark; do
+      if [[ "${f}" != "${mapfile}" && "${f}" != "${savedir}/"*_??.??.????_??.??.??.ark ]]; then
+        cp -p "${f}" "${backupdir}/${f##*/}"
+      fi
+    done
+  fi
+
   # ARK server uses Lock-Truncate-Write-Unlock
   # Unfortunately we can't lock the file, as
   # ARK server uses a non-blocking lock and will
