@@ -282,6 +282,10 @@ instances.
 `checkupdate`::
     Checks if an ARK server update is available
 
+    Exit status;;
+        - 0: No update is available
+        - 1: An update is available
+
 `checkmodupdate`::
     Checks if any mods need updating on the server
     
@@ -293,8 +297,8 @@ instances.
         - 1: No update is available
         - 2: One or more mods is missing from the workshop
     
-    Reversed status codes;;
-        - 0: No update is avaibale
+    Reversed status codes (--revstatus);;
+        - 0: No update is available
         - 1: An update is available
         - 2: One or more mods is missing from the workshop
         - 3: appworkshop_346110.acf is missing
