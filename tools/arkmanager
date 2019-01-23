@@ -3434,6 +3434,20 @@ main(){
         ;;
         start)
           doStart "${options[@]}"
+	  if [[ ${#instances[@]} > 1 ]]; then
+          	COUNTER=0
+                if [ -z "$defaultinstance_max" ]; then
+                      defaultinstance_max=0
+                fi
+                while [  $COUNTER -lt $defaultinstance_max ]; do
+                        echo -ne "$NORMAL Waiting up to $RED$((defaultinstance_max-COUNTER))$NORMAL seconds before starting next instance."\\r
+                     let COUNTER=COUNTER+1
+                        if isTheServerOnline ;then
+                                break
+                        fi
+                     sleep 1s
+                done
+          fi
         ;;
         stop)
           doStop shutdown "${options[@]}"
