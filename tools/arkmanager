@@ -1230,6 +1230,20 @@ doStart() {
   if [ -n "$serverpid" ] && kill -0 "$serverpid"; then
     logprint "Start aborted due to server already running - pid: $serverpid"
   else
+    local prestart="${configfile%.cfg}.start"
+
+    if [ -n "${arkPreStart}" ]; then
+      prestart="${arkPreStart}"
+    fi
+
+    if [[ -n "${prestart}" && -f "${prestart}" ]]; then
+      if [ -x "${prestart}" ]; then
+        "${prestart}" "$@"
+      else
+        /bin/bash "${prestart}" "$@"
+      fi
+    fi
+
     if [ "$arkAutoUpdateOnStart" == "true" ]; then
       if ! [[ " $* " =~ " --noautoupdate " ]]; then
         logprint "Checking for updates before starting"
@@ -1277,6 +1291,20 @@ doStart() {
     fi
     tput rc; tput ed;
     logprint "The server is now running, and should be up within 10 minutes"
+    if [[ -n "$arkStartDelay" || -n "$defaultinstance_max" ]]; then
+      local delay="${arkStartDelay:-${defaultinstance_max}}"
+      if (( "${#instances[@]}" > 1 )); then
+        echo -n "Waiting up to ${delay} seconds before starting next instance "
+        while (( delay > 0 )); do
+	  echo -n "."
+	  if isTheServerOnline; then
+	    break
+	  fi
+	  (( delay-- ))
+	done
+	echo
+      fi
+    fi
   fi
 }
 
@@ -3434,20 +3462,6 @@ main(){
         ;;
         start)
           doStart "${options[@]}"
-	  if [[ ${#instances[@]} > 1 ]]; then
-          	COUNTER=0
-                if [ -z "$defaultinstance_max" ]; then
-                      defaultinstance_max=0
-                fi
-                while [  $COUNTER -lt $defaultinstance_max ]; do
-                        echo -ne "$NORMAL Waiting up to $RED$((defaultinstance_max-COUNTER))$NORMAL seconds before starting next instance."\\r
-                     let COUNTER=COUNTER+1
-                        if isTheServerOnline ;then
-                                break
-                        fi
-                     sleep 1s
-                done
-          fi
         ;;
         stop)
           doStop shutdown "${options[@]}"
