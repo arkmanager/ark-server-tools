@@ -1237,7 +1237,11 @@ doStart() {
     fi
 
     if [[ -n "${prestart}" && -f "${prestart}" ]]; then
-      "${prestart}" "$@"
+      if [ -x "${prestart}" ]; then
+        "${prestart}" "$@"
+      else
+        /bin/bash "${prestart}" "$@"
+      fi
     fi
 
     if [ "$arkAutoUpdateOnStart" == "true" ]; then
