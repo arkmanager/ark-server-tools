@@ -18,6 +18,10 @@ arkstRootUseEnv=''
 arkstGlobalCfgFile='/etc/arkmanager/arkmanager.cfg'
 arkstUserCfgFile='.arkmanager.cfg'
 
+#--------------------
+#  Installation
+#--------------------
+
 doUpgradeTools() {
   local sudo=sudo
   if [ $(id -u) == 0 -o "$steamcmd_user" == "--me" ]; then
@@ -203,63 +207,6 @@ if [ "$(id -u)" == "0" ]; then
   runAsRoot "$@"
   exit 0
 fi
-
-#---------------------
-# Variables
-#---------------------
-
-# Global variables
-if [ -f "${arkstGlobalCfgFile}" ]; then
-    source "${arkstGlobalCfgFile}"
-fi
-
-if [ -f "${HOME}/${arkstUserCfgFile}" ]; then
-    source "${HOME}/${arkstUserCfgFile}"
-fi
-
-if [ -n "${serverbasedir}" && -d "${serverbasedir}" ]; then
-    cd "${serverbasedir}"
-elif [ -d "${HOME}" ]; then
-    cd "${HOME}"
-elif [ -d "${steamcmdroot}" ]; then
-    cd "${steamcmdroot}"
-elif [[ ! -d "${PWD}" || ! -r "${PWD}" || ! -x "${PWD}" ]]; then
-    cd /
-fi
-
-lsof=lsof
-if [ -x /usr/sbin/lsof ]; then
-  lsof=/usr/sbin/lsof
-fi
-
-# Local variables
-instver=""
-bnumber=""
-GREEN="\\033[1;32m"
-RED="\\033[1;31m"
-YELLOW="\\e[0;33m"
-NORMAL="\\033[0;39m"
-maxOpenFiles=100000
-
-# Set TERM to "dumb" if TERM is not set
-export TERM=${TERM:-dumb}
-
-arkmanagerLog="arkmanager.log"  # here are logged the actions performed by arkmanager
-arkserverLog="arkserver.log"    # here is logged the output of ShooterGameServer
-
-appid="${appid:-376030}"
-mod_appid="${mod_appid:-346110}"
-install_bindir="${install_bindir:-${0%/*}}"
-install_libexecdir="${install_libexecdir:-${install_bindir%/*}/libexec/arkmanager}"
-steamcmd_workshoplog="${steamcmd_workshoplog:-${HOME}/Steam/logs/workshop_log.txt}"
-
-if [ "$steamcmd_user" == "--me" ]; then
-  install_datadir="${install_datadir:-${HOME}/.share/local/arkmanager}"
-else
-  install_datadir="${install_datadir:-${install_bindir%/*}/share/arkmanager}"
-fi
-
-declare -A modsrcdirs
 
 #---------------------
 # functions
@@ -1220,7 +1167,24 @@ doRunBG(){
     [[ $fd -gt 2 && $fd != 255 ]] && exec {fd}<&-
   done
 
-  doRun "$@" > >(while read -r l; do printf "%s: [%s] %s\n" "$(timestamp)" "${instance}" "${l}"; done) 2>&1
+  if [ -n "$server_runas" ]; then
+    sudo -u "$server_runas" "$0" --run-instance "$instance" <(cat "${arkstGlobalCfgFile}" "${HOME}/${arkstUserCfgFile}" 2>/dev/null; if [ -z "arkSingleInstance" && -n "$configfile" ]; then cat "$configfile" 2>/dev/null; fi) > >(while read -r l; do printf "%s: [%s] %s\n" "$(timestamp)" "${instance}" "${l}"; done) 2>&1
+  else
+    doRun "$@" > >(while read -r l; do printf "%s: [%s] %s\n" "$(timestamp)" "${instance}" "${l}"; done) 2>&1
+  fi
+}
+
+doRunInstance(){
+  instance="$1"
+  
+  if [[ -n "$2" && -r "$2" ]]; then
+    . "$2"
+  fi
+
+  shift
+  shift
+
+  doRun "$@"
 }
 
 #
@@ -1784,6 +1748,7 @@ doUpdate() {
   local appbeta=
   local appbetapass=
   local mapfile=
+  declare -A modsrcdirs
 
   for arg in "$@"; do
     case "$arg" in
@@ -3190,6 +3155,58 @@ useConfig() {
   arkupdatetimefile="${arkupdatetimefile:-${arkserverdir}/Saved/.ark-update.time}"
 }
 
+loadGlobalConfig() {
+  if [ -f "${arkstGlobalCfgFile}" ]; then
+    source "${arkstGlobalCfgFile}"
+  fi
+
+  if [ -f "${HOME}/${arkstUserCfgFile}" ]; then
+    source "${HOME}/${arkstUserCfgFile}"
+  fi
+
+  lsof=lsof
+  if [ -x /usr/sbin/lsof ]; then
+    lsof=/usr/sbin/lsof
+  fi
+
+  # Local variables
+  GREEN="\\033[1;32m"
+  RED="\\033[1;31m"
+  YELLOW="\\e[0;33m"
+  NORMAL="\\033[0;39m"
+  maxOpenFiles=100000
+
+  # Set TERM to "dumb" if TERM is not set
+  export TERM=${TERM:-dumb}
+
+  arkmanagerLog="arkmanager.log"  # here are logged the actions performed by arkmanager
+  arkserverLog="arkserver.log"    # here is logged the output of ShooterGameServer
+
+  appid="${appid:-376030}"
+  mod_appid="${mod_appid:-346110}"
+  install_bindir="${install_bindir:-${0%/*}}"
+  install_libexecdir="${install_libexecdir:-${install_bindir%/*}/libexec/arkmanager}"
+  steamcmd_workshoplog="${steamcmd_workshoplog:-${HOME}/Steam/logs/workshop_log.txt}"
+
+  if [ "$steamcmd_user" == "--me" ]; then
+    install_datadir="${install_datadir:-${HOME}/.share/local/arkmanager}"
+  else
+    install_datadir="${install_datadir:-${install_bindir%/*}/share/arkmanager}"
+  fi
+}
+
+setScriptWorkingDir() {
+  if [[ -n "${serverbasedir}" && -d "${serverbasedir}" ]]; then
+      cd "${serverbasedir}"
+  elif [ -d "${HOME}" ]; then
+      cd "${HOME}"
+  elif [ -d "${steamcmdroot}" ]; then
+      cd "${steamcmdroot}"
+  elif [[ ! -d "${PWD}" || ! -r "${PWD}" || ! -x "${PWD}" ]]; then
+      cd /
+  fi
+}
+
 addArkOpt() {
   local optname="${1%%=*}"
   local optval="${1#*=}"
@@ -3316,6 +3333,18 @@ EOE
 #---------------------
 
 main(){
+  # Handle special --run-instance command
+  if [ "$1" == "--run-instance" ]; then
+    shift
+    doRunInstance "$@"
+    exit
+  fi
+  
+  # Global variables
+  loadGlobalConfig
+
+  setScriptWorkingDir
+
   # check the configuration and throw errors or warnings if needed
   checkConfig
   
@@ -3529,6 +3558,7 @@ main(){
           checkForModUpdate "${options[@]}"
         ;;
         installmod)
+          declare -A modsrcdirs
           doInstallMod "${args[@]}"
         ;;
         enablemod)
@@ -3538,6 +3568,7 @@ main(){
           doDisableMod "${args[@]}"
         ;;
         installmods)
+          declare -A modsrcdirs
           doInstallAllMods
         ;;
         uninstallmods)
@@ -3547,6 +3578,7 @@ main(){
           doUninstallMod "${args[@]}"
         ;;
         reinstallmod)
+          declare -A modsrcdirs
           doUninstallMod "${args[@]}"
           doInstallMod "${args[@]}"
         ;;
