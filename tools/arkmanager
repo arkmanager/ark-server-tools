@@ -217,7 +217,7 @@ if [ -f "${HOME}/${arkstUserCfgFile}" ]; then
     source "${HOME}/${arkstUserCfgFile}"
 fi
 
-if [ -n "${serverbasedir}" && -d "${serverbasedir}" ]; then
+if [[ -n "${serverbasedir}" && -d "${serverbasedir}" ]]; then
     cd "${serverbasedir}"
 elif [ -d "${HOME}" ]; then
     cd "${HOME}"
