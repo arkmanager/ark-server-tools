@@ -25,4 +25,4 @@ ark_MaxPlayers="70"
 # ARK server options - i.e. for -optname=val, use arkopt_optname=val
 #arkopt_StructureDestructionTag=DestroySwampSnowStructures
 
-
+#arkPreStart="/etc/arkmanager/instances/instance.start"              # Set this to override the start script; defaults to config file name with .cfg replaced by .start
