@@ -3433,7 +3433,29 @@ main(){
           doRun
         ;;
         start)
-          doStart "${options[@]}"
+          serverpid="$(getServerPID)"
+          if [ -n "$serverpid" ] && kill -0 "$serverpid"; then
+                  echo "Error: server pid not detected"
+          else
+                 if [[ -f "/etc/arkmanager/instances/${instance}.cfg" ]]; then
+                        if [[ -f "/etc/arkmanager/instances/${instance}.custom" ]]; then
+                                source /etc/arkmanager/instances/${instance}.custom
+                        else
+                                touch "/etc/arkmanager/instances/${instance}.custom"
+                                echo "# Enter custom code into this file that will be executed before instance starts" > /etc/arkmanager/instances/${instance}.custom
+                        fi
+                elif [[ -f "${HOME}/.config/arkmanager/instances/${instance}.cfg" ]]; then
+                        if [[ -f "${HOME}/.config/arkmanager/instances/${instance}.custom" ]]; then
+                                source ${HOME}/.config/arkmanager/instances/${instance}.custom
+                        else
+                                touch "${HOME}/.config/arkmanager/instances/${instance}.custom"
+                                echo "# Enter custom code into this file that will be executed before instance starts" > ${HOME}/.config/arkmanager/instances/${instance}.custom
+                        fi
+                else
+                        echo "Unable to locate instance config file for custom code execution."
+                fi
+          fi
+	doStart "${options[@]}"
 	  if [[ ${#instances[@]} > 1 ]]; then
           	COUNTER=0
                 if [ -z "$defaultinstance_max" ]; then
