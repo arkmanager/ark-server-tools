@@ -3044,26 +3044,58 @@ printStatus(){
 
 getAllInstanceNames(){
   declare -A instancenames
-  for varname in "${!configfile_@}"; do
-    instancename="${varname#configfile_}"
-    instancenames[${instancename}]="${instancename}"
+  if [ -n "${defaultinstance}" ]; then
+    instancenames[${defaultinstance}]="${defaultinstance}"
+    echo "${defaultinstance}"
+  fi
+  if [ -f "${HOME}/${arkstUserCfgFile}" ]; then
+    while read l <&3; do
+      v="${l%%=*}"
+      if [[ "${v}" = configfile_* ]]; then
+        if [ -n "${!v}" ]; then
+          instancename="${v#configfile_}"
+          if [ -z "${instancenames[${instancename}]}" ]; then
+            instancenames[${instancename}]="${instancename}"
+            echo "${instancename}"
+          fi
+        fi
+      fi
+    done 3<"${HOME}/${arkstUserCfgFile}"
+  fi
+  if [ -f "${arkstGlobalCfgFile}" ]; then
+    while read l <&3; do
+      v="${l%%=*}"
+      if [[ "${v}" = configfile_* ]]; then
+        if [ -n "${!v}" ]; then
+          instancename="${v#configfile_}"
+          if [ -z "${instancenames[${instancename}]}" ]; then
+            instancenames[${instancename}]="${instancename}"
+            echo "${instancename}"
+          fi
+        fi
+      fi
+    done 3<"${arkstGlobalCfgFile}"
+  fi
+  for f in ${HOME}/.config/arkmanager/instances/*.cfg; do
+    if [ -f "${f}" ]; then
+      instancename="${f##*/}"
+      instancename="${instancename%.cfg}"
+      if [ -z "${instancenames[${instancename}]}" ]; then
+        instancenames[${instancename}]="${instancename}"
+        echo "${instancename}"
+      fi
+    fi
   done
   for f in /etc/arkmanager/instances/*.cfg; do
     if [ -f "${f}" ]; then
       instancename="${f##*/}"
       instancename="${instancename%.cfg}"
-      instancenames[${instancename}]="${instancename}"
+      if [ -z "${instancenames[${instancename}]}" ]; then
+        instancenames[${instancename}]="${instancename}"
+        echo "${instancename}"
+      fi
     fi
   done
-  for f in ${HOME}/.config/arkmanager/instances/*.cfg; do
-    if [ -f "${f}" ]; then
-      instancename="${f##*/}"
-      instancename="${instancename%.cfg}"
-      instancenames[${instancename}]="${instancename}"
-    fi
-  done
-
-  echo "${instancenames[@]}"
 }
 
 doListAllInstances(){
