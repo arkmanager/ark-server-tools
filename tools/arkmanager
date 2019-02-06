@@ -3053,6 +3053,48 @@ printStatus(){
   fi
 }
 
+doWait(){
+  local waitall=
+  local waitany=
+  declare -A pidfiles
+
+  for arg in "$@"; do
+    case "$arg" in
+      --all) waitall=1; ;;
+      --any) waitany=1; ;;
+    esac
+  done
+
+  for instance in "${instances[@]}"; do
+    pidfile="$(useConfig "$instance"; echo "${arkserverroot}/${arkmanagerpidfile}")"
+    pidfiles[$instance]="$pidfile"
+  done
+
+  (
+    trap exit INT
+    trap exit TERM
+
+    while sleep 5; do
+      anyrunning=0
+      allrunning=1
+      for instance in "${instances[@]}"; do
+        pidfile="${pidfiles[$instance]}"
+        if [ -f "${pidfile}" ]; then
+          pid="$(<"${pidfile}")"
+          if kill -0 "${pid}"; then
+            anyrunning=1
+          else
+            allrunning=0
+          fi
+        fi
+      done
+      if [[ ( "${waitall}" == 1 && "${anyrunning}" == 0 ) || ( "${waitany}" == 1 && "${allrunning}" == 0 ) ]]; then
+        return
+      fi
+    done
+  )
+}
+
 getAllInstanceNames(){
   declare -A instancenames
   if [ -n "${defaultinstance}" ]; then
@@ -3491,6 +3533,14 @@ main(){
     if [[ "$allinstances" == "yes" ]]; then
       instances=( $(getAllInstanceNames) )
     fi
+
+    # Handle wait command specially
+    case "$command" in
+      wait)
+        doWait "${options[@]}"
+        continue
+      ;;
+    esac
 
     # Run the command for each instance requested
     for instance in "${instances[@]}"; do
