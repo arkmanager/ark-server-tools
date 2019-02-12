@@ -3056,14 +3056,26 @@ printStatus(){
 doWait(){
   local waitall=
   local waitany=
+  local waitonline=
+  local waitstopped=
   declare -A pidfiles
 
   for arg in "$@"; do
     case "$arg" in
       --all) waitall=1; ;;
       --any) waitany=1; ;;
+      --online) waitonline=1; ;;
+      --stopped) waitstopped=1; ;;
     esac
   done
+
+  if [[ -z "${waitany}" && -z "${waitall}" ]]; then
+    waitany=1
+  fi
+
+  if [[ -z "${waitonline}" && -z "${waitstopped}" ]]; then
+    waitstopped=1
+  fi
 
   for instance in "${instances[@]}"; do
     pidfile="$(useConfig "$instance"; echo "${arkserverroot}/${arkmanagerpidfile}")"
@@ -3077,18 +3089,31 @@ doWait(){
     while sleep 5; do
       anyrunning=0
       allrunning=1
+      anyonline=0
+      allonline=1
       for instance in "${instances[@]}"; do
         pidfile="${pidfiles[$instance]}"
         if [ -f "${pidfile}" ]; then
           pid="$(<"${pidfile}")"
           if kill -0 "${pid}"; then
             anyrunning=1
+            if [ -n "$waitonline" ]; then
+              if (useConfig "$instance"; isTheServerOnline); then
+                anyonline=1
+              else
+                allonline=0
+              fi
+            fi
           else
             allrunning=0
+            allonline=0
           fi
         fi
       done
-      if [[ ( "${waitall}" == 1 && "${anyrunning}" == 0 ) || ( "${waitany}" == 1 && "${allrunning}" == 0 ) ]]; then
+      if [[ ( "${waitstopped}" == 1 && "${waitall}" == 1 && "${anyrunning}" == 0 ) ||
+            ( "${waitstopped}" == 1 && "${waitany}" == 1 && "${allrunning}" == 0 ) ||
+            ( "${waitonline}" == 1 && "${waitall}" == 1 && "${allonline}" == 1 ) ||
+            ( "${waitonline}" == 1 && "${waitany}" == 1 && "${anyonline}" == 1 ) ]]; then
         return
       fi
     done

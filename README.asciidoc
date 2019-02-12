@@ -404,14 +404,22 @@ instances.
 `remove-cronjob <command>`::
     Removes a cron job previously installed by `install-cronjob`
 
-`wait {--any|--all}`::
-    Waits until any or all instances are stopped
+`wait`::
+    Waits until any or all instances are stopped or online
+    Defaults to any stopped
 
     `--any`;;
-        Waits until any specified instance is stopped
+        Waits until any specified instance is in specified state
 
     `--all`;;
-        Waits until all specified instances are stopped
+        Waits until all specified instances are in specified state
+
+    `--stopped`;;
+        Waits until instances are stopped
+
+    `--online`;;
+        Waits until instances are online
+
 
 Configuration files
 -------------------
