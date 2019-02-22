@@ -559,7 +559,10 @@ function doDownloadSteamCMD(){
 # SteamCMD helper function
 #
 function runSteamCMD(){
-  "$steamcmdroot/$steamcmdexec" +@NoPromptForPassword 1 ${steamcmd_cmds_prelogin} +login ${steamlogin:-anonymous} ${steamcmd_cmds_postlogin} "$@" +quit
+  if [[ -z "${steamcmdhome}" || ! -d "${steamcmdhome}" ]]; then
+    steamcmdhome="${HOME}"
+  fi
+  HOME="${steamcmdhome}" "$steamcmdroot/$steamcmdexec" +@NoPromptForPassword 1 ${steamcmd_cmds_prelogin} +login ${steamlogin:-anonymous} ${steamcmd_cmds_postlogin} "$@" +quit
 }
 
 function runSteamCMDspinner(){
