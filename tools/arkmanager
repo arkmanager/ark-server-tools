@@ -251,7 +251,6 @@ appid="${appid:-376030}"
 mod_appid="${mod_appid:-346110}"
 install_bindir="${install_bindir:-${0%/*}}"
 install_libexecdir="${install_libexecdir:-${install_bindir%/*}/libexec/arkmanager}"
-steamcmd_workshoplog="${steamcmd_workshoplog:-${HOME}/Steam/logs/workshop_log.txt}"
 
 if [ "$steamcmd_user" == "--me" ]; then
   install_datadir="${install_datadir:-${HOME}/.share/local/arkmanager}"
@@ -411,19 +410,65 @@ getQueryPort(){
 # Determine SteamCMD data directory
 #
 getSteamWorkshopDir(){
+  if [[ -z "${steamcmdhome}" || ! -d "${steamcmdhome}" ]]; then
+    steamcmdhome="${HOME}"
+  fi
+
   for d in "$steamworkshopdir" \
-           "$HOME/.steam/SteamApps/workshop" \
-	   "$HOME/.steam/steamapps/workshop" \
-	   "$HOME/Steam/SteamApps/workshop" \
-	   "$HOME/Steam/steamapps/workshop" \
-	   "${steamdataroot:-$steamcmdroot}/steamapps/workshop"; do
+           "$steamcmdhome/.steam/SteamApps/workshop" \
+           "$steamcmdhome/.steam/steamapps/workshop" \
+           "$steamcmdhome/Steam/SteamApps/workshop" \
+           "$steamcmdhome/Steam/steamapps/workshop" \
+           "${steamdataroot:-$steamcmdroot}/steamapps/workshop"; do
     if [[ -d "${d}" && -f "${d}/appworkshop_${mod_appid}.acf" ]]; then
       echo "$d"
       return
     fi
   done
   # default
-  echo "$HOME/Steam/steamapps/workshop"
+  echo "$steamcmdhome/Steam/steamapps/workshop"
+}
+
+#
+# Determine SteamCMD data directory
+#
+getSteamAppInfoCache(){
+  if [[ -z "${steamcmdhome}" || ! -d "${steamcmdhome}" ]]; then
+    steamcmdhome="${HOME}"
+  fi
+
+  for d in "${steamcmd_appinfocache}" \
+           "$steamcmdhome/.steam/appcache/appinfo.vdf" \
+           "$steamcmdhome/Steam/appcache/appinfo.vdf" \
+           "${steamdataroot:-$steamcmdroot}/appcache/appinfo.vdf"; do
+    if [[ -f "${d}" ]]; then
+      echo "$d"
+      return
+    fi
+  done
+  # default
+  echo "${steamcmd_appinfocache:-$steamcmdhome/Steam/appcache/appinfo.vdf}"
+}
+
+#
+# Determine SteamCMD data directory
+#
+getSteamWorkshopLog(){
+  if [[ -z "${steamcmdhome}" || ! -d "${steamcmdhome}" ]]; then
+    steamcmdhome="${HOME}"
+  fi
+
+  for d in "${steamcmd_workshoplog}" \
+           "$steamcmdhome/.steam/logs/workshop_log.txt" \
+           "$steamcmdhome/Steam/logs/workshop_log.txt" \
+           "${steamdataroot:-$steamcmdroot}/logs/workshop_log.txt"; do
+    if [[ -f "${d}" ]]; then
+      echo "$d"
+      return
+    fi
+  done
+  # default
+  echo "${steamcmd_workshoplog:-$steamcmdhome/logs/workshop_log.txt}"
 }
 
 #
@@ -720,7 +765,7 @@ function getCurrentBranch(){
 # Get the current available server version on steamdb
 #
 function getAvailableVersion(){
-  rm -f "$steamcmd_appinfocache"
+  rm -f "$(getSteamAppInfoCache)"
   if [ -z "$appbranch" ]; then
     appbranch="$(getCurrentBranch)"
   fi
@@ -2267,6 +2312,7 @@ doDownloadMod(){
   fi
   doDownloadSteamCMD
   local steamworkshopdir="$(getSteamWorkshopDir)"
+  local steamcmd_workshoplog="$(getSteamWorkshopLog)"
   local modsrcdir="${steamworkshopdir}/content/$mod_appid/$modid"
   local moddldir="${steamworkshopdir}/downloads/$mod_appid"
   cd "$steamcmdroot"
