@@ -2155,6 +2155,7 @@ checkForModUpdate(){
   local cancheckmodavail=1
   local modmissing=
   local revstatcode=
+  local alluptodate=1 
 
   if [[ " $* " =~ " --revstatus " ]]; then
     revstatcode=1
@@ -2172,35 +2173,50 @@ checkForModUpdate(){
 
   for modid in $(getModIds); do
     availupd="$(getAvailModLastUpdated "$modid")"
+    instupd="$(getInstalledModLastUpdated "$modid")"
     modname="$(getModName $modid)"
     if [ -z "$availupd" ]; then
       printf "Mod %d doesn't exist in the steam workshop\n" "$modid"
       modmissing=1
-    elif [ -n "$cancheckmodavail" ]; then
-      instupd="$(getLocalModLastUpdated "$modid")"
-      if [ -z "$instupd" ]; then
-        printf "Mod %d [%s] has not been downloaded\n" "$modid" "$modname"
-        updateavail=1
-      elif [ "$availupd" != "$instupd" ]; then
-        printf "Mod %d [%s] has been updated on the Steam workshop\n" "$modid" "$modname"
-        printf "Local last updated: %s\nSteam last updated: %s\n" "$(date --date="@$instupd")" "$(date --date="@$availupd")"
-        updateavail=1
+    elif [ "$instupd" != "$availupd" ]; then
+      alluptodate=
+      if [ -n "$cancheckmodavail" ]; then
+        localupd="$(getLocalModLastUpdated "$modid")"
+        if [ -z "$localupd" ]; then
+          printf "Mod %d [%s] has not been downloaded\n" "$modid" "$modname"
+          updateavail=1
+        elif [ "$availupd" != "$localupd" ]; then
+          printf "Mod %d [%s] has been updated on the Steam workshop\n" "$modid" "$modname"
+          printf "Local last updated: %s\nSteam last updated: %s\n" "$(date --date="@$localupd")" "$(date --date="@$availupd")"
+          updateavail=1
+        fi
       fi
     fi
     if [ ! -d "$arkserverroot/${arkserverdir}/Content/Mods/$modid" ]; then
       printf "Mod %d [%s] is not installed\n" "$modid" "$modname"
       updateavail=1
-    elif isModUpdateNeeded $modid; then
-      printf "Mod %d [%s] update needs to be applied\n" "$modid" "$modname"
-      updateavail=1
+    elif [ "$instupd" != "$availupd" ]; then
+      if isModUpdateNeeded $modid; then
+        printf "Mod %d [%s] update needs to be applied\n" "$modid" "$modname"
+        updateavail=1
+      elif [ -z "$cancheckmodavail" ]; then
+        printf "Mod %d [%s] update needs to be downloaded and applied\n" "$modid" "$modname"
+        updateavail=1
+      fi
     fi
   done
 
   if [ -n "$updateavail" ]; then
+    echo "One or more updates are available"
     if [ -n "$revstatcode" ]; then return 1; else return 0; fi
+  elif [ -n "$alluptodate" ]; then
+    echo "All mods are up to date"
+    if [ -n "$revstatcode" ]; then return 0; else return 1; fi
   elif [ -z "$cancheckmodavail" ]; then
+    echo "Cannot check if mods are up to date"
     if [ -n "$revstatcode" ]; then return 3; else return 0; fi
   elif [ -n "$modmissing" ]; then
+    echo "One or more mods are unavailable"
     return 2
   else
     echo "All mods are up to date"
@@ -2264,7 +2280,20 @@ listMods(){
 }
 
 #
-# Gets local mod manifest ID
+# Gets installed mod last update timestamp
+#
+getInstalledModLastUpdated(){
+  local modid="$1"
+  if [ ! -f "${arkserverroot}/${arkserverdir}/Content/Mods/${modid}.mod" ]; then return 0; fi
+  if [ -f "${arkserverroot}/${arkserverdir}/Content/Mods/${modid}/__modversion__.info" ]; then
+    cat "${arkserverroot}/${arkserverdir}/Content/Mods/${modid}/__modversion__.info"
+  else
+    stat -c "%Y" "${arkserverroot}/${arkserverdir}/Content/Mods/${modid}.mod"
+  fi
+}
+
+#
+# Gets local mod last update timestamp
 #
 getLocalModLastUpdated(){
   local modid="$1"
@@ -2275,7 +2304,7 @@ getLocalModLastUpdated(){
 }
 
 #
-# Gets available mod manifest ID
+# Gets available mod last update timestamp
 #
 getAvailModLastUpdated(){
   local modid="$1"
@@ -2291,11 +2320,17 @@ getAvailModLastUpdated(){
 # Checks if a mod update is available before trying to download it
 isModUpdateAvailable(){
   local modid="$1"
-  local instupd="$(getLocalModLastUpdated "$modid")"
+  local localupd="$(getLocalModLastUpdated "$modid")"
   local remupd="$(getAvailModLastUpdated "$modid")"
+  local instupd="$(getInstalledModLastUpdated "$modid")"
+
+  if [[ -n "$remupd" && "$instupd" == "$remupd" ]]; then
+    return 1
+  fi
+
   local steamworkshopdir="$(getSteamWorkshopDir)"
   if [ ! -f "${steamworkshopdir}/appworkshop_${mod_appid}.acf" ]; then return 0; fi
-  if [[ -n "${remupd}" && "${instupd}" != "${remupd}" ]]; then
+  if [[ -n "${remupd}" && "${localupd}" != "${remupd}" ]]; then
     return 0 # true
   fi
   return 1 # false
@@ -2440,7 +2475,7 @@ getModName(){
     modsrcdir="${modsrcdirs[$modid]}"
   fi
 
-  modname="$(curl -s "http://steamcommunity.com/sharedfiles/filedetails/?id=${modid}" | sed -n 's|^.*<div class="workshopItemTitle">\([^<]*\)</div>.*|\1|p')"
+  modname="$(curl -s "https://steamcommunity.com/sharedfiles/filedetails/?id=${modid}" | sed -n 's|^.*<div class="workshopItemTitle">\([^<]*\)</div>.*|\1|p')"
 
   if [ -n "$modname" ]; then
     echo "$modname"
@@ -2513,6 +2548,8 @@ doExtractMod(){
   fi
 
   if [ -f "$modsrcdir/mod.info" ]; then
+    local modupdatetime="$(getLocalModLastUpdated "$modid")"
+
     echo "Copying files to $modextractdir"
 
     if [ -f "$modsrcdir/${modbranch}NoEditor/mod.info" ]; then
@@ -2620,6 +2657,11 @@ doExtractMod(){
       cat "$modextractdir/modmeta.info" >>"${modextractdir}.mod"
     else
       echo -ne '\x01\x00\x00\x00\x08\x00\x00\x00ModType\x00\x02\x00\x00\x001\x00' >>"${modextractdir}.mod"
+    fi
+
+    if [ -n "${modupdatetime}" ]; then
+      touch -c --date="@${modupdatetime}" -- "${modextractdir}.mod"
+      echo "${modupdatetime}" >"${modextractdir}/__modversion__.info"
     fi
 
     echo "$modbranch" >"$modextractdir/__arkmanager_modbranch__.info"
