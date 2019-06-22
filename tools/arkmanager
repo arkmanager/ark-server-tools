@@ -1034,6 +1034,7 @@ doRun() {
   fi
 
   arkserveropts="$serverMap"
+  declare -A usedoptions
 
   while read varname; do
     val="${!varname}"
@@ -1049,6 +1050,7 @@ doRun() {
         ark_TotalConversionMod="${modid}"
         ;;
     esac
+    usedoptions[${varname}]="${val}"
   done < <(sed -n 's/^\(arkmod_[^= ]*\)=.*/\1/p' <"$configfile")
 
   if [[ ( -z "$serverMap" || "$serverMap" == "TheIsland" ) && -n "$serverMapModId" ]]; then
@@ -1104,42 +1106,51 @@ doRun() {
         arkextraopts=( "${arkextraopts[@]}" "-${name}" )
       ;;
     esac
-    unset $varname
+    usedoptions[$varname]="${val}"
   done < <(sed -n 's/^\(ark\(\|opt\|flag\)_[^= ]*\)=.*/\1/p' <"$configfile")
 
   # bring in ark_... options
   for varname in "${!ark_@}"; do
-    name="${varname#ark_}"
-    val="${!varname}"
+    if [ -z "${usedoptions[${varname}]}" ]; then
+      name="${varname#ark_}"
+      val="${!varname}"
 
-    # Port is actually one higher than specified
-    # i.e. specifying port 7777 will have the server
-    # use port 7778
-    if [ "$name" == "Port" ]; then
-      (( val = val - 1 ))
-    fi
+      # Port is actually one higher than specified
+      # i.e. specifying port 7777 will have the server
+      # use port 7778
+      if [ "$name" == "Port" ]; then
+        (( val = val - 1 ))
+      fi
 
-    if [ -n "$val" ]; then
-      arkserveropts="${arkserveropts}?${name}=${val}"
-    else
-      arkserveropts="${arkserveropts}?${name}"
+      if [ -n "$val" ]; then
+        arkserveropts="${arkserveropts}?${name}=${val}"
+      else
+        arkserveropts="${arkserveropts}?${name}"
+      fi
+      usedoptions[${varname}]="${val}"
     fi
   done
 
   # bring in arkflag_... flags
   for varname in "${!arkflag_@}"; do
-    name="${varname#arkflag_}"
+    if [ -z "${usedoptions[${varname}]}" ]; then
+      name="${varname#arkflag_}"
 
-    arkextraopts=( "${arkextraopts[@]}" "-${name}" )
+      arkextraopts=( "${arkextraopts[@]}" "-${name}" )
+      usedoptions[${varname}]="${val}"
+    fi
   done
 
   # bring in arkopt_... options
   for varname in "${!arkopt_@}"; do
-    name="${varname#arkopt_}"
-    val="${!varname}"
+    if [ -z "${usedoptions[${varname}]}" ]; then
+      name="${varname#arkopt_}"
+      val="${!varname}"
 
-    if [ -n "$val" ]; then
-      arkextraopts=( "${arkextraopts[@]}" "-${name}=${val}" )
+      if [ -n "$val" ]; then
+        arkextraopts=( "${arkextraopts[@]}" "-${name}=${val}" )
+      fi
+      usedoptions[${varname}]="${val}"
     fi
   done
 
