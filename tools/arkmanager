@@ -1027,7 +1027,7 @@ doRun() {
     fi
   fi
 
-  if [ " $* " = *" --wait "* ]; then
+  if [[ " $* " = *" --wait "* ]]; then
     # This requires bash 4+
     # $$ returns the main process, $BASHPID returns the current process
     kill -STOP $BASHPID # wait for caller to renice us
