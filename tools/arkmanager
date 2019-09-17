@@ -193,7 +193,7 @@ runAsRoot(){
   elif [ "$1" == "uninstall-tools" ]; then
     doUninstallTools
   else
-    runuser "$steamcmd_user" -s "$steamcmd_user_shellexec" -c "$(printf "%q" "$0")$(printf " %q" "$@")"
+    exec runuser "$steamcmd_user" -s "$steamcmd_user_shellexec" -c "$(printf "%q" "$0")$(printf " %q" "$@")"
     exit 1
   fi
 }
