@@ -601,7 +601,7 @@ The following options can be overridden on a per-instance basis:
 `notifyMsgServerTerminated`::
     Message to be sent when server has crashed and is being restarted. Use `-` to disable.
 
-`notifyvar_<varname>`:
+`notifyvar_<varname>`::
     Extra variables to be used to replace `{<varname>}` replacement parameters in notify message.
     e.g. `notifyvar_instancename="My Instance"` will replace `{instancename}` with `My Instance` in the notify message.
 
