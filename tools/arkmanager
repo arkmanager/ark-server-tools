@@ -584,6 +584,12 @@ function notify(){
     msg="${msg//\{msg\}/${1}}"
     msg="${msg//\{instance\}/${instance}}"
     msg="${msg//\{server\}/${HOSTNAME}}"
+
+    for v in "${!notifyvar_@}"; do
+        vn="${v#notifyvar_}"
+        msg="${msg//\{${vn}\}/${!v}}"
+    done
+
     notifyDiscord "$msg"
     notifyOverride "$msg"
   fi
