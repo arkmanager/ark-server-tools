@@ -308,7 +308,7 @@ checkConfig() {
 
     # SavedArks directory
     if [ -n "$arkserverroot" ]; then
-      local savedarksdir="${arkserverroot}/${arkserverdir}/Saved/${ark_AltSaveDirectoryName:-SavedArks}"
+      local savedarksdir="${arkserverroot}/${arkserverdir:-ShooterGame}/Saved/${ark_AltSaveDirectoryName:-SavedArks}"
       mkdir -p "${savedarksdir}"
       if [ ! -w "${savedarksdir}" ]; then
         echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tThe ARK SavedArks directory is not writable, and saveworld will fail"
@@ -317,9 +317,9 @@ checkConfig() {
 
     if [ "$1" != "installmod" ] && [ "$1" != "installmods" ]; then
       # Warn if any mods are requested but not installed
-      if [ -n "$arkserverroot" -a -d "${arkserverroot}/${arkserverdir}/Content/Mods" ]; then
+      if [ -n "$arkserverroot" -a -d "${arkserverroot}/${arkserverdir:-ShooterGame}/Content/Mods" ]; then
         for modid in $(getModIds); do
-          if [ ! -f "${arkserverroot}/${arkserverdir}/Content/Mods/${modid}/mod.info" ]; then
+          if [ ! -f "${arkserverroot}/${arkserverdir:-ShooterGame}/Content/Mods/${modid}/mod.info" ]; then
             echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tMod ${modid} is requested but not installed.  Run 'arkmanager installmod ${modid}' to install this mod."
           fi
         done
