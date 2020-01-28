@@ -300,7 +300,7 @@ checkConfig() {
   fi
 
   # Environment configuration
-  if [ "$1" != "install" ]; then
+  if [ "$1" != "install" ] && [ -n "$instance" ]; then
     # arkserverexec
     if [ -n "$arkserverroot" ] && [ ! -f "$arkserverroot/$arkserverexec" ] ; then
       echo -e "[" "$YELLOW" "WARN" "$NORMAL" "]" "\tYour ARK server exec could not be found."
