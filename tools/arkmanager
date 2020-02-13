@@ -2842,7 +2842,9 @@ doBackup(){
   for arg in "$@"; do
     case "$arg" in
       --allmaps) backupAllMaps=true; ;;
+      --no-allmaps) backupAllMaps=false; ;;
       --autobackups) includeAutoBackups=true; ;;
+      --no-autobackups) includeAutoBackups=false; ;;
       *)
         echo "Unrecognized option $arg"
         echo "Try 'arkmanager -h' or 'arkmanager --help' for more information."
@@ -2891,7 +2893,7 @@ doBackup(){
   fi
 
   # Copy other world files
-  if [ "$backupAllMaps" == "true" ]; then
+  if [ -n "$backupAllMaps" ] && [ "$backupAllMaps" != "false" ]; then
     echo -e "${NORMAL} Copying other ARK world files"
     for f in "${savedir}/"*.ark; do
       if [[ "${f}" != "${mapfile}" && "${f}" != "${savedir}/"*_??.??.????_??.??.??.ark ]]; then
@@ -2901,7 +2903,7 @@ doBackup(){
   fi
   
   # Copy map autobackups
-  if [ "$includeAutoBackups" == "true" ]; then
+  if [ -n "$includeAutoBackups" ] && [ "$includeAutoBackups" != "false" ]; then
     echo -e "${NORMAL} Copying all ARK world autobackup files"
     for f in "${savedir}/"*.ark; do
       if [[ "${f}" == "${savedir}/"*_??.??.????_??.??.??.ark ]]; then
