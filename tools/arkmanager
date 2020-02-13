@@ -2839,6 +2839,17 @@ doBackup(){
   mkdir -p "$backupdir"
   mkdir -p "$backupdirdaily"
 
+  for arg in "$@"; do
+    case "$arg" in
+      --allmaps) backupAllMaps=true; ;;
+      --autobackups) includeAutoBackups=true; ;;
+      *)
+        echo "Unrecognized option $arg"
+        echo "Try 'arkmanager -h' or 'arkmanager --help' for more information."
+        exit 1
+    esac
+  done
+
   if [[ -z "$savedir" ]]; then
     return 1
   fi
@@ -2880,9 +2891,20 @@ doBackup(){
   fi
 
   # Copy other world files
-  if [ -n "$backupAllMaps" ]; then
+  if [ "$backupAllMaps" == "true" ]; then
+    echo -e "${NORMAL} Copying other ARK world files"
     for f in "${savedir}/"*.ark; do
       if [[ "${f}" != "${mapfile}" && "${f}" != "${savedir}/"*_??.??.????_??.??.??.ark ]]; then
+        cp -p "${f}" "${backupdir}/${f##*/}"
+      fi
+    done
+  fi
+  
+  # Copy map autobackups
+  if [ "$includeAutoBackups" == "true" ]; then
+    echo -e "${NORMAL} Copying all ARK world autobackup files"
+    for f in "${savedir}/"*.ark; do
+      if [[ "${f}" == "${savedir}/"*_??.??.????_??.??.??.ark ]]; then
         cp -p "${f}" "${backupdir}/${f##*/}"
       fi
     done
@@ -3737,7 +3759,7 @@ main(){
 	  listMods
 	;;
         backup)
-          doBackup
+          doBackup "${options[@]}"
         ;;
         broadcast)
           doBroadcast "${args[@]}"
