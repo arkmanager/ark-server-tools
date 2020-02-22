@@ -330,7 +330,8 @@ instances.
 `enablemod <modnum>=<modtype>`::
     Enables the `arkmod_<modnum>` setting in the instance config.
     modtype defaults to `game`.
-    Mod types:
++
+Mod types:
 
     `game`;;
         A mod in `GameModIds`
@@ -385,14 +386,16 @@ instances.
         This is the hour field of the cron job.
 	If you want to have the command execute every n hours, then
 	use `--hour='*/n'`
-	Default: `*` (i.e. all hours)
++
+Default: `*` (i.e. all hours)
 
     `--minute=<minute>`;;
         Specifies one or more minutes of the hour when the command
         should execute.  This is the minute field of the cron job.
 	If you want to have the command execute every n minutes,
 	then use `--minute='*/n'`
-	Default: `0` (i.e. the first minute of the hour)
++
+Default: `0` (i.e. the first minute of the hour)
 
     `--enable-output`;;
         Enables the output from the command - the cron daemon usually
@@ -467,35 +470,42 @@ The following options can be overridden on a per-instance basis:
 
 `steamcmd_appinfocache`::
     The path to the Steam appinfo cache file.
-    Most systems will have this in `$HOME/Steam/appcache/appinfo.vdf`, 
-    but some systems (especially with the `steamcmd` package installed)
-    have this instead in `$HOME/.steam/appcache/appinfo.vdf`.
-    You will need to modify this setting if this is the case.
++
+Most systems will have this in `$HOME/Steam/appcache/appinfo.vdf`, 
+but some systems (especially with the `steamcmd` package installed)
+have this instead in `$HOME/.steam/appcache/appinfo.vdf`.
+You will need to modify this setting if this is the case.
 
 `steamcmd_workshoplog`::
     The path to the Steam workshop log file.
-    Most systems will have this in `$HOME/Steam/logs/workshop_log.txt`,
-    but some systems (especially with the `steamcmd` package installed)
-    have this instead in `$HOME/.steam/logs/workshop_log.txt`.
-    You will need to modify this setting if this is the case.
++
+Most systems will have this in `$HOME/Steam/logs/workshop_log.txt`,
+but some systems (especially with the `steamcmd` package installed)
+have this instead in `$HOME/.steam/logs/workshop_log.txt`.
+You will need to modify this setting if this is the case.
 
 `steamdataroot`::
     The path to the SteamCMD data.
-    Defaults to `$steamcmdroot`
-    Some SteamCMD installations  (especially with the `steamcmd` package installed)
-    store downloaded files (workshop files, etc.) in /home/.steam instead of in the steamcmd
-    directory.
++
+Defaults to `$steamcmdroot`
++
+Some SteamCMD installations  (especially with the `steamcmd` package installed)
+store downloaded files (workshop files, etc.) in /home/.steam instead of in the steamcmd
+directory.
 
 `steamworkshopdir`::
     The path to the SteamCMD workshop directory.
-    Defaults to `$steamdataroot/steamapps/workshop`
-    Some SteamCMD installations (especially with the `steamcmd` package installed)
-    use `SteamApps` as the steamapps directory instead of `steamapps`
++
+Defaults to `$steamdataroot/steamapps/workshop`
++
+Some SteamCMD installations (especially with the `steamcmd` package installed)
+use `SteamApps` as the steamapps directory instead of `steamapps`
 
 `arkserverexec`::
     The relative path within an ARK server install where the
     ARK server executable can be found.
-    For the standard ARK server, this should be `ShooterGame/Binaries/Linux/ShooterGameServer`
++
+For the standard ARK server, this should be `ShooterGame/Binaries/Linux/ShooterGameServer`
 
 `arkbackupdir`::
     The directory in which to store backups.  Can be overridden in
@@ -504,7 +514,8 @@ The following options can be overridden on a per-instance basis:
 `arkBackupPostCommand`::
     Command to be run using `eval` after backup completes.
     `$backupfile` will be set to the full path of the backup tar.bz2 file.
-    e.g. `arkBackupPostCommand='aws s3 cp "$backupfile" "s3://bucket_name/backups"'`
++
+e.g. `arkBackupPostCommand='aws s3 cp "$backupfile" "s3://bucket_name/backups"'`
 
 `arkwarnminutes`::
     The number of minutes over which the shutdown and update warnings
@@ -517,8 +528,9 @@ The following options can be overridden on a per-instance basis:
 `arkAlwaysRestartOnCrash`::
     Set to `true` to enable automatically restarting even when the
     server has not become ready for player connections.
-    Be aware that this may cause the server to enter an endless
-    crash-restart loop if the cause of the crash is not resolved.
++
+Be aware that this may cause the server to enter an endless
+crash-restart loop if the cause of the crash is not resolved.
 
 `arkAutoUpdateOnStart`::
     Set to `true` to enable updating before server startup
@@ -612,7 +624,8 @@ The following options can be overridden on a per-instance basis:
 
 `notifyvar_<varname>`::
     Extra variables to be used to replace `{<varname>}` replacement parameters in notify message.
-    e.g. `notifyvar_instancename="My Instance"` will replace `{instancename}` with `My Instance` in the notify message.
++
+e.g. `notifyvar_instancename="My Instance"` will replace `{instancename}` with `My Instance` in the notify message.
 
 `noNotifyWarn`::
     Disable notification at start of shutdown warning period
