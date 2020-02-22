@@ -580,6 +580,7 @@ function notifyOverride(){
 function notify(){
   if [[ -n "$1" && "$1" != "-" ]]; then
     local msg
+    local notifymsg="$1"
     msg="${notifyTemplate:-Message from instance \`{instance\}\` on server \`{server\}\`: {msg\}}"
     msg="${msg//\{msg\}/${1}}"
     msg="${msg//\{instance\}/${instance}}"
@@ -592,6 +593,10 @@ function notify(){
 
     notifyDiscord "$msg"
     notifyOverride "$msg"
+
+    if [ -n "${notifyCommand}" ]; then
+      eval " ${notifyCommand}"
+    fi
   fi
 }
 

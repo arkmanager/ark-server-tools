@@ -617,6 +617,11 @@ The following options can be overridden on a per-instance basis:
 `noNotifyWarn`::
     Disable notification at start of shutdown warning period
 
+`notifyCommand`::
+    Notify command to run.  Notify message will be in `${notifymsg}`, and templated message will be in `${msg}`
++
+e.g. `notifyCommand='echo "$msg" | mailx -s "Message from instance ${instance} on server ${HOSTNAME}" "email@domain.com"'`
+
 `logdir`::
     Specifies where to store log files
 
