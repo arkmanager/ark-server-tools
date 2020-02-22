@@ -501,6 +501,11 @@ The following options can be overridden on a per-instance basis:
     The directory in which to store backups.  Can be overridden in
     the instance config.
 
+`arkBackupPostCommand`::
+    Command to be run using `eval` after backup completes.
+    `$backupfile` will be set to the full path of the backup tar.bz2 file.
+    e.g. `arkBackupPostCommand='aws s3 cp "$backupfile" "s3://bucket_name/backups"'`
+
 `arkwarnminutes`::
     The number of minutes over which the shutdown and update warnings
     should be run

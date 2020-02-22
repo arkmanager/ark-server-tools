@@ -2836,6 +2836,7 @@ doBackup(){
   local savedcfgdir="${saverootdir}/Config/LinuxServer"
   local savedir="$(getSavedArksDirectory "${saverootdir}")"
   local mapname="$(getServerMapName)"
+  local backupfile
   mkdir -p "$backupdir"
   mkdir -p "$backupdirdaily"
 
@@ -3015,11 +3016,12 @@ doBackup(){
   #Tar the files and remove the original Backup Directory.  Saves about 50MB of disk space per backup
 
   echo -ne "${NORMAL} Compressing Backup "
+  backupfile="${arkbackupdir}/${daystamp}/${instance}.${datestamp}.tar.bz2"
 
-  tar -jcf "${arkbackupdir}/${daystamp}/${instance}.${datestamp}.tar.bz2" -C "${arkbackupdir}" "${datestamp}"
+  tar -jcf "${backupfile}" -C "${arkbackupdir}" "${datestamp}"
   rm -rf ${backupdir}
 
-  if [ -f "${arkbackupdir}/${daystamp}/${instance}.${datestamp}.tar.bz2" ]; then
+  if [ -f "${backupfile}" ]; then
    echo -e "${NORMAL}\e[68G[   ${GREEN}OK${NORMAL}   ]"
   else
     echo -e "${NORMAL}\e[68G[ ${RED}FAILED${NORMAL} ]"
@@ -3040,6 +3042,10 @@ doBackup(){
         fi
         (( sz += fsz ))
       done)
+  fi
+
+  if [ -n "${arkPostBsckupCommand}" ] && [ -f "${backupfile}" ]; then
+    eval " ${arkPostBsckupCommand}"
   fi
 }
 
