@@ -538,6 +538,21 @@ crash-restart loop if the cause of the crash is not resolved.
 `arkBackupPreUpdate`::
     Set to `true` to enable automatic backups before updating
 
+`arkPreStart`::
+    Set to the path to a script to execute on startup if it exists
++
+default: /path/to/instance/config.start
+
+`arkGameUserSettingsIniFile`::
+    Set to the path to an ini file to replace GameUserSettings.ini on startup if it exists
++
+default: /path/to/instance/config.GameUserSettings.ini
+
+`arkGameIniFile`::
+    Set to the path to an ini file to replace Game.ini on startup if it exists
++
+default: /path/to/instance/config.Game.ini
+
 `arkStagingDir`::
     Sets the staging directory in order to download updates
     before shutting down the server

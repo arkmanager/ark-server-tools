@@ -1311,10 +1311,30 @@ doStart() {
   if [ -n "$serverpid" ] && kill -0 "$serverpid"; then
     logprint "Start aborted due to server already running - pid: $serverpid"
   else
+    local saverootdir="${arkserverroot}/${arkserverdir}/Saved"
+    local savedcfgdir="${saverootdir}/Config/LinuxServer"
     local prestart="${configfile%.cfg}.start"
+    local gusini="${configfile%.cfg}.GameUserSettings.ini"
+    local gameini="${configfile%.cfg}.Game.ini"
+
+    if [ -n "${arkGameUserSettingsIniFile}" ]; then
+      gusini="${arkGameUserSettingsIniFile}"
+    fi
+
+    if [ -n "${arkGameIniFile}" ]; then
+      gameini="${arkGameIniFile}"
+    fi
 
     if [ -n "${arkPreStart}" ]; then
       prestart="${arkPreStart}"
+    fi
+
+    if [[ -n "${gusini}" && -f "${gusini}" ]]; then
+      cp "${gusini}" "${savedcfgdir}/GameUserSettings.ini"
+    fi
+
+    if [[ -n "${gameini}" && -f "${gameini}" ]]; then
+      cp "${gameini}" "${savedcfgdir}/Game.ini"
     fi
 
     if [[ -n "${prestart}" && -f "${prestart}" ]]; then
