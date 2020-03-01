@@ -605,6 +605,11 @@ default: /path/to/instance/config.Game.ini
     `{seconds}`;;
         Valid in `msgTimeSeconds`, replaced at runtime with seconds remaining until shutdown
 
+`broadcastcmd`::
+    Used to override which rcon command to use for server broadcasts - e.g. serverchat
++
+default: `broadcast`
+
 `discordWebhookURL`::
     Discord Webhook URL - server status messages and update warning messages will be sent through
     this if specified

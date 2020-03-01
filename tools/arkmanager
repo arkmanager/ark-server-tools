@@ -545,7 +545,7 @@ doExitServer() {
 # Broadcast message
 #
 doBroadcast(){
-  rconcmd "broadcast $1"
+  rconcmd "${broadcastcmd:-broadcast} $1"
 }
 
 #
@@ -3418,6 +3418,7 @@ useConfig() {
   # This is linked to the directory, not to the instance
   arkupdatelockfile="${arkupdatelockfile:-${arkserverdir}/Saved/.ark-update.lock}"
   arkupdatetimefile="${arkupdatetimefile:-${arkserverdir}/Saved/.ark-update.time}"
+  broadcastcmd="${broadcastcmd:-broadcast}"
 }
 
 addArkOpt() {
