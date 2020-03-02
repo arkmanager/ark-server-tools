@@ -3547,6 +3547,14 @@ EOE
 #---------------------
 
 main(){
+  if [ -f "${arkstGlobalCfgFile}" ]; then
+      source "${arkstGlobalCfgFile}"
+  fi
+
+  if [ -f "${HOME}/${arkstUserCfgFile}" ]; then
+      source "${HOME}/${arkstUserCfgFile}"
+  fi
+
   # check the configuration and throw errors or warnings if needed
   checkConfig
   
