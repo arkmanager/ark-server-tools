@@ -3735,6 +3735,9 @@ main(){
     case "$command" in
       wait)
         doWait "${options[@]}"
+	if [ "$#" == 0 ]; then
+	  break
+	fi
         continue
       ;;
     esac
