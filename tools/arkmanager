@@ -217,6 +217,10 @@ if [ -f "${HOME}/${arkstUserCfgFile}" ]; then
     source "${HOME}/${arkstUserCfgFile}"
 fi
 
+if [[ -n "${steamcmd_user}" && "${steamcmd_user}" != "--me" && "$USERNAME" != "${steamcmd_user}" && -n "$usesudo" ]]; then
+    exec sudo --user="${steamcmd_user}" "$0" "$@"
+fi
+
 if [[ -n "${serverbasedir}" && -d "${serverbasedir}" ]]; then
     cd "${serverbasedir}"
 elif [ -d "${HOME}" ]; then
