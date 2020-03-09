@@ -1776,17 +1776,19 @@ doWarn(){
             printWarnMessage "$1" "$2" "minutes" "$warnminutes" "$usenotify"
             usenotify=
             for (( min = warnminutes - 1; min >= warninterval; min-- )); do
-              numplayers=$(numPlayersConnected)
-              echo "There are ${numplayers} players connected"
-              if [[ "numplayers" == "-1" ]]; then
-                echo "Server is not running.  Shutting down immediately"
-                notify "${notifyMsgServerNotRunning:-Server is not running.  Shutting down immediately}"
-                return 0
-              elif (( (numplayers + 0) == 0 )); then
-                doBroadcastWithEcho "Nobody is connected.  Shutting down immediately"
-                notify "${notifyMsgNobodyConnected:-Nobody is connected.  Shutting down immediately}"
-                rm -f "${arkserverroot}/${arkwarnlockfile}"
-                return 0
+              if [ "$arkprecisewarn" != "true" ]; then
+                numplayers=$(numPlayersConnected)
+                echo "There are ${numplayers} players connected"
+                if [[ "numplayers" == "-1" ]]; then
+                  echo "Server is not running.  Shutting down immediately"
+                  notify "${notifyMsgServerNotRunning:-Server is not running.  Shutting down immediately}"
+                  return 0
+                elif (( (numplayers + 0) == 0 )); then
+                  doBroadcastWithEcho "Nobody is connected.  Shutting down immediately"
+                  notify "${notifyMsgNobodyConnected:-Nobody is connected.  Shutting down immediately}"
+                  rm -f "${arkserverroot}/${arkwarnlockfile}"
+                  return 0
+                fi
               fi
               if isUpdateCancelRequested; then
                 doBroadcastWithEcho "Restart cancelled by player request"
@@ -1821,17 +1823,19 @@ doWarn(){
         printWarnMessage "$1" "$2" "seconds" "$warnseconds" "$usenotify"
         usenotify=
         if (( warnseconds >= 20 )); then
-          numplayers=$(numPlayersConnected)
-          echo "There are ${numplayers} players connected"
-          if [[ "numplayers" == "-1" ]]; then
-            echo "Server is not running.  Shutting down immediately"
-            notify "${notifyMsgServerNotRunning:-Server is not running.  Shutting down immediately}"
-            return 0
-          elif (( (numplayers + 0) == 0 )); then
-            doBroadcastWithEcho "Nobody is connected.  Shutting down immediately"
-            notify "${notifyMsgNobodyConnected:-Nobody is connected.  Shutting down immediately}"
-            rm -f "${arkserverroot}/${arkwarnlockfile}"
-            return 0
+          if [ "$arkprecisewarn" != "true" ]; then
+            numplayers=$(numPlayersConnected)
+            echo "There are ${numplayers} players connected"
+            if [[ "numplayers" == "-1" ]]; then
+              echo "Server is not running.  Shutting down immediately"
+              notify "${notifyMsgServerNotRunning:-Server is not running.  Shutting down immediately}"
+              return 0
+            elif (( (numplayers + 0) == 0 )); then
+              doBroadcastWithEcho "Nobody is connected.  Shutting down immediately"
+              notify "${notifyMsgNobodyConnected:-Nobody is connected.  Shutting down immediately}"
+              rm -f "${arkserverroot}/${arkwarnlockfile}"
+              return 0
+            fi
           fi
           if isUpdateCancelRequested; then
             doBroadcastWithEcho "Restart cancelled by player request"
