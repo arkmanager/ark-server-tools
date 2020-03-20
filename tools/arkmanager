@@ -192,6 +192,9 @@ runAsRoot(){
     doUpgradeTools
   elif [ "$1" == "uninstall-tools" ]; then
     doUninstallTools
+  elif [ "$steamcmd_user" = "$USERNAME" ]; then
+    echo "Error: steamcmd_user is root; aborting"
+    exit 1
   else
     exec /sbin/runuser "$steamcmd_user" -s "$steamcmd_user_shellexec" -c "$(printf "%q" "$0")$(printf " %q" "$@")"
     exit 1
