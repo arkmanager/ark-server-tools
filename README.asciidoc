@@ -77,6 +77,8 @@ curl -sL http://git.io/vtf5N | sudo bash -s steam
 
 NB: You may want to change the `bash -s` parameter to fit your steam user if different from `steam`.
 
+If you want to install the `arkmanager` service, append the `--install-service` option to the install command.
+
 This will copy the `arkmanager` script and its daemon to the proper directories and will create an empty log directory in `/var/log` for ARK Server Tools.
 
 To instead perform a user-install of ARK Server Tools as an unprivileged user, run this command:
