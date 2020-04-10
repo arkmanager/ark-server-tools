@@ -160,6 +160,20 @@ Common Options
 `--spinner`::
     Uses a spinner for progress
 
+`--arkopt,{option}`::
+    Adds the specified option to the server command line; used with `run`, `start`, and `restart`.
++
+Options can be of the form:
+
+    `-<option>`;;
+        Equivalent to adding `arkflag_<option>=true` for this run
+    `-<option>=<value>`;;
+        Equivalent to adding `arkopt_<option>=<value>` for this run
+    `<option>`;;
+        Equivalent to adding `ark_<option>=""` for this run
+    `<option>=<value>`;;
+        Equivalent to adding `ark_<option>=<value>` for this run
+
 Instanceless commands
 ~~~~~~~~~~~~~~~~~~~~~
 
@@ -328,6 +342,9 @@ instances.
     Runs the `uninstallmod` command followed by the `installmod`
     command
 
+`list-mods`::
+    Lists the mods in the config and/or installed in the server directory
+
 `enablemod <modnum>`::
 `enablemod <modnum>=<modtype>`::
     Enables the `arkmod_<modnum>` setting in the instance config.
@@ -344,6 +361,9 @@ Mod types:
     `tc`;;
     `totalconversion`;;
         The `TotalConversionMod` mod
+
+`disablemod <modnum>`::
+    Disables the `arkmod_<modnum>` setting in the instance config.
 
 `backup`::
     Backs up the saved world and game config files to a compressed
@@ -366,6 +386,12 @@ Mod types:
 
 `status`::
     Prints the status of the ARK server
+
+`printconfig`::
+    Prints the config option names and which file they were found in
+
+`getpid`::
+    Prints the server PID
 
 `install-cronjob <command>`::
     Installs a cron job that executes the specified command.
