@@ -2913,7 +2913,7 @@ doBackup(){
     else
       echo "${NORMAL}\e[68G[ ${RED}FAILED${NORMAL} ]"
       cimapfile="$(find "${savedir}" -maxdepth 1 -iname "${mapname}.ark" -or -iname "${mapname}.tmp" | head -n1)"
-      if [ -n "${mapfile}" ]; then
+      if [ -n "${cimapfile}" ]; then
         logprint "Inconsistent casing in map name - ${mapname}.ark does not exist, but ${cimapfile##*/} does"
       else
         logprint "Saved ark file could not be found"
