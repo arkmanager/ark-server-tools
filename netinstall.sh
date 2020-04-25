@@ -24,7 +24,7 @@ for arg in "$@"; do
     --perform-user-install) userinstall2=yes; ;;
     --yes-i-really-want-to-perform-a-user-install) userinstall=yes; ;;
     *)
-      if [ -n "$channel" ]; then
+      if [[ -n "$channel" || "$arg" == --* ]]; then
         args+="$arg"
       else
         channel="$arg"
