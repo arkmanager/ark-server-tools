@@ -3021,6 +3021,11 @@ doBackup(){
     fi
   done
 
+  if [ -d "${saverootdir}/SavedGames" ]; then
+    echo -e "${NORMAL} Copying mod persistent info "
+    cp -av "${saverootdir}/SavedGames" "${backupdir}/SavedGames"
+  fi
+
   # ARK server uses Lock-Truncate-Write-Unlock
   echo -ne "${NORMAL} Copying GameUserSettings.ini "
   cp -p "${savedcfgdir}/GameUserSettings.ini" "${backupdir}/GameUserSettings.ini"
