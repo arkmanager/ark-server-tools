@@ -3097,35 +3097,42 @@ doRestore(){
   local savedcfgdir="${saverootdir}/Config/LinuxServer"
   local savedir="$(getSavedArksDirectory "${saverootdir}")"
   local savedir="$(getSavedArksDirectory "${saverootdir}")"
+  local restorePath=
   if [[ $# -ne 0 ]] ; then
    backupFile=$1
   else
-   backupFile=$(find ${arkbackupdir}/ -type f -printf "%T@ %p\n" | sort -n | cut -d' ' -f 2- | tail -n 1)
+   backupFile=$(find "${arkbackupdir}/" -type f -printf "%T@ %p\n" | sort -n | cut -d' ' -f 2- | tail -n 1)
   fi
-  if [[ ! -f $backupFile ]] ; then
+  if [[ ! -f "$backupFile" ]] ; then
     if [[ -f "$arkbackupdir/$backupFile" ]] ; then
       backupFile="$arkbackupdir/$backupFile"
     else
-      echo File $backupFile not found.
+      echo "File $backupFile" not found."
       exit -1
     fi
   fi
-  echo restore ${backupFile}
-  for file in $(tar -tjf ${backupFile}) ; do
-       # ini are the config files
-    if [[  $file == *.ini ]] ; then
-       tar xjvf $backupFile -C ${savedcfgdir} --strip-components=1 $file
-    fi # ark file in savedir
-    if [[  $file == *.ark ]] ; then
-       tar xjvf $backupFile -C ${savedir} --strip-components=1 $file
-    fi  # arkprofile in config dir
-    if [[  $file == *.arkprofile ]] ; then
-       tar xjvf $backupFile -C ${savedir} --strip-components=1 $file
-    fi
-    if [[ $? ]] ; then
-      echo -e "${NORMAL}\e[68G[   ${GREEN}OK${NORMAL}   ]"
-    else
-      echo -e "${NORMAL}\e[68G[ ${RED}FAILED${NORMAL} ]"
+  echo "Restoring from ${backupFile}"
+  for file in $(tar -tjf "${backupFile}") ; do
+    restorePath=
+    case "${file}" in
+      SaveGames/*) # mod persistent info
+        restorePath="${saverootdir}"
+        ;;
+      *.ini) # ini are the config files
+        restorePath="${savedcfgdir}"
+        ;;
+      *.ark|*.arkprofile|*.arktribe|*.arktributetribe) # ark file in savedir
+        restorePath="${savedir}"
+        ;;
+    esac
+    if [ -n "${restorePath}" ]; then
+      echo "Restoring ${file} to ${restorePath}"
+      tar -xjvf "${backupFile}" -C "${restorePath}" --strip-components=1 "${file}"
+      if [ $? == 0 ] ; then
+        echo -e "${NORMAL}\e[68G[   ${GREEN}OK${NORMAL}   ]"
+      else
+        echo -e "${NORMAL}\e[68G[ ${RED}FAILED${NORMAL} ]"
+      fi
     fi
   done
  echo -e "${NORMAL}Restore Complete \e[68G[   ${GREEN}OK${NORMAL}   ]"
