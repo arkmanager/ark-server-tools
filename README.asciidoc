@@ -369,6 +369,10 @@ Mod types:
     Backs up the saved world and game config files to a compressed
     tar file in the backups directory specified in the config
 
+`restore "<filepath>"`::
+    Restore a Backup
+    If no file is specified, the latest backup is used (helpful for a new server)
+
 `broadcast "message"`::
     Broadcasts a message to players connected to the server using
     the RCON `broadcast` command
