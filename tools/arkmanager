@@ -3107,7 +3107,7 @@ doRestore(){
     if [[ -f "$arkbackupdir/$backupFile" ]] ; then
       backupFile="$arkbackupdir/$backupFile"
     else
-      echo "File $backupFile" not found."
+      echo "File $backupFile not found."
       exit -1
     fi
   fi
