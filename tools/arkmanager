@@ -3089,7 +3089,47 @@ doBackup(){
     eval " ${arkBackupPostCommand}"
   fi
 }
-
+#
+# Copies server state from a backup
+#
+doRestore(){
+  local saverootdir="${arkserverroot}/${arkserverdir}/Saved"
+  local savedcfgdir="${saverootdir}/Config/LinuxServer"
+  local savedir="$(getSavedArksDirectory "${saverootdir}")"
+  local savedir="$(getSavedArksDirectory "${saverootdir}")"
+  if [[ $# -ne 0 ]] ; then
+   backupFile=$1
+  else
+   backupFile=$(find ${arkbackupdir}/ -type f -printf "%T@ %p\n" | sort -n | cut -d' ' -f 2- | tail -n 1)
+  fi
+  if [[ ! -f $backupFile ]] ; then
+    if [[ -f "$arkbackupdir/$backupFile" ]] ; then
+      backupFile="$arkbackupdir/$backupFile"
+    else
+      echo File $backupFile not found.
+      exit -1
+    fi
+  fi
+  echo restore ${backupFile}
+  for file in $(tar -tjf ${backupFile}) ; do
+       # ini are the config files
+    if [[  $file == *.ini ]] ; then
+       tar xjvf $backupFile -C ${savedcfgdir} --strip-components=1 $file
+    fi # ark file in savedir
+    if [[  $file == *.ark ]] ; then
+       tar xjvf $backupFile -C ${savedir} --strip-components=1 $file
+    fi  # arkprofile in config dir
+    if [[  $file == *.arkprofile ]] ; then
+       tar xjvf $backupFile -C ${savedir} --strip-components=1 $file
+    fi
+    if [[ $? ]] ; then
+      echo -e "${NORMAL}\e[68G[   ${GREEN}OK${NORMAL}   ]"
+    else
+      echo -e "${NORMAL}\e[68G[ ${RED}FAILED${NORMAL} ]"
+    fi
+  done
+ echo -e "${NORMAL}Restore Complete \e[68G[   ${GREEN}OK${NORMAL}   ]"
+}
 #
 # Install a cron job to execute a particular command
 #
@@ -3479,6 +3519,7 @@ showUsage() {
 	Commands that take one or more instances:
 	Command               Description
 	backup                Saves a backup of your server inside the backup directory
+	restore <filepath>    Restore a Backup, If no file is specified, the latest backup is used
 	broadcast <msg>       Sends a message to all users connected to server
 	saveworld             Saves the game world to disk
 	rconcmd <cmd>         Execute RCON command on server
@@ -3619,6 +3660,7 @@ main(){
       install-cronjob) nrarg=1; ;;
       remove-cronjob) nrarg=1; ;;
       remove-mods) nrarg=1; ;;
+      restore) nrarg=1; ;;
     esac
 
     # Enumerate the options and arguments
@@ -3816,11 +3858,14 @@ main(){
           doUninstallMod "${args[@]}"
           doInstallMod "${args[@]}"
         ;;
-	list-mods)
-	  listMods
-	;;
+        list-mods)
+          listMods
+        ;;
         backup)
           doBackup "${options[@]}"
+        ;;
+        restore)
+          doRestore "${args[@]}"
         ;;
         broadcast)
           doBroadcast "${args[@]}"
@@ -3883,4 +3928,3 @@ main(){
 if [[ "$0" = "${BASH_SOURCE[0]}" || -z "${BASH_SOURCE}" ]]; then
   main "$@"
 fi
-
