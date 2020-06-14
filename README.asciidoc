@@ -729,6 +729,10 @@ ARK server options:
     the `-StructureDestructionTag=DestroySwampSnowStructures`
     option.
 
+`arkNoPortDecrement="<bool>"`::
+    True if the `Port` option should be passed untouched.
+    False for the old behaviour of decrementing the `Port`.
+
 Instance config files
 ~~~~~~~~~~~~~~~~~~~~~
 
