@@ -1136,7 +1136,7 @@ doRun() {
       # Port is actually one higher than specified
       # i.e. specifying port 7777 will have the server
       # use port 7778
-      if [ "$name" == "Port" ]; then
+      if [[ "$name" == "Port" && ( -z "$arkNoPortDecrement" || "$arkNoPortDecrement" == "false" ) ]]; then
         (( val = val - 1 ))
       fi
 
