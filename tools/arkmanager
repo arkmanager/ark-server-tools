@@ -243,7 +243,7 @@ elif [[ ! -d "${PWD}" || ! -r "${PWD}" || ! -x "${PWD}" ]]; then
     cd /
 fi
 
-lsof=$(which lsof)
+lsof=lsof
 if [ -x /usr/sbin/lsof ]; then
   lsof=/usr/sbin/lsof
 fi
