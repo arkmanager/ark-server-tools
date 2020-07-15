@@ -4,7 +4,7 @@
 #
 # Original author:      LeXaT
 # Maintainer:           FezVrasta
-# Contributors:         Sispheor, Atriusftw, klightspeed, lexat, puseidr
+# Contributors:         Sispheor, Atriusftw, klightspeed, lexat, puseidr, chriscpritchard
 
 #disable exportall so options are no exported under Debian et al.
 set +o allexport
@@ -13,34 +13,39 @@ set +o allexport
 arkstVersion='1.6'
 arkstTag=''
 arkstCommit=''
+arkstUsePkgManager=0
 arkstGithubRepo="FezVrasta/ark-server-tools"
 arkstRootUseEnv=''
 arkstGlobalCfgFile='/etc/arkmanager/arkmanager.cfg'
 arkstUserCfgFile='.arkmanager.cfg'
 
 doUpgradeTools() {
-  local sudo=sudo
-  if [ $(id -u) == 0 -o "$steamcmd_user" == "--me" ]; then
-    sudo=
-  fi
-
-  local reinstall_args=()
-  if [ -n "$install_bindir" ]; then
-    reinstall_args=( "${reinstall_args[@]}" "--bindir" "$install_bindir" )
-  fi
-  if [ -n "$install_libexecdir" ]; then
-    reinstall_args=( "${reinstall_args[@]}" "--libexecdir" "$install_libexecdir" )
-  fi
-  if [ -n "$install_datadir" ]; then
-    reinstall_args=( "${reinstall_args[@]}" "--datadir" "$install_datadir" )
-  fi
-
-  echo "arkmanager v${arkstVersion}: Checking for updates..."
-
-  if [ -n "$arkstUnstable" ] || [ "$arkstChannel" != "master" ]; then
-    doUpgradeToolsFromBranch
+  if [ "$arkstUsePkgManager" == 1 ]; then
+    echo "arkmanager v${arkstVersion}: Please check for, and install, updates using your system's package manager"
   else
-    doUpgradeToolsFromRelease
+    local sudo=sudo
+    if [ $(id -u) == 0 -o "$steamcmd_user" == "--me" ]; then
+      sudo=
+    fi
+
+    local reinstall_args=()
+    if [ -n "$install_bindir" ]; then
+      reinstall_args=( "${reinstall_args[@]}" "--bindir" "$install_bindir" )
+    fi
+    if [ -n "$install_libexecdir" ]; then
+      reinstall_args=( "${reinstall_args[@]}" "--libexecdir" "$install_libexecdir" )
+    fi
+    if [ -n "$install_datadir" ]; then
+      reinstall_args=( "${reinstall_args[@]}" "--datadir" "$install_datadir" )
+    fi
+
+    echo "arkmanager v${arkstVersion}: Checking for updates..."
+
+    if [ -n "$arkstUnstable" ] || [ "$arkstChannel" != "master" ]; then
+      doUpgradeToolsFromBranch
+    else
+      doUpgradeToolsFromRelease
+    fi
   fi
 }
 
@@ -140,20 +145,24 @@ doUpgradeToolsFromRelease(){
 }
 
 doUninstallTools() {
-  local sudo=sudo
-  if [ $(id -u) == 0 -o "$steamcmd_user" == "--me" ]; then
-    sudo=
-  fi
+  if [ "$arkstUsePkgManager" == 1 ]; then
+    echo "arkmanager v${arkstVersion}: Please uninstall using your system's package manager"
+  else
+    local sudo=sudo
+    if [ $(id -u) == 0 -o "$steamcmd_user" == "--me" ]; then
+      sudo=
+    fi
 
-  read -p "Are you sure you want to uninstall the ARK Server Tools? [y/N]" -n 1 -r
+    read -p "Are you sure you want to uninstall the ARK Server Tools? [y/N]" -n 1 -r
 
-  if [[ "$REPLY" =~ ^[Yy]$ ]]; then
-    if [ -n "${install_datadir}" -a -x "${install_datadir}/arkmanager-uninstall.sh" ]; then
-      $sudo "${install_datadir}/arkmanager-uninstall.sh"
-      exit 0
-    elif [ -n "${install_libexecdir}" -a -x "${install_libexecdir}/arkmanager-uninstall.sh" ]; then
-      $sudo "${install_libexecdir}/arkmanager-uninstall.sh"
-      exit 0
+    if [[ "$REPLY" =~ ^[Yy]$ ]]; then
+      if [ -n "${install_datadir}" -a -x "${install_datadir}/arkmanager-uninstall.sh" ]; then
+        $sudo "${install_datadir}/arkmanager-uninstall.sh"
+        exit 0
+      elif [ -n "${install_libexecdir}" -a -x "${install_libexecdir}/arkmanager-uninstall.sh" ]; then
+        $sudo "${install_libexecdir}/arkmanager-uninstall.sh"
+        exit 0
+      fi
     fi
   fi
 }
@@ -234,7 +243,7 @@ elif [[ ! -d "${PWD}" || ! -r "${PWD}" || ! -x "${PWD}" ]]; then
     cd /
 fi
 
-lsof=lsof
+lsof=$(which lsof)
 if [ -x /usr/sbin/lsof ]; then
   lsof=/usr/sbin/lsof
 fi
