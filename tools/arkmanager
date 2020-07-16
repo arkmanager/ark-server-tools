@@ -13,7 +13,7 @@ set +o allexport
 arkstVersion='1.6'
 arkstTag=''
 arkstCommit=''
-arkstUsePkgManager=0
+arkstUsePkgManager='' #Set to 1 if you are a distribution package maintainer otherwise leave empty
 arkstGithubRepo="FezVrasta/ark-server-tools"
 arkstRootUseEnv=''
 arkstGlobalCfgFile='/etc/arkmanager/arkmanager.cfg'
