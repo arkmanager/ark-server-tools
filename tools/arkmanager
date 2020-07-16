@@ -11,16 +11,39 @@ set +o allexport
 
 # Script version
 arkstVersion='1.6'
+
+### The following variables are changed by an installer or package manager, and are excluded from git blob hash calculation
+### If an override is added, do not put anything after arkstSomeOverride='' in a commit
+
+# Set by installer to git tag (i.e. release version)
 arkstTag=''
+
+# Set by installer to git commit
 arkstCommit=''
-arkstUsePkgManager='' #Set to 1 if you are a distribution package maintainer otherwise leave empty
-arkstGithubRepo="FezVrasta/ark-server-tools"
+
+# Set this if you are a distribution package maintainer otherwise leave empty
+arkstUsePkgManager=''
+
+# Set this to allow variable expansion in variables sourced from arkmanager.cfg
 arkstRootUseEnv=''
-arkstGlobalCfgFile='/etc/arkmanager/arkmanager.cfg'
-arkstUserCfgFile='.arkmanager.cfg'
+
+# Set this to override the main fork
+arkstGithubRepoOverride=''
+
+# Set this to override the global config file path
+arkstGlobalCfgFileOverride=''
+
+# Set this to override the user config file path
+arkstUserCfgFileOverride=''
+
+### Do not modify the following settings in an installer or package manager - use the above overrides instead
+
+arkstGithubRepo="${arkstGithubRepoOverride:-FezVrasta/ark-server-tools}"
+arkstGlobalCfgFile="${arkstGlobalCfgFileOverride:-/etc/arkmanager/arkmanager.cfg}"
+arkstUserCfgFile="${arkstUserCfgFileOverride:-.arkmanager.cfg}"
 
 doUpgradeTools() {
-  if [ "$arkstUsePkgManager" == 1 ]; then
+  if [ -n "$arkstUsePkgManager" ]; then
     echo "arkmanager v${arkstVersion}: Please check for, and install, updates using your system's package manager"
   else
     local sudo=sudo
@@ -66,6 +89,9 @@ doUpgradeToolsFromCommit(){
   sed -i -e "s|^arkstCommit='.*'|arkstCommit='${commit}'|" \
          -e "s|^arkstTag='.*'|arkstTag='${tagname}'|" \
          -e "s|^arkstRootUseEnv='.*'|arkstRootUseEnv='${arkstRootUseEnv}'|" \
+         -e "s|^arkstGithubRepoOverride='.*'|arkstGithubRepoOverride='${arkstGithubRepoOverride}'|" \
+         -e "s|^arkstGlobalCfgFileOverride='.*'|arkstGlobalCfgFileOverride='${arkstGlobalCfgFileOverride}'|" \
+         -e "s|^arkstUserCfgFileOverride='.*'|arkstUserCfgFileOverride='${arkstUserCfgFileOverride}'|" \
          arkmanager
   echo "Running install.sh"
   $sudo bash install.sh "$steamcmd_user" "${reinstall_args[@]}"
@@ -145,7 +171,7 @@ doUpgradeToolsFromRelease(){
 }
 
 doUninstallTools() {
-  if [ "$arkstUsePkgManager" == 1 ]; then
+  if [ -n "$arkstUsePkgManager" ]; then
     echo "arkmanager v${arkstVersion}: Please uninstall using your system's package manager"
   else
     local sudo=sudo
@@ -3751,14 +3777,17 @@ main(){
       --version)
         echo "Version: ${arkstVersion}"
         echo "Channel: ${arkstChannel}"
+	if [ -n "${arkstUsePkgManager}" ]; then
+	  echo "Installed by package manager: ${arkstUsePkgManager}"
+	fi
         if [ -n "${arkstCommit}" ]; then
           echo "Commit: ${arkstCommit:0:7}"
         fi
         if [ -n "${arkstTag}" ]; then
           echo "Release Tag: ${arkstTag}"
         fi
-        blobsize="$(sed "s@^\\(arkst\\(Commit\\|Tag\\|RootUseEnv\\)\\)=.*@\\1=''@" "$0" | wc -c)"
-        echo "Blob SHA: $( (echo -ne "blob ${blobsize}\0"; sed "s@^\\(arkst\\(Commit\\|Tag\\|RootUseEnv\\)\\)=.*@\\1=''@" "$0") | sha1sum | cut -d' ' -f1)"
+        blobsize="$(sed "s@^\\(arkst\\(Commit\\|Tag\\|RootUseEnv\\|UsePkgManager\\|GithubRepoOverride\\|GlobalCfgFileOverride\\|UserCfgFileOverride\\)\\)=.*@\\1=''@" "$0" | wc -c)"
+        echo "Blob SHA: $( (echo -ne "blob ${blobsize}\0"; sed "s@^\\(arkst\\(Commit\\|Tag\\|RootUseEnv\\|UsePkgManager\\|GithubRepoOverride\\|GlobalCfgFileOverride\\|UserCfgFileOverride\\)\\)=.*@\\1=''@" "$0") | sha1sum | cut -d' ' -f1)"
         exit 1
       ;;
       -h|--help)
