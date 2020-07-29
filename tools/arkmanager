@@ -1012,6 +1012,13 @@ function isTheServerOnline(){
 # Check if anybody is connected to the server
 #
 function numPlayersConnected(){
+  if [[ -n "$arkflag_crossplay" || -n "$arkflag_epiconly" ]]; then
+    players="$(rconcmd listplayers 2>/dev/null)"
+    if [[ "$players" == '"'?*'"' ]]; then
+      echo "$players" | wc -l
+    fi
+  fi
+
   if [ -n "$arkUsePlayerList" ]; then
     perl -MSocket -e '
       my $port = int($ARGV[0]);
@@ -3253,7 +3260,9 @@ printStatus(){
     echo -e "$NORMAL" "Server running: " "$RED" "No" "$NORMAL"
   fi
 
-  if isTheServerUp ;then
+  if [ -n "$arkflag_epiconly" ]; then
+    echo -e "$NORMAL" "Cannot check server status with -epiconly"
+  elif isTheServerUp ;then
     echo -e "$NORMAL" "Server listening: " "$RED" "No" "$NORMAL"
   else
     echo -e "$NORMAL" "Server listening: " "$GREEN" "Yes" "$NORMAL"
@@ -3269,7 +3278,7 @@ printStatus(){
       my $players = ord(substr($rest, 2, 1));
       my $maxplayers = ord(substr($rest, 3, 1));
       print "Server Name: $servername\n";
-      print "Players: $players / $maxplayers\n";
+      print "Steam Players: $players / $maxplayers\n";
       send($socket, "\xff\xff\xff\xff\x55\xff\xff\xff\xff", 0, $sockaddr);
       $data = "";
       recv($socket, $data, 1400, 0) or (print "Challenge request failed" and exit(1));
@@ -3291,7 +3300,7 @@ printStatus(){
           $active = $active + 1;
         }
       }
-      print "Active Players: $active\n";
+      print "Active Steam Players: $active\n";
       ' "$(getQueryPort)" "$(getMultiHomeIP)"
 
     if isTheServerOnline; then
@@ -3300,6 +3309,13 @@ printStatus(){
       echo -e "$NORMAL" "Steam connect link: " "$GREEN" "steam://connect/${publicip}:$(getQueryPort)" "$NORMAL"
     else
       echo -e "$NORMAL" "Server online: " "$RED" "No" "$NORMAL"
+    fi
+  fi
+
+  if [[ -n "$arkflag_crossplay" || -n "$arkflag_epiconly" ]]; then
+    players="$(rconcmd listplayers 2>/dev/null)"
+    if [[ "$players" == '"'?*'"' ]]; then
+      echo "Active Players: $(echo "$players" | wc -l)"
     fi
   fi
 
