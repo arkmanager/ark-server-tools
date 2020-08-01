@@ -1015,7 +1015,7 @@ function numPlayersConnected(){
   if [[ -n "$arkflag_crossplay" || -n "$arkflag_epiconly" ]]; then
     players="$(rconcmd listplayers 2>/dev/null)"
     if [[ "$players" == '"'?*'"' ]]; then
-      echo "$players" | wc -l
+      echo "$players" | grep '[0-9]\.' | wc -l
     fi
   fi
 
@@ -3315,7 +3315,7 @@ printStatus(){
   if [[ -n "$arkflag_crossplay" || -n "$arkflag_epiconly" ]]; then
     players="$(rconcmd listplayers 2>/dev/null)"
     if [[ "$players" == '"'?*'"' ]]; then
-      echo "Active Players: $(echo "$players" | wc -l)"
+      echo "Active Players: $(echo "$players" | grep '[0-9]\.' | wc -l)"
     fi
   fi
 
