@@ -3487,6 +3487,30 @@ doPrintConfig(){
   done
 }
 
+doTestConfig(){
+  set -e
+  if [ -r "${arkstGlobalCfgFile}" ]; then
+      source "${arkstGlobalCfgFile}"
+  fi
+
+  if [ -r "${HOME}/${arkstUserCfgFile}" ]; then
+      source "${HOME}/${arkstUserCfgFile}"
+  fi
+
+  if [ -r "$configfile" ]; then
+      source "$configfile"
+  fi
+
+  test -n "$steamcmdroot" -a -d "$steamcmdroot" -a -r "$steamcmdroot"
+  test -f "$steamcmdroot/$steamcmdexec"
+  test -n "$arkserverroot" -a -d "$arkserverroot" -a -r "$arkserverroot"
+  test -n "$arkserverexec" -a -x "$arkserverroot/$arkserverexec"
+  test -n "$savedarksdir" -a -d "$savedarksdir" -a -w "$savedarksdir"
+  test "$mod_branch" = "Linux" -a -z "$nowarnmodbranch"
+  test -n "$logdir" -a -d "$logdir" -a -w "$logdir"
+  set +e
+}
+
 useConfig() {
   configfile=
   if [ -f "/etc/arkmanager/instances/${1}.cfg" ]; then
@@ -3943,6 +3967,9 @@ main(){
         printconfig)
           doPrintConfig
         ;;
+	testconfig)
+	  doTestConfig
+	;;
         status)
           printStatus
         ;;
