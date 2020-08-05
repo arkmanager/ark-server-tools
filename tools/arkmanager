@@ -328,16 +328,16 @@ checkConfig() {
   # SteamCMD configuration
   # steamcmdroot
   if [ ! -d "$steamcmdroot" ] ; then
-    echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tYour SteamCMD root seems not valid."
+    echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tYour SteamCMD root seems not valid." >&2
   fi
   # steamcmdexec
   if [ ! -f "$steamcmdroot/$steamcmdexec" ] ; then
-    echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tYour SteamCMD exec could not be found."
+    echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tYour SteamCMD exec could not be found." >&2
   fi
   # steamcmd_user
   if [ "$steamcmd_user" != "--me" ]; then
     if ! getent passwd $steamcmd_user > /dev/null 2>&1 ; then
-      echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tYour SteamCMD user is not valid."
+      echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tYour SteamCMD user is not valid." >&2
     fi
   fi
 
@@ -345,7 +345,7 @@ checkConfig() {
   if [ "$1" != "install" ] && [ -n "$instance" ]; then
     # arkserverexec
     if [ -n "$arkserverroot" ] && [ ! -f "$arkserverroot/$arkserverexec" ] ; then
-      echo -e "[" "$YELLOW" "WARN" "$NORMAL" "]" "\tYour ARK server exec could not be found."
+      echo -e "[" "$YELLOW" "WARN" "$NORMAL" "]" "\tYour ARK server exec could not be found." >&2
     fi
 
     # SavedArks directory
@@ -353,7 +353,7 @@ checkConfig() {
       local savedarksdir="${arkserverroot}/${arkserverdir:-ShooterGame}/Saved/${ark_AltSaveDirectoryName:-SavedArks}"
       mkdir -p "${savedarksdir}"
       if [ ! -w "${savedarksdir}" ]; then
-        echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tThe ARK SavedArks directory is not writable, and saveworld will fail"
+        echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tThe ARK SavedArks directory is not writable, and saveworld will fail" >&2
       fi
     fi
 
@@ -362,7 +362,7 @@ checkConfig() {
       if [ -n "$arkserverroot" -a -d "${arkserverroot}/${arkserverdir:-ShooterGame}/Content/Mods" ]; then
         for modid in $(getModIds); do
           if [ ! -f "${arkserverroot}/${arkserverdir:-ShooterGame}/Content/Mods/${modid}/mod.info" ]; then
-            echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tMod ${modid} is requested but not installed.  Run 'arkmanager installmod ${modid}' to install this mod."
+            echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tMod ${modid} is requested but not installed.  Run 'arkmanager installmod ${modid}' to install this mod." >&2
           fi
         done
       fi
@@ -371,13 +371,13 @@ checkConfig() {
 
   # Warn if mod_branch=Linux
   if [ "$mod_branch" == "Linux" -a -z "$nowarnmodbranch" ]; then
-    echo -e "[" "$YELLOW" "WARN" "$NORMAL" "]" "\tmod_branch is set to Linux. Linux mods are known to cause the server to crash. It is suggested you set mod_branch to Windows."
+    echo -e "[" "$YELLOW" "WARN" "$NORMAL" "]" "\tmod_branch is set to Linux. Linux mods are known to cause the server to crash. It is suggested you set mod_branch to Windows." >&2
   fi
 
   # Service configuration
   # logdir
   if [ ! -w "$logdir" ] ; then
-    echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tYou do not permission to write to the log directory."
+    echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tYou do not permission to write to the log directory." >&2
   fi
 }
 
