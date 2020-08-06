@@ -135,7 +135,7 @@ if [ "$showusage" == "yes" ]; then
     echo "                [PREFIX=${PREFIX}]"
     echo "--exec-prefix   Specify the prefix under which to install executables"
     echo "                [EXECPREFIX=${EXECPREFIX}]"
-    echo "--data-prefix   Specify the prefix under which to install suppor files"
+    echo "--data-prefix   Specify the prefix under which to install support files"
     echo "                [DATAPREFIX=${DATAPREFIX}]"
     echo "--install-root  Specify the staging directory in which to perform the install"
     echo "                [INSTALL_ROOT=${INSTALL_ROOT}]"
