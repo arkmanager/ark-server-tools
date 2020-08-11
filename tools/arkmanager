@@ -27,6 +27,9 @@ arkstUsePkgManager=''
 # Set this to allow variable expansion in variables sourced from arkmanager.cfg
 arkstRootUseEnv=''
 
+# Set this to override the command used to drop privileges
+arkstRunUserCommandOverride=''
+
 # Set this to override the main fork
 arkstGithubRepoOverride=''
 
@@ -89,6 +92,7 @@ doUpgradeToolsFromCommit(){
   sed -i -e "s|^arkstCommit='.*'|arkstCommit='${commit}'|" \
          -e "s|^arkstTag='.*'|arkstTag='${tagname}'|" \
          -e "s|^arkstRootUseEnv='.*'|arkstRootUseEnv='${arkstRootUseEnv}'|" \
+         -e "s|^arkstRunUserCommandOverride='.*'|arkstRunUserCommandOverride='${arkstRunUserCommandOverride}'|" \
          -e "s|^arkstGithubRepoOverride='.*'|arkstGithubRepoOverride='${arkstGithubRepoOverride}'|" \
          -e "s|^arkstGlobalCfgFileOverride='.*'|arkstGlobalCfgFileOverride='${arkstGlobalCfgFileOverride}'|" \
          -e "s|^arkstUserCfgFileOverride='.*'|arkstUserCfgFileOverride='${arkstUserCfgFileOverride}'|" \
@@ -231,7 +235,7 @@ runAsRoot(){
     echo "Error: steamcmd_user is root; aborting"
     exit 1
   else
-    exec /sbin/runuser "$steamcmd_user" -s "$steamcmd_user_shellexec" -c "$(printf "%q" "$0")$(printf " %q" "$@")"
+    exec "${arkstRunUserCommandOverride:-/sbin/runuser}" "$steamcmd_user" -s "$steamcmd_user_shellexec" -c "$(printf "%q" "$0")$(printf " %q" "$@")"
     exit 1
   fi
 }
@@ -3826,8 +3830,8 @@ main(){
         if [ -n "${arkstTag}" ]; then
           echo "Release Tag: ${arkstTag}"
         fi
-        blobsize="$(sed "s@^\\(arkst\\(Commit\\|Tag\\|RootUseEnv\\|UsePkgManager\\|GithubRepoOverride\\|GlobalCfgFileOverride\\|UserCfgFileOverride\\)\\)=.*@\\1=''@" "$0" | wc -c)"
-        echo "Blob SHA: $( (echo -ne "blob ${blobsize}\0"; sed "s@^\\(arkst\\(Commit\\|Tag\\|RootUseEnv\\|UsePkgManager\\|GithubRepoOverride\\|GlobalCfgFileOverride\\|UserCfgFileOverride\\)\\)=.*@\\1=''@" "$0") | sha1sum | cut -d' ' -f1)"
+        blobsize="$(sed "s@^\\(arkst\\(Commit\\|Tag\\|RootUseEnv\\|UsePkgManager\\|RunUserCommandOverride\\|GithubRepoOverride\\|GlobalCfgFileOverride\\|UserCfgFileOverride\\)\\)=.*@\\1=''@" "$0" | wc -c)"
+        echo "Blob SHA: $( (echo -ne "blob ${blobsize}\0"; sed "s@^\\(arkst\\(Commit\\|Tag\\|RootUseEnv\\|UsePkgManager\\|RunUserCommandOverride\\|GithubRepoOverride\\|GlobalCfgFileOverride\\|UserCfgFileOverride\\)\\)=.*@\\1=''@" "$0") | sha1sum | cut -d' ' -f1)"
         exit 1
       ;;
       -h|--help)
