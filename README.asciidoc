@@ -573,17 +573,17 @@ crash-restart loop if the cause of the crash is not resolved.
 `arkPreStart`::
     Set to the path to a script to execute on startup if it exists
 +
-default: /path/to/instance/config.start
+default: `/path/to/instance/config.start` where `/path/to/instance/config` is the path to the instance config file with the `.cfg` extension removed - e.g. `/etc/arkmanager/instances/main.start`
 
 `arkGameUserSettingsIniFile`::
-    Set to the path to an ini file to replace GameUserSettings.ini on startup if it exists
+    Set to the path to an ini file that, if it exists, will overwrite `${arkserverroot}/ShooterGame/Saved/Config/LinuxServer/GameUserSettings.ini` on startup
 +
-default: /path/to/instance/config.GameUserSettings.ini
+default: `/path/to/instance/config.GameUserSettings.ini` where `/path/to/instance/config` is the path to the instance config file with the `.cfg` extension removed - e.g. `/etc/arkmanager/instances/main.GameUserSettings.ini`
 
 `arkGameIniFile`::
-    Set to the path to an ini file to replace Game.ini on startup if it exists
+    Set to the path to an ini file that, if it exists, will overwrite `${arkserverroot}/ShooterGame/Saved/Config/LinuxServer/Game.ini` on startup
 +
-default: /path/to/instance/config.Game.ini
+default: `/path/to/instance/config.Game.ini` where `/path/to/instance/config` is the path to the instance config file with the `.cfg` extension removed - e.g. `/etc/arkmanager/instances/main.Game.ini`
 
 `arkStagingDir`::
     Sets the staging directory in order to download updates
