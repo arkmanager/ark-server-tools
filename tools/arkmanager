@@ -3,7 +3,8 @@
 # ARK: survival evolved manager
 #
 # Original author:      LeXaT
-# Maintainer:           FezVrasta
+# Original Maintainer:  FezVrasta
+# Current Maintainer:   klightspeed
 # Contributors:         Sispheor, Atriusftw, klightspeed, lexat, puseidr, chriscpritchard
 
 #disable exportall so options are no exported under Debian et al.
@@ -38,7 +39,7 @@ arkstUserCfgFileOverride=''
 
 ### Do not modify the following settings in an installer or package manager - use the above overrides instead
 
-arkstGithubRepo="${arkstGithubRepoOverride:-FezVrasta/ark-server-tools}"
+arkstGithubRepo="${arkstGithubRepoOverride:-arkmanager/ark-server-tools}"
 arkstGlobalCfgFile="${arkstGlobalCfgFileOverride:-/etc/arkmanager/arkmanager.cfg}"
 arkstUserCfgFile="${arkstUserCfgFileOverride:-.arkmanager.cfg}"
 
