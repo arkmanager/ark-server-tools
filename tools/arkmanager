@@ -356,6 +356,11 @@ checkConfig() {
       if [ ! -w "${savedarksdir}" ]; then
         echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tThe ARK SavedArks directory is not writable, and saveworld will fail" >&2
       fi
+      
+      mkdir -p "${arkserverroot}/${arkserverdir:-ShooterGame}/Content/Mods"
+      if [ ! -w "${arkserverroot}/${arkserverdir:-ShooterGame}/Content/Mods" ]; then
+        echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tThe ARK Mods directory is not writable, and installmod will fail" >&2
+      fi
     fi
 
     if [ "$1" != "installmod" ] && [ "$1" != "installmods" ]; then
