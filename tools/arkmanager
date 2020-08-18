@@ -1,5 +1,5 @@
 #!/bin/bash
-# shellcheck disable=SC2155
+# shellcheck disable=SC2154,SC2155 source=arkmanager.cfg,instance.cfg.example
 
 # ARK: survival evolved manager
 #
