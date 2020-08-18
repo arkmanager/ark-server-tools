@@ -2944,7 +2944,7 @@ doBackup(){
     return 1
   fi
 
-  echo "${NORMAL} Saved arks directory is ${savedir}"
+  echo -e "${NORMAL} Saved arks directory is ${savedir}"
 
   # ARK server uses Write-Unlink-Rename
   echo -ne "${NORMAL} Copying ARK world file (${mapname}) "
