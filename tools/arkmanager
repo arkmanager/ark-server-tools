@@ -128,7 +128,7 @@ doUpgradeToolsFromBranch(){
   if [[ $arkstLatestVersion > $arkstVersion ]]; then
     read -p "A new version was found! Do you want to upgrade ARK Server Tools to v${arkstLatestVersion}?" -n 1 -r
     echo
-  elif [[ $arkstLatestVersion == $arkstVersion && "$arkstLatestCommit" != "$arkstCommit" ]]; then
+  elif [[ $arkstLatestVersion == "$arkstVersion" && "$arkstLatestCommit" != "$arkstCommit" ]]; then
     read -p "A hotfix is available for v${arkstLatestVersion}.  Do you wish to install it?" -n 1 -r
     echo
   else
@@ -939,7 +939,7 @@ function getServerPID(){
 # Check id the server process is alive
 #
 function isTheServerRunning(){
-  if [ -n "`getServerPID`" ]; then
+  if [ -n "$(getServerPID)" ]; then
     return 0
   else
     return 1
@@ -2882,7 +2882,7 @@ doEnableMod(){
 doDisableMod(){
   local modid="$1"
   local modvar="arkmod_$modid"
-  if [ "$ark_GameModIds" = *"$modid"* ]; then
+  if [[ "$ark_GameModIds" = *"$modid"* ]]; then
     sed -i "s|^\(ark_GameModIds=\(\|[\"']\)\(\|[^\"' ]*,\)\)${modid},*|\1|" "$configfile"
   fi
   if [ -n "$modvar" ]; then
