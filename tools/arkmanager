@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2155
 
 # ARK: survival evolved manager
 #
@@ -1748,6 +1749,8 @@ isUpdateCancelRequested(){
         xargs -0 grep -F -e "${chatCommandRestartCancel}" | 
         sed 's@^[[]\(....\)\.\(..\)\.\(..\)-\(..\)\.\(..\)\.\(..\):.*@\1-\2-\3 \4:\5:\6 UTC@' | 
         head -n1)"
+    # canceltime is a command, not a string
+    # shellcheck disable=SC2157
     if [ -n canceltime ]; then
       canceltime="$(date +%s --date="${canceltime}")"
       local timenow="$(date +%s --date="now - 5 minutes")"
@@ -3155,8 +3158,8 @@ doRestore(){
     if [[ -f "$arkbackupdir/$backupFile" ]] ; then
       backupFile="$arkbackupdir/$backupFile"
     else
-      echo "File $backupFile not found."
-      exit -1
+      echo "File $backupFile not found." 1>&2
+      exit 1
     fi
   fi
   echo "Restoring from ${backupFile}"
