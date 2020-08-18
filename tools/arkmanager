@@ -184,10 +184,10 @@ doUninstallTools() {
     read -p "Are you sure you want to uninstall the ARK Server Tools? [y/N]" -n 1 -r
 
     if [[ "$REPLY" =~ ^[Yy]$ ]]; then
-      if [ -n "${install_datadir}" -a -x "${install_datadir}/arkmanager-uninstall.sh" ]; then
+      if [ -n "${install_datadir}" ] && [ -x "${install_datadir}/arkmanager-uninstall.sh" ]; then
         $sudo "${install_datadir}/arkmanager-uninstall.sh"
         exit 0
-      elif [ -n "${install_libexecdir}" -a -x "${install_libexecdir}/arkmanager-uninstall.sh" ]; then
+      elif [ -n "${install_libexecdir}" ] && [ -x "${install_libexecdir}/arkmanager-uninstall.sh" ]; then
         $sudo "${install_libexecdir}/arkmanager-uninstall.sh"
         exit 0
       fi
@@ -366,7 +366,7 @@ checkConfig() {
 
     if [ "$1" != "installmod" ] && [ "$1" != "installmods" ]; then
       # Warn if any mods are requested but not installed
-      if [ -n "$arkserverroot" -a -d "${arkserverroot}/${arkserverdir:-ShooterGame}/Content/Mods" ]; then
+      if [ -n "$arkserverroot" ] && [ -d "${arkserverroot}/${arkserverdir:-ShooterGame}/Content/Mods" ]; then
         for modid in $(getModIds); do
           if [ ! -f "${arkserverroot}/${arkserverdir:-ShooterGame}/Content/Mods/${modid}/mod.info" ]; then
             echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tMod ${modid} is requested but not installed.  Run 'arkmanager installmod ${modid}' to install this mod." >&2
@@ -377,7 +377,7 @@ checkConfig() {
   fi
 
   # Warn if mod_branch=Linux
-  if [ "$mod_branch" == "Linux" -a -z "$nowarnmodbranch" ]; then
+  if [ "$mod_branch" == "Linux" ] && [ -z "$nowarnmodbranch" ]; then
     echo -e "[" "$YELLOW" "WARN" "$NORMAL" "]" "\tmod_branch is set to Linux. Linux mods are known to cause the server to crash. It is suggested you set mod_branch to Windows." >&2
   fi
 
@@ -776,7 +776,7 @@ function parseSteamACF(){
     elif [ "$name" == "{" ]; then
       parseSteamACF "$1" "$2" "${3}.${sname}"
     else
-      if [ "$3" == "$1" -a "$name" == "$2" ]; then
+      if [ "$3" == "$1" ] && [ "$name" == "$2" ]; then
         echo "$val"
         break
       fi
@@ -2006,7 +2006,7 @@ doUpdate() {
   if [ -n "$appupdate" ] || isUpdateNeeded; then
     appupdate=1
 
-    if [ -n "${arkStagingDir}" -a "${arkStagingDir}" != "${arkserverroot}" ]; then
+    if [ -n "${arkStagingDir}" ] && [ "${arkStagingDir}" != "${arkserverroot}" ]; then
       if [ ! -d "$arkStagingDir/${arkserverdir}" ]; then
         logprint "Copying to staging directory"
         mkdir -p "$arkStagingDir"
@@ -2079,14 +2079,14 @@ doUpdate() {
   fi
 
   if [ -n "$downloadonly" ]; then
-    if [ -n "$appupdate" -a -n "$arkStagingDir" -a "$arkStagingDir" != "$arkserverroot" ]; then
+    if [ -n "$appupdate" ] && [ -n "$arkStagingDir" ] && [ "$arkStagingDir" != "$arkserverroot" ]; then
       logprint "Server update downloaded"
     fi
     if [ -n "$modupdate" ]; then
       logprint "Mod update downloaded"
     fi
     logprint "Not applying update - download-only requested"
-  elif [ -n "$appupdate" -o -n "$modupdate" -o -n "$bgupdate" ]; then
+  elif [ -n "$appupdate" ] || [ -n "$modupdate" ] || [ -n "$bgupdate" ]; then
     if false && [ -f "$arkserverroot/version.txt" ]; then
       arkversion="$(<"$arkserverroot/version.txt")"
     else
@@ -2157,7 +2157,7 @@ doUpdate() {
     fi
 
     if [ -n "$appupdate" ]; then
-      if [ -d "${arkStagingDir}" -a "${arkStagingDir}" != "${arkserverroot}" ]; then
+      if [ -d "${arkStagingDir}" ] && [ "${arkStagingDir}" != "${arkserverroot}" ]; then
         logprint "Applying update from staging directory"
         if [ "$(stat -c "%d" "$arkserverroot")" == "$(stat -c "%d" "$arkStagingDir")" ]; then
           if [ -n "$useRefLinks" ]; then
@@ -2560,7 +2560,7 @@ isModUpdateNeeded(){
     fi
 
     while read f; do
-      if [ \( ! -f "$moddestdir/${f%.z}" \) -o "$modsrcdir/$f" -nt "$moddestdir/${f%.z}" ]; then
+      if [ \( ! -f "$moddestdir/${f%.z}" \) ] || [ "$modsrcdir/$f" -nt "$moddestdir/${f%.z}" ]; then
         return 0
       fi
     done < <(find "$modsrcdir" -type f ! -name "*.z.uncompressed_size" -printf "%P\n")
@@ -2665,7 +2665,7 @@ doExtractMod(){
     find "$modsrcdir" -type d -printf "$modextractdir/%P\0" | xargs -0 -r mkdir -p
 
     find "$modextractdir" -type f ! -name '.*' -printf "%P\n" | while read f; do
-      if [ \( ! -f "$modsrcdir/$f" \) -a \( ! -f "$modsrcdir/${f}.z" \) ]; then
+      if [ \( ! -f "$modsrcdir/$f" \) ] && [ \( ! -f "$modsrcdir/${f}.z" \) ]; then
         rm "$modextractdir/$f"
       fi
     done
@@ -2677,7 +2677,7 @@ doExtractMod(){
     done
 
     find "$modsrcdir" -type f ! \( -name '*.z' -or -name '*.z.uncompressed_size' \) -printf "%P\n" | while read f; do
-      if [ \( ! -f "$modextractdir/$f" \) -o "$modsrcdir/$f" -nt "$modextractdir/$f" ]; then
+      if [ \( ! -f "$modextractdir/$f" \) ] || [ "$modsrcdir/$f" -nt "$modextractdir/$f" ]; then
         printf "%10d  %s  " "`stat -c '%s' "$modsrcdir/$f"`" "$f"
         if [[ -n "$useRefLinks" && "$(stat -c "%d" "$modsrcdir")" == "$(stat -c "%d" "$modextractdir")" ]]; then
           cp --reflink=auto "$modsrcdir/$f" "$modextractdir/$f"
@@ -2689,7 +2689,7 @@ doExtractMod(){
     done
 
     find "$modsrcdir" -type f -name '*.z' -printf "%P\n" | while read f; do
-      if [ \( ! -f "$modextractdir/${f%.z}" \) -o "$modsrcdir/$f" -nt "$modextractdir/${f%.z}" ]; then
+      if [ \( ! -f "$modextractdir/${f%.z}" \) ] || [ "$modsrcdir/$f" -nt "$modextractdir/${f%.z}" ]; then
         printf "%10d  %s  " "`stat -c '%s' "$modsrcdir/$f"`" "${f%.z}"
         perl -M'Compress::Raw::Zlib' -e '
           my $sig;
