@@ -1326,7 +1326,7 @@ doRun() {
 
     # Wait on the now-dead process to reap it and get its return status
     wait $serverpid
-    echo "`timestamp`: exited with status $?"
+    echo "$(timestamp): exited with status $?"
 
     # doStop will remove the autorestart file
     if [ ! -f "$arkserverroot/$arkautorestartfile" ]; then
@@ -1336,12 +1336,14 @@ doRun() {
 
     if [ "$restartserver" -ne 0 ]; then
       notify "${notifyMsgServerTerminated:-Server exited - restarting}"
-      echo "`timestamp`: restarting server"
+      echo "$(timestamp): restarting server"
     fi
   done
 }
 
 doRunBG(){
+  # Iterating over ls might be fragile, /proc/*/fs shouldn't be affected.
+  # shellcheck disable=SC2045
   for fd in $(ls /proc/$BASHPID/fd/); do
     [[ $fd -gt 2 && $fd != 255 ]] && exec {fd}<&-
   done
