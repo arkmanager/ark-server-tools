@@ -19,8 +19,9 @@ installservice=
 for arg in "$@"; do
   case "$arg" in
     --verbose) output=/dev/fd/1; ;;
-    --output=*) output="${1#--output=}"; ;;
+    --output=*) output="${arg#--output=}"; ;;
     --unstable) unstable=1; ;;
+    --repo=*) arkstGithubRepo="${arg#--repo=}"; ;;
     --perform-user-install) userinstall2=yes; ;;
     --yes-i-really-want-to-perform-a-user-install) userinstall=yes; ;;
     *)
