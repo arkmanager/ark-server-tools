@@ -3,6 +3,27 @@
 This tool allows you to manage any ARK: Survival Evolved linux server without having to remember long commands.
 It provides a lot of features, to get the full list check the <<Usage>> section.
 
+Known issue with updating
+-------------------------
+If updating from 1.6.53 or earlier, you will likely get the following message:
+```
+Unable to get latest release
+```
+If updating from 1.6.53 or earlier, and `arkstUnstable` is set, then it is likely to say that a hotfix is available, but fail to install it.
+
+Please either:
+
+* edit `arkmanager` wherever it is installed, and replace
++
+`arkstGithubRepo="FezVrasta/ark-server-tools"`
++
+with
++
+`arkstGithubRepo="arkmanager/ark-server-tools"`
++
+or
+* re-install using the netinstall script below.
+
 Installation
 ------------
 
