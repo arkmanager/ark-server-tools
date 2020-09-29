@@ -3938,7 +3938,7 @@ main(){
           doCancelShutdown "${options[@]}"
         ;;
         install)
-          doInstall
+          doInstall "${options[@]}"
         ;;
         update)
           doUpdate "${options[@]}"
@@ -3950,7 +3950,7 @@ main(){
           checkForModUpdate "${options[@]}"
         ;;
         installmod)
-          doInstallMod "${args[@]}"
+          doInstallMod "${args[@]}" "${options[@]}"
         ;;
         enablemod)
           doEnableMod "${args[@]}"
@@ -3959,7 +3959,7 @@ main(){
           doDisableMod "${args[@]}"
         ;;
         installmods)
-          doInstallAllMods
+          doInstallAllMods "${options[@]}"
         ;;
         uninstallmods)
           doUninstallAllMods
@@ -3969,7 +3969,7 @@ main(){
         ;;
         reinstallmod)
           doUninstallMod "${args[@]}"
-          doInstallMod "${args[@]}"
+          doInstallMod "${args[@]}" "${options[@]}"
         ;;
         list-mods)
           listMods
