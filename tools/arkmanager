@@ -1292,11 +1292,11 @@ doRun() {
             # Enable auto-restart if the server is up
             echo "$(timestamp): server is up"
             notify "${notifyMsgServerUp:-Server is up}"
-	    if [ "$restartserver" -eq 0 ]; then
+            if [ "$restartserver" -eq 0 ]; then
               touch "$arkserverroot/$arkautorestartfile"
               restartserver=1
-	    fi
-	    serveronline=1
+            fi
+            serveronline=1
           fi
         elif isTheServerUp; then
           (( serverdowntries++ ))
@@ -1463,13 +1463,13 @@ doStart() {
       if (( "${#instances[@]}" > 1 )); then
         echo -n "Waiting up to ${delay} seconds before starting next instance "
         while (( delay > 0 )); do
-	  echo -n "."
-	  if isTheServerOnline; then
-	    break
-	  fi
-	  (( delay-- ))
-	done
-	echo
+          echo -n "."
+          if isTheServerOnline; then
+            break
+          fi
+          (( delay-- ))
+        done
+        echo
       fi
     fi
   fi
@@ -1484,7 +1484,7 @@ doStartAll(){
     if [ -f "${!cfg}" ]; then
       (
         # shellcheck source=instance.cfg.example
-	source "${!cfg}"
+        source "${!cfg}"
         doStart
       )
     fi
@@ -1572,7 +1572,7 @@ doStopAll(){
     if [ -f "${!cfg}" ]; then
       (
         # shellcheck source=instance.cfg.example
-	source "${!cfg}"
+        source "${!cfg}"
         doStop
       )
     fi
@@ -3499,7 +3499,7 @@ doPrintConfig(){
     if [ -r "$cfgfile" ]; then
       while read -r v; do
         # shellcheck source=arkmanager.cfg,instance.cfg.example
-	val="$(source "$cfgfile"; echo "${!v}")"
+        val="$(source "$cfgfile"; echo "${!v}")"
         if [[ "$val" = "${vals[$v]}" && -z "${vars[$v]}" ]]; then
           vars["$v"]="$cfgfile"
           echo "${cfgfile} => ${v}"
@@ -3845,9 +3845,9 @@ main(){
       --version)
         echo "Version: ${arkstVersion}"
         echo "Channel: ${arkstChannel}"
-	if [ -n "${arkstUsePkgManager}" ]; then
-	  echo "Installed by package manager: ${arkstUsePkgManager}"
-	fi
+        if [ -n "${arkstUsePkgManager}" ]; then
+          echo "Installed by package manager: ${arkstUsePkgManager}"
+        fi
         if [ -n "${arkstCommit}" ]; then
           echo "Commit: ${arkstCommit:0:7}"
         fi
@@ -3906,9 +3906,9 @@ main(){
     case "$command" in
       wait)
         doWait "${options[@]}"
-	if [ "$#" == 0 ]; then
-	  break
-	fi
+        if [ "$#" == 0 ]; then
+          break
+        fi
         continue
       ;;
     esac
@@ -3995,9 +3995,9 @@ main(){
         printconfig)
           doPrintConfig
         ;;
-	testconfig)
-	  doTestConfig
-	;;
+        testconfig)
+          doTestConfig
+        ;;
         status)
           printStatus
         ;;
