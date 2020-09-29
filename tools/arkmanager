@@ -48,7 +48,7 @@ doUpgradeTools() {
     echo "arkmanager v${arkstVersion}: Please check for, and install, updates using your system's package manager"
   else
     local sudo=sudo
-    if [ $(id -u) == 0 -o "$steamcmd_user" == "--me" ]; then
+    if [ "$(id -u)" == 0 ] || [ "$steamcmd_user" == "--me" ]; then
       sudo=
     fi
 
@@ -75,7 +75,7 @@ doUpgradeTools() {
 
 doUpgradeToolsFromCommit(){
   local sudo=sudo
-  if [ $(id -u) == 0 -o "$steamcmd_user" == "--me" ]; then
+  if [ "$(id -u)" == 0 ] || [ "$steamcmd_user" == "--me" ]; then
     sudo=
   fi
 
@@ -110,8 +110,8 @@ doUpgradeToolsFromCommit(){
 }
 
 doUpgradeToolsFromBranch(){
-  arkstLatestVersion=`curl -s "https://raw.githubusercontent.com/${arkstGithubRepo}/${arkstChannel}/.version"`
-  arkstLatestCommit=`curl -s "https://api.github.com/repos/${arkstGithubRepo}/git/refs/heads/${arkstChannel}" | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p'`
+  arkstLatestVersion="$(curl -s "https://raw.githubusercontent.com/${arkstGithubRepo}/${arkstChannel}/.version")"
+  arkstLatestCommit="$(curl -s "https://api.github.com/repos/${arkstGithubRepo}/git/refs/heads/${arkstChannel}" | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p')"
 
   if [[ "$arkstLatestVersion" == "404: Not Found" ]]; then
     echo "Channel '${arkstChannel}' does not exist"
@@ -124,10 +124,10 @@ doUpgradeToolsFromBranch(){
 
   REPLY=
 
-  if [[ $arkstLatestVersion > $arkstVersion ]]; then
+  if [[ "$arkstLatestVersion" > "$arkstVersion" ]]; then
     read -p "A new version was found! Do you want to upgrade ARK Server Tools to v${arkstLatestVersion}?" -n 1 -r
     echo
-  elif [[ $arkstLatestVersion == $arkstVersion && "$arkstLatestCommit" != "$arkstCommit" ]]; then
+  elif [[ "$arkstLatestVersion" == "$arkstVersion" && "$arkstLatestCommit" != "$arkstCommit" ]]; then
     read -p "A hotfix is available for v${arkstLatestVersion}.  Do you wish to install it?" -n 1 -r
     echo
   else
@@ -176,17 +176,17 @@ doUninstallTools() {
     echo "arkmanager v${arkstVersion}: Please uninstall using your system's package manager"
   else
     local sudo=sudo
-    if [ $(id -u) == 0 -o "$steamcmd_user" == "--me" ]; then
+    if [ "$(id -u)" == 0 ] || [ "$steamcmd_user" == "--me" ]; then
       sudo=
     fi
 
     read -p "Are you sure you want to uninstall the ARK Server Tools? [y/N]" -n 1 -r
 
     if [[ "$REPLY" =~ ^[Yy]$ ]]; then
-      if [ -n "${install_datadir}" -a -x "${install_datadir}/arkmanager-uninstall.sh" ]; then
+      if [ -n "${install_datadir}" ] && [ -x "${install_datadir}/arkmanager-uninstall.sh" ]; then
         $sudo "${install_datadir}/arkmanager-uninstall.sh"
         exit 0
-      elif [ -n "${install_libexecdir}" -a -x "${install_libexecdir}/arkmanager-uninstall.sh" ]; then
+      elif [ -n "${install_libexecdir}" ] && [ -x "${install_libexecdir}/arkmanager-uninstall.sh" ]; then
         $sudo "${install_libexecdir}/arkmanager-uninstall.sh"
         exit 0
       fi
@@ -365,7 +365,7 @@ checkConfig() {
 
     if [ "$1" != "installmod" ] && [ "$1" != "installmods" ]; then
       # Warn if any mods are requested but not installed
-      if [ -n "$arkserverroot" -a -d "${arkserverroot}/${arkserverdir:-ShooterGame}/Content/Mods" ]; then
+      if [ -n "$arkserverroot" ] && [ -d "${arkserverroot}/${arkserverdir:-ShooterGame}/Content/Mods" ]; then
         for modid in $(getModIds); do
           if [ ! -f "${arkserverroot}/${arkserverdir:-ShooterGame}/Content/Mods/${modid}/mod.info" ]; then
             echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tMod ${modid} is requested but not installed.  Run 'arkmanager installmod ${modid}' to install this mod." >&2
@@ -376,7 +376,7 @@ checkConfig() {
   fi
 
   # Warn if mod_branch=Linux
-  if [ "$mod_branch" == "Linux" -a -z "$nowarnmodbranch" ]; then
+  if [ "$mod_branch" == "Linux" ] && [ -z "$nowarnmodbranch" ]; then
     echo -e "[" "$YELLOW" "WARN" "$NORMAL" "]" "\tmod_branch is set to Linux. Linux mods are known to cause the server to crash. It is suggested you set mod_branch to Windows." >&2
   fi
 
@@ -775,7 +775,7 @@ function parseSteamACF(){
     elif [ "$name" == "{" ]; then
       parseSteamACF "$1" "$2" "${3}.${sname}"
     else
-      if [ "$3" == "$1" -a "$name" == "$2" ]; then
+      if [ "$3" == "$1" ] && [ "$name" == "$2" ]; then
         echo "$val"
         break
       fi
@@ -938,7 +938,7 @@ function getServerPID(){
 # Check id the server process is alive
 #
 function isTheServerRunning(){
-  if [ -n "`getServerPID`" ]; then
+  if [ -n "$(getServerPID)" ]; then
     return 0
   else
     return 1
@@ -1236,7 +1236,7 @@ doRun() {
   fi
 
   # run the server in background
-  echo "`timestamp`: start"
+  echo "$(timestamp): start"
 
   serverpid=0
   restartserver=1
@@ -1256,7 +1256,7 @@ doRun() {
 
   # Auto-restart loop
   while [ $restartserver -ne 0 ]; do
-    echo -n "`timestamp`: Running"
+    echo -n "$(timestamp): Running"
     notify "${notifyMsgStarting:-Starting}"
     printf " %q" "$arkserverroot/$arkserverexec" "$arkserveropts" "${arkextraopts[@]}"
     echo
@@ -1265,7 +1265,7 @@ doRun() {
     # Grab the server PID
     serverpid=$!
     echo "$serverpid" >"${arkserverroot}/${arkserverpidfile}"
-    echo "`timestamp`: Server PID: $serverpid"
+    echo "$(timestamp): Server PID: $serverpid"
     # Disable auto-restart so we don't get caught in a restart loop
     rm -f "$arkserverroot/$arkautorestartfile"
     restartserver=0
@@ -1281,14 +1281,14 @@ doRun() {
 
     while true; do
       # Grab the current server PID
-      local pid="`getServerPID`"
+      local pid="$(getServerPID)"
       if [ "$pid" == "$serverpid" ]; then
         serverdowntries=0
         if [ "$serveronline" -eq 0 ]; then
           # Check if the server has fully started
           if ! isTheServerUp; then
             # Enable auto-restart if the server is up
-            echo "`timestamp`: server is up"
+            echo "$(timestamp): server is up"
             notify "${notifyMsgServerUp:-Server is up}"
 	    if [ "$restartserver" -eq 0 ]; then
               touch "$arkserverroot/$arkautorestartfile"
@@ -1301,8 +1301,8 @@ doRun() {
 
           if (( serverdowntries > 12 )); then
             # Server has not been listening for 60 seconds, so restart it.
-            echo "`timestamp`: The server has stopped listening"
-            echo "`timestamp`: Restarting server"
+            echo "$(timestamp): The server has stopped listening"
+            echo "$(timestamp): Restarting server"
             notify "${notifyMsgStoppedListening:-Server has stopped listening - restarting}"
             for (( i = 0; i < 5; i++ )); do
               if ! kill -0 "$serverpid"; then
@@ -1312,7 +1312,7 @@ doRun() {
               sleep 5
             done
             if kill -0 "$serverpid"; then
-              echo "`timestamp`: Graceful restart failed - killing server"
+              echo "$(timestamp): Graceful restart failed - killing server"
               kill -KILL "$serverpid"
             fi
 
@@ -1321,7 +1321,7 @@ doRun() {
           fi
         fi
       else
-        echo "`timestamp`: Bad PID '$pid'; expected '$serverpid'"
+        echo "$(timestamp): Bad PID '$pid'; expected '$serverpid'"
         if [ "$pid" != "" ]; then
           # Another instance must be running - disable autorestart
           restartserver=0
@@ -1333,7 +1333,7 @@ doRun() {
 
     # Wait on the now-dead process to reap it and get its return status
     wait $serverpid
-    echo "`timestamp`: exited with status $?"
+    echo "$(timestamp): exited with status $?"
 
     # doStop will remove the autorestart file
     if [ ! -f "$arkserverroot/$arkautorestartfile" ]; then
@@ -1343,7 +1343,7 @@ doRun() {
 
     if [ "$restartserver" -ne 0 ]; then
       notify "${notifyMsgServerTerminated:-Server exited - restarting}"
-      echo "`timestamp`: restarting server"
+      echo "$(timestamp): restarting server"
     fi
   done
 }
@@ -1523,7 +1523,7 @@ doStop() {
     rm -f "$arkserverroot/$arkautorestartfile"
     rm -f "$arkserverroot/$arkoldautorestartfile"
     # kill the server with the PID
-    PID=`getServerPID`
+    PID="$(getServerPID)"
     kill -INT $PID >/dev/null 2>&1
 
     for (( i = 0; i < 20; i++ )); do
@@ -1756,7 +1756,7 @@ isUpdateCancelRequested(){
         xargs -0 grep -F -e "${chatCommandRestartCancel}" | 
         sed 's@^[[]\(....\)\.\(..\)\.\(..\)-\(..\)\.\(..\)\.\(..\):.*@\1-\2-\3 \4:\5:\6 UTC@' | 
         head -n1)"
-    if [ -n canceltime ]; then
+    if [ -n "${canceltime}" ]; then
       canceltime="$(date +%s --date="${canceltime}")"
       local timenow="$(date +%s --date="now - 5 minutes")"
       if (( canceltime > timenow )); then
@@ -1807,7 +1807,7 @@ doWarn(){
     trap "update_cancelled 'Connection Closed'" SIGHUP
     trap "update_cancelled 'Quit'" SIGQUIT
 
-    local pid=`getServerPID`
+    local pid="$(getServerPID)"
     local sleeppid
     local usenotify=1
     if [ -n "$noNotifyWarn" ]; then
@@ -1824,7 +1824,7 @@ doWarn(){
 
       if (( warnminutes > 2 )); then
         for warninterval in "${warnintervals[@]}"; do
-          if [ "`getServerPID`" != "$pid" ]; then
+          if [ "$(getServerPID)" != "$pid" ]; then
             echo "Server has stopped.  Aborting $1"
             rm -f "${arkserverroot}/${arkwarnlockfile}"
             return 1
@@ -1874,7 +1874,7 @@ doWarn(){
       for warninterval in "${warnintervals[@]}"; do
         sleep $(( warnseconds - warninterval ))s &
         sleeppid=$!
-        if [ "`getServerPID`" != "$pid" ]; then
+        if [ "$(getServerPID)" != "$pid" ]; then
           echo "Server has stopped.  Aborting update"
           rm -f "${arkserverroot}/${arkwarnlockfile}"
           return 1
@@ -1909,7 +1909,7 @@ doWarn(){
 
     rm -f "${arkserverroot}/${arkwarnlockfile}"
 
-    if [ "`getServerPID`" != "$pid" ]; then
+    if [ "$(getServerPID)" != "$pid" ]; then
       echo "Server has stopped.  Aborting $1"
       return 1
     fi
@@ -2009,7 +2009,7 @@ doUpdate() {
   if [ -n "$appupdate" ] || isUpdateNeeded; then
     appupdate=1
 
-    if [ -n "${arkStagingDir}" -a "${arkStagingDir}" != "${arkserverroot}" ]; then
+    if [ -n "${arkStagingDir}" ] && [ "${arkStagingDir}" != "${arkserverroot}" ]; then
       if [ ! -d "$arkStagingDir/${arkserverdir}" ]; then
         logprint "Copying to staging directory"
         mkdir -p "$arkStagingDir"
@@ -2082,14 +2082,14 @@ doUpdate() {
   fi
 
   if [ -n "$downloadonly" ]; then
-    if [ -n "$appupdate" -a -n "$arkStagingDir" -a "$arkStagingDir" != "$arkserverroot" ]; then
+    if [ -n "$appupdate" ] && [ -n "$arkStagingDir" ] && [ "$arkStagingDir" != "$arkserverroot" ]; then
       logprint "Server update downloaded"
     fi
     if [ -n "$modupdate" ]; then
       logprint "Mod update downloaded"
     fi
     logprint "Not applying update - download-only requested"
-  elif [ -n "$appupdate" -o -n "$modupdate" -o -n "$bgupdate" ]; then
+  elif [ -n "$appupdate" -o -n "$modupdate" ] || [ -n "$bgupdate" ]; then
     if false && [ -f "$arkserverroot/version.txt" ]; then
       arkversion="$(<"$arkserverroot/version.txt")"
     else
@@ -2160,7 +2160,7 @@ doUpdate() {
     fi
 
     if [ -n "$appupdate" ]; then
-      if [ -d "${arkStagingDir}" -a "${arkStagingDir}" != "${arkserverroot}" ]; then
+      if [ -d "${arkStagingDir}" ] && [ "${arkStagingDir}" != "${arkserverroot}" ]; then
         logprint "Applying update from staging directory"
         if [ "$(stat -c "%d" "$arkserverroot")" == "$(stat -c "%d" "$arkStagingDir")" ]; then
           if [ -n "$useRefLinks" ]; then
@@ -2553,7 +2553,7 @@ isModUpdateNeeded(){
     mv "$moddestdir/.modbranch" "$moddestdir/__arkmanager_modbranch__.info"
   fi
 
-  if [ \( ! -f "$moddestdir/__arkmanager_modbranch__.info" \) ] || [ "$(<"$moddestdir/__arkmanager_modbranch__.info")" != "$modbranch" ]; then
+  if [ ! -f "$moddestdir/__arkmanager_modbranch__.info" ] || [ "$(<"$moddestdir/__arkmanager_modbranch__.info")" != "$modbranch" ]; then
     return 0
   fi
 
@@ -2563,7 +2563,7 @@ isModUpdateNeeded(){
     fi
 
     while read f; do
-      if [ \( ! -f "$moddestdir/${f%.z}" \) -o "$modsrcdir/$f" -nt "$moddestdir/${f%.z}" ]; then
+      if [ ! -f "$moddestdir/${f%.z}" ] || [ "$modsrcdir/$f" -nt "$moddestdir/${f%.z}" ]; then
         return 0
       fi
     done < <(find "$modsrcdir" -type f ! -name "*.z.uncompressed_size" -printf "%P\n")
@@ -2652,7 +2652,7 @@ doExtractMod(){
     mv "$modextractdir/.modbranch" "$modextractdir/__arkmanager_modbranch__.info"
   fi
 
-  if [ \( ! -f "$modextractdir/__arkmanager_modbranch__.info" \) ] || [ "$(<"$modextractdir/__arkmanager_modbranch__.info")" != "$modbranch" ]; then
+  if [ ! -f "$modextractdir/__arkmanager_modbranch__.info" ] || [ "$(<"$modextractdir/__arkmanager_modbranch__.info")" != "$modbranch" ]; then
     rm -rf "$modextractdir"
   fi
 
@@ -2668,7 +2668,7 @@ doExtractMod(){
     find "$modsrcdir" -type d -printf "$modextractdir/%P\0" | xargs -0 -r mkdir -p
 
     find "$modextractdir" -type f ! -name '.*' -printf "%P\n" | while read f; do
-      if [ \( ! -f "$modsrcdir/$f" \) -a \( ! -f "$modsrcdir/${f}.z" \) ]; then
+      if [ ! -f "$modsrcdir/$f" ] && [ ! -f "$modsrcdir/${f}.z" ]; then
         rm "$modextractdir/$f"
       fi
     done
@@ -2680,8 +2680,8 @@ doExtractMod(){
     done
 
     find "$modsrcdir" -type f ! \( -name '*.z' -or -name '*.z.uncompressed_size' \) -printf "%P\n" | while read f; do
-      if [ \( ! -f "$modextractdir/$f" \) -o "$modsrcdir/$f" -nt "$modextractdir/$f" ]; then
-        printf "%10d  %s  " "`stat -c '%s' "$modsrcdir/$f"`" "$f"
+      if [ ! -f "$modextractdir/$f" ] || [ "$modsrcdir/$f" -nt "$modextractdir/$f" ]; then
+        printf "%10d  %s  " "$(stat -c '%s' "$modsrcdir/$f")" "$f"
         if [[ -n "$useRefLinks" && "$(stat -c "%d" "$modsrcdir")" == "$(stat -c "%d" "$modextractdir")" ]]; then
           cp --reflink=auto "$modsrcdir/$f" "$modextractdir/$f"
         else
@@ -2692,8 +2692,8 @@ doExtractMod(){
     done
 
     find "$modsrcdir" -type f -name '*.z' -printf "%P\n" | while read f; do
-      if [ \( ! -f "$modextractdir/${f%.z}" \) -o "$modsrcdir/$f" -nt "$modextractdir/${f%.z}" ]; then
-        printf "%10d  %s  " "`stat -c '%s' "$modsrcdir/$f"`" "${f%.z}"
+      if [ ! -f "$modextractdir/${f%.z}" ] || [ "$modsrcdir/$f" -nt "$modextractdir/${f%.z}" ]; then
+        printf "%10d  %s  " "$(stat -c '%s' "$modsrcdir/$f")" "${f%.z}"
         perl -M'Compress::Raw::Zlib' -e '
           my $sig;
           read(STDIN, $sig, 8) or die "Unable to read compressed file: $!";
@@ -2887,7 +2887,7 @@ doEnableMod(){
 doDisableMod(){
   local modid="$1"
   local modvar="arkmod_$modid"
-  if [ "$ark_GameModIds" = *"$modid"* ]; then
+  if [[ "$ark_GameModIds" = *"$modid"* ]]; then
     sed -i "s|^\(ark_GameModIds=\(\|[\"']\)\(\|[^\"' ]*,\)\)${modid},*|\1|" "$configfile"
   fi
   if [ -n "$modvar" ]; then
@@ -2920,8 +2920,8 @@ doRemoveMods(){
 # Copies server state to a backup directory
 #
 doBackup(){
-  local datestamp=`date +"%Y-%m-%d_%H.%M.%S"`
-  local daystamp=`date +"%Y-%m-%d"`
+  local datestamp="$(date +"%Y-%m-%d_%H.%M.%S")"
+  local daystamp="$(date +"%Y-%m-%d")"
   local backupdir="${arkbackupdir}/${datestamp}"
   local backupdirdaily="${arkbackupdir}/${daystamp}"
   local saverootdir="${arkserverroot}/${arkserverdir}/Saved"
@@ -2949,7 +2949,7 @@ doBackup(){
     return 1
   fi
 
-  echo "${NORMAL} Saved arks directory is ${savedir}"
+  echo -e "${NORMAL} Saved arks directory is ${savedir}"
 
   # ARK server uses Write-Unlink-Rename
   echo -ne "${NORMAL} Copying ARK world file (${mapname}) "
@@ -3163,8 +3163,8 @@ doRestore(){
     if [[ -f "$arkbackupdir/$backupFile" ]] ; then
       backupFile="$arkbackupdir/$backupFile"
     else
-      echo "File $backupFile not found."
-      exit -1
+      echo "File $backupFile not found." 1>&2
+      exit 1
     fi
   fi
   echo "Restoring from ${backupFile}"
@@ -3918,7 +3918,7 @@ main(){
         ;;
         restart)
           doStop restart "${options[@]}"
-          echo "`timestamp`: stop" >> "$logdir/$arkmanagerLog"
+          echo "$(timestamp): stop" >> "$logdir/$arkmanagerLog"
         ;;
         cancelshutdown)
           doCancelShutdown "${options[@]}"
@@ -3988,7 +3988,7 @@ main(){
           printStatus
         ;;
         getpid)
-          echo `getServerPID`
+          echo "$(getServerPID)"
         ;;
         *)
           echo -n "arkmanager v${arkstVersion}: unknown command '$command' specified"
@@ -4010,7 +4010,7 @@ main(){
       sleep 1
       for instance in "${instances[@]}"; do
       (
-        echo "`timestamp`: restart" >> "$logdir/$arkmanagerLog"
+        echo "$(timestamp): restart" >> "$logdir/$arkmanagerLog"
         useConfig "$instance"
         doStart "${options[@]}"
       )
