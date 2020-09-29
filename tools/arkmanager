@@ -1227,6 +1227,14 @@ doRun() {
   fi
 
   arkserveropts="${arkserveropts}?listen"
+
+  if [ -n "${arkCustomDynamicConfigURL}" ]; then
+    arkserveropts="${arkserveropts}?customdynamicconfigurl=${arkCustomDynamicConfigURL}"
+    if [[ ! -n "${usedoptions[arkflag_UseDynamicConfig]}" && ! -n "${usedoptions[arkopt_UseDynamicConfig]}" ]]; then
+      arkextraopts=( "${arkextraopts[@]}" "-UseDynamicConfig" )
+    fi
+  fi
+
   # run the server in background
   echo "`timestamp`: start"
 
