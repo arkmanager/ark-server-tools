@@ -25,4 +25,5 @@ ark_MaxPlayers="70"
 # ARK server options - i.e. for -optname=val, use arkopt_optname=val
 #arkopt_StructureDestructionTag=DestroySwampSnowStructures
 
+#arkCustomDynamicConfigURL="http://arkdedicated.com/dynamicconfig.ini"  # Set this to use a custom dynamic config from the given server address
 #arkPreStart="/etc/arkmanager/instances/instance.start"              # Set this to override the start script; defaults to config file name with .cfg replaced by .start
