@@ -249,10 +249,12 @@ fi
 
 # Global variables
 if [ -f "${arkstGlobalCfgFile}" ]; then
+    # shellcheck source=arkmanager.cfg
     source "${arkstGlobalCfgFile}"
 fi
 
 if [ -f "${HOME}/${arkstUserCfgFile}" ]; then
+    # shellcheck source=arkmanager.cfg
     source "${HOME}/${arkstUserCfgFile}"
 fi
 
@@ -337,7 +339,7 @@ checkConfig() {
   fi
   # steamcmd_user
   if [ "$steamcmd_user" != "--me" ]; then
-    if ! getent passwd $steamcmd_user > /dev/null 2>&1 ; then
+    if ! getent passwd "$steamcmd_user" > /dev/null 2>&1 ; then
       echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tYour SteamCMD user is not valid." >&2
     fi
   fi
@@ -666,13 +668,13 @@ function runSteamCMD(){
   if [[ -z "${steamcmdhome}" || ! -d "${steamcmdhome}" ]]; then
     steamcmdhome="${HOME}"
   fi
-  HOME="${steamcmdhome}" "$steamcmdroot/$steamcmdexec" +@NoPromptForPassword 1 ${steamcmd_cmds_prelogin} +login ${steamlogin:-anonymous} ${steamcmd_cmds_postlogin} "$@" +quit
+  HOME="${steamcmdhome}" "$steamcmdroot/$steamcmdexec" +@NoPromptForPassword 1 ${steamcmd_cmds_prelogin} +login "${steamlogin:-anonymous}" ${steamcmd_cmds_postlogin} "$@" +quit
 }
 
 function runSteamCMDspinner(){
   if [ -n "$verbose" ]; then
     printf "Executing"
-    printf " %q" "$steamcmdroot/$steamcmdexec" +@NoPromptForPassword 1 ${steamcmd_cmds_prelogin} +login ${steamlogin:-anonymous} ${steamcmd_cmds_postlogin} "$@" +quit
+    printf " %q" "$steamcmdroot/$steamcmdexec" +@NoPromptForPassword 1 ${steamcmd_cmds_prelogin} +login "${steamlogin:-anonymous}" ${steamcmd_cmds_postlogin} "$@" +quit
     printf "\n"
     if (command >&3) 2>/dev/null; then
       runSteamCMD "$@" > >(tee /dev/fd/3)
@@ -714,7 +716,7 @@ function runSteamCMDspinner(){
 function runSteamCMDspinnerSubst(){
   local fd="$1"
   shift
-  runSteamCMDspinner "$@" 3>&1 >/dev/fd/${fd}
+  runSteamCMDspinner "$@" 3>&1 >"/dev/fd/${fd}"
 }
 
 #
@@ -726,15 +728,15 @@ function checkForUpdate(){
 
   if isUpdateNeeded; then
     tput rc; tput ed;
-    echo -e "Current version:" "$RED" $instver "$NORMAL"
-    echo -e "Available version:" "$GREEN" $bnumber "$NORMAL"
+    echo -e "Current version:" "$RED" "$instver" "$NORMAL"
+    echo -e "Available version:" "$GREEN" "$bnumber" "$NORMAL"
     echo -e "Your server needs to be restarted in order to receive the latest update."
     echo -e "Run \"arkmanager update\" to do so"
     return 1
   else
     tput rc; tput ed;
-    echo -e "Current version:" "$GREEN" $instver "$NORMAL"
-    echo -e "Available version:" "$GREEN" $bnumber "$NORMAL"
+    echo -e "Current version:" "$GREEN" "$instver" "$NORMAL"
+    echo -e "Available version:" "$GREEN" "$bnumber" "$NORMAL"
     echo "Your server is up to date!"
     return 0
   fi
@@ -765,7 +767,7 @@ function isUpdateNeeded(){
 #
 function parseSteamACF(){
   local sname
-  while read name val; do
+  while read -r name val; do
     name="${name#\"}"
     name="${name%\"}"
     val="${val#\"}"
@@ -789,7 +791,7 @@ function parseSteamACF(){
 #
 function getCurrentVersion(){
   if [ -f "${arkserverroot}/steamapps/appmanifest_${appid}.acf" ]; then
-    while read name val; do if [ "${name}" == "{" ]; then parseSteamACF "" "buildid"; break; fi; done <"${arkserverroot}/steamapps/appmanifest_${appid}.acf"
+    while read -r name val; do if [ "${name}" == "{" ]; then parseSteamACF "" "buildid"; break; fi; done <"${arkserverroot}/steamapps/appmanifest_${appid}.acf"
   fi
 }
 
@@ -798,7 +800,7 @@ function getCurrentVersion(){
 #
 function getStagingVersion(){
   if [ -f "${arkStagingDir}/steamapps/appmanifest_${appid}.acf" ]; then
-    while read name val; do if [ "${name}" == "{" ]; then parseSteamACF "" "buildid"; break; fi; done <"${arkStagingDir}/steamapps/appmanifest_${appid}.acf"
+    while read -r name val; do if [ "${name}" == "{" ]; then parseSteamACF "" "buildid"; break; fi; done <"${arkStagingDir}/steamapps/appmanifest_${appid}.acf"
   fi
 }
 
@@ -807,7 +809,7 @@ function getStagingVersion(){
 #
 function getCurrentBranch(){
   if [ -f "${arkserverroot}/steamapps/appmanifest_${appid}.acf" ]; then
-    while read name val; do if [ "${name}" == "{" ]; then parseSteamACF ".UserConfig" "betakey"; break; fi; done <"${arkserverroot}/steamapps/appmanifest_${appid}.acf"
+    while read -r name val; do if [ "${name}" == "{" ]; then parseSteamACF ".UserConfig" "betakey"; break; fi; done <"${arkserverroot}/steamapps/appmanifest_${appid}.acf"
   fi
 }
 
@@ -816,7 +818,7 @@ function getCurrentBranch(){
 #
 function getCurrentBranch(){
   if [ -f "${arkStagingDir}/steamapps/appmanifest_${appid}.acf" ]; then
-    while read name val; do if [ "${name}" == "{" ]; then parseSteamACF ".UserConfig" "betakey"; break; fi; done <"${arkStagingDir}/steamapps/appmanifest_${appid}.acf"
+    while read -r name val; do if [ "${name}" == "{" ]; then parseSteamACF ".UserConfig" "betakey"; break; fi; done <"${arkStagingDir}/steamapps/appmanifest_${appid}.acf"
   fi
 }
 
@@ -828,7 +830,7 @@ function getAvailableVersion(){
   if [ -z "$appbranch" ]; then
     appbranch="$(getCurrentBranch)"
   fi
-  runSteamCMD +app_info_update 1 +app_info_print "$appid" | while read name val; do if [ "${name}" == "{" ]; then parseSteamACF ".depots.branches.${appbranch:-public}" "buildid"; break; fi; done
+  runSteamCMD +app_info_update 1 +app_info_print "$appid" | while read -r name val; do if [ "${name}" == "{" ]; then parseSteamACF ".depots.branches.${appbranch:-public}" "buildid"; break; fi; done
 }
 
 #
@@ -895,13 +897,13 @@ function checkUpdateManifests(){
     appbranch="$(getCurrentBranch)"
   fi
   local hasmanifest=
-  while read depot manifest <&3; do
+  while read -r depot manifest <&3; do
     hasmanifest=1
     depot="${depot//\"/}"
     manifest="${manifest//\"/}"
-    newmanifest="$(echo "${appinfo}" | while read name val; do if [ "${name}" == "{" ]; then parseSteamACF ".depots.${depot}.manifests" "${appbranch:-public}"; break; fi; done)"
+    newmanifest="$(echo "${appinfo}" | while read -r name val; do if [ "${name}" == "{" ]; then parseSteamACF ".depots.${depot}.manifests" "${appbranch:-public}"; break; fi; done)"
     if [[ -z "${newmanifest}" && "${appbranch:-public}" != "public" ]]; then
-      newmanifest="$(echo "${appinfo}" | while read name val; do if [ "${name}" == "{" ]; then parseSteamACF ".depots.${depot}.manifests" "public"; break; fi; done)"
+      newmanifest="$(echo "${appinfo}" | while read -r name val; do if [ "${name}" == "{" ]; then parseSteamACF ".depots.${depot}.manifests" "public"; break; fi; done)"
     fi
     if [ "${newmanifest}" != "${manifest}" ]; then
       return 1
@@ -921,14 +923,14 @@ function getServerPID(){
   if [ -f "${arkserverroot}/${arkserverpidfile}" ]; then
     serverpid="$(<"${arkserverroot}/${arkserverpidfile}")"
     if kill -0 "$serverpid" >/dev/null 2>&1; then
-      echo $serverpid
+      echo "$serverpid"
       return
     fi
   fi
   if [ -f "${arkserverroot}/${arkserveroldpidfile}" ]; then
     serverpid="$(<"${arkserverroot}/${arkserveroldpidfile}")"
     if kill -0 "$serverpid" >/dev/null 2>&1; then
-      echo $serverpid
+      echo "$serverpid"
       return
     fi
   fi
@@ -1021,7 +1023,7 @@ function numPlayersConnected(){
   if [[ -n "$arkflag_crossplay" || -n "$arkflag_epiconly" ]]; then
     players="$(rconcmd listplayers 2>/dev/null)"
     if [[ "$players" == '"'?*'"' ]]; then
-      echo "$players" | grep '[0-9]\.' | wc -l
+      echo "$players" | grep -c '[0-9]\.'
     fi
   fi
 
@@ -1102,7 +1104,7 @@ doRun() {
   arkserveropts="$serverMap"
   declare -A usedoptions
 
-  while read varname; do
+  while read -r varname; do
     val="${!varname}"
     modid="${varname#arkmod_}"
     case "$val" in
@@ -1139,7 +1141,7 @@ doRun() {
 
   arkextraopts=( )
 
-  while read varname; do
+  while read -r varname; do
     val="${!varname}"
     case "$varname" in
       ark_*)
@@ -1230,7 +1232,7 @@ doRun() {
 
   if [ -n "${arkCustomDynamicConfigURL}" ]; then
     arkserveropts="${arkserveropts}?customdynamicconfigurl=${arkCustomDynamicConfigURL}"
-    if [[ ! -n "${usedoptions[arkflag_UseDynamicConfig]}" && ! -n "${usedoptions[arkopt_UseDynamicConfig]}" ]]; then
+    if [[ -z "${usedoptions[arkflag_UseDynamicConfig]}" && -z "${usedoptions[arkopt_UseDynamicConfig]}" ]]; then
       arkextraopts=( "${arkextraopts[@]}" "-UseDynamicConfig" )
     fi
   fi
@@ -1349,7 +1351,8 @@ doRun() {
 }
 
 doRunBG(){
-  for fd in $(ls /proc/$BASHPID/fd/); do
+  for fd in "/proc/$BASHPID/fd/"*; do
+    fd="${fd##*/}"
     [[ $fd -gt 2 && $fd != 255 ]] && exec {fd}<&-
   done
 
@@ -1480,7 +1483,8 @@ doStartAll(){
   for cfg in "${!configfile_@}"; do
     if [ -f "${!cfg}" ]; then
       (
-        source "${!cfg}"
+        # shellcheck source=instance.cfg.example
+	source "${!cfg}"
         doStart
       )
     fi
@@ -1524,7 +1528,9 @@ doStop() {
     rm -f "$arkserverroot/$arkoldautorestartfile"
     # kill the server with the PID
     PID="$(getServerPID)"
-    kill -INT $PID >/dev/null 2>&1
+    if [ -n "$PID" ]; then
+      kill -INT "$PID" >/dev/null 2>&1
+    fi
 
     for (( i = 0; i < 20; i++ )); do
       sleep 1
@@ -1533,16 +1539,16 @@ doStop() {
       fi
     done
 
-    if isTheServerRunning; then
+    if isTheServerRunning && [ -n "$PID" ]; then
       tput rc
       logprint "Killing server"
-      kill -KILL $PID >/dev/null 2>&1
+      kill -KILL "$PID" >/dev/null 2>&1
     fi
 
     if [ -f "${arkserverroot}/${arkmanagerpidfile}" ]; then
       PID="$(<"${arkserverroot}/${arkmanagerpidfile}")"
       if [ -n "$PID" ]; then
-        kill $PID >/dev/null 2>&1
+        kill "$PID" >/dev/null 2>&1
       fi
     fi
 
@@ -1565,7 +1571,8 @@ doStopAll(){
   for cfg in "${!configfile_@}"; do
     if [ -f "${!cfg}" ]; then
       (
-        source "${!cfg}"
+        # shellcheck source=instance.cfg.example
+	source "${!cfg}"
         doStop
       )
     fi
@@ -1578,7 +1585,7 @@ doStopAll(){
 runSteamCMDAppUpdate(){
   local installdir="$1"
   shift
-  runSteamCMDspinner +force_install_dir "$installdir" +app_update $appid $steamcmd_appextraopts "$@"
+  runSteamCMDspinner +force_install_dir "$installdir" +app_update "$appid" $steamcmd_appextraopts "$@"
 }
 
 #
@@ -1838,7 +1845,7 @@ doWarn(){
               if [ "$arkprecisewarn" != "true" ]; then
                 numplayers=$(numPlayersConnected)
                 echo "There are ${numplayers} players connected"
-                if [[ "numplayers" == "-1" ]]; then
+                if [[ "${numplayers}" == "-1" ]]; then
                   echo "Server is not running.  Shutting down immediately"
                   notify "${notifyMsgServerNotRunning:-Server is not running.  Shutting down immediately}"
                   return 0
@@ -1855,7 +1862,7 @@ doWarn(){
                 return 1
               fi
               wait $sleeppid
-              if (( $min > $warninterval )); then
+              if (( min > warninterval )); then
                 sleep 1m &
                 sleeppid=$!
               fi
@@ -1885,7 +1892,7 @@ doWarn(){
           if [ "$arkprecisewarn" != "true" ]; then
             numplayers=$(numPlayersConnected)
             echo "There are ${numplayers} players connected"
-            if [[ "numplayers" == "-1" ]]; then
+            if [[ "${numplayers}" == "-1" ]]; then
               echo "Server is not running.  Shutting down immediately"
               notify "${notifyMsgServerNotRunning:-Server is not running.  Shutting down immediately}"
               return 0
@@ -2089,7 +2096,7 @@ doUpdate() {
       logprint "Mod update downloaded"
     fi
     logprint "Not applying update - download-only requested"
-  elif [ -n "$appupdate" -o -n "$modupdate" ] || [ -n "$bgupdate" ]; then
+  elif [ -n "$appupdate" ] || [ -n "$modupdate" ] || [ -n "$bgupdate" ]; then
     if false && [ -f "$arkserverroot/version.txt" ]; then
       arkversion="$(<"$arkserverroot/version.txt")"
     else
@@ -2180,9 +2187,9 @@ doUpdate() {
           rsync -a "$arkStagingDir/." "$arkserverroot"
         fi
         cd "$arkserverroot"
-        find Engine ${arkserverdir} linux64 -depth -print |
+        find Engine "${arkserverdir}" linux64 -depth -print |
           grep -v '^\('"${arkserverdir}"'/\(Saved\|Content/Mods\|Binaries/Linux/.*\.txt\)\|Engine/Binaries/ThirdParty/SteamCMD/Linux/steamapps\)' |
-          while read f; do
+          while read -r f; do
             if [ ! -e "${arkStagingDir}/${f}" ]; then
               if [ -f "$f" ]; then
                 rm "${f}"
@@ -2213,9 +2220,9 @@ doUpdate() {
 
     if [ -n "$modupdate" ] && [ -z "$arkflag_automanagedmods" ]; then
       for modid in $(getModIds); do
-        if isModUpdateNeeded $modid; then
+        if isModUpdateNeeded "$modid"; then
           logprint "Updating mod $modid"
-          doExtractMod $modid
+          doExtractMod "$modid"
           logprint "Mod $modid updated"
         fi
       done
@@ -2283,7 +2290,7 @@ checkForModUpdate(){
   for modid in $(getModIds); do
     availupd="$(getAvailModLastUpdated "$modid")"
     instupd="$(getInstalledModLastUpdated "$modid")"
-    modname="$(getModName $modid)"
+    modname="$(getModName "$modid")"
     if [ -z "$availupd" ]; then
       printf "Mod %d doesn't exist in the steam workshop\n" "$modid"
       modmissing=1
@@ -2305,7 +2312,7 @@ checkForModUpdate(){
       printf "Mod %d [%s] is not installed\n" "$modid" "$modname"
       updateavail=1
     elif [ "$instupd" != "$availupd" ]; then
-      if isModUpdateNeeded $modid; then
+      if isModUpdateNeeded "$modid"; then
         printf "Mod %d [%s] update needs to be applied\n" "$modid" "$modname"
         updateavail=1
       elif [ -z "$cancheckmodavail" ]; then
@@ -2470,7 +2477,7 @@ doDownloadMod(){
   while true; do
     echo -n "Downloading mod $modid"
     local output
-    output=$(runSteamCMDspinnerSubst 5 +workshop_download_item $mod_appid $modid)
+    output=$(runSteamCMDspinnerSubst 5 +workshop_download_item "$mod_appid" "$modid")
     result=$?
     if [ $result -eq 0 ]; then
       modsrcdir="$(echo "$output" | sed -n 's@^Success. Downloaded item [0-9][0-9]* to "\([^"]*\)" .*@\1@p')"
@@ -2513,8 +2520,8 @@ doDownloadAllMods(){
   local fail=0
   local success=0
   for modid in $(getModIds); do
-    if isModUpdateAvailable $modid; then
-      if doDownloadMod $modid; then
+    if isModUpdateAvailable "$modid"; then
+      if doDownloadMod "$modid"; then
         success=1
       else
         fail=1
@@ -2562,7 +2569,7 @@ isModUpdateNeeded(){
       modsrcdir="$modsrcdir/${modbranch}NoEditor"
     fi
 
-    while read f; do
+    while read -r f; do
       if [ ! -f "$moddestdir/${f%.z}" ] || [ "$modsrcdir/$f" -nt "$moddestdir/${f%.z}" ]; then
         return 0
       fi
@@ -2606,7 +2613,7 @@ isAnyModUpdateNeeded(){
   modnamesupdated=""
   local ismodupdateneeded=1
   for modid in $(getModIds); do
-    if isModUpdateNeeded $modid; then
+    if isModUpdateNeeded "$modid"; then
       ismodupdateneeded=0
       if [ -n "$modnamesupdated" ]; then
         modnamesupdated="${modnamesupdated}, "
@@ -2667,19 +2674,19 @@ doExtractMod(){
 
     find "$modsrcdir" -type d -printf "$modextractdir/%P\0" | xargs -0 -r mkdir -p
 
-    find "$modextractdir" -type f ! -name '.*' -printf "%P\n" | while read f; do
+    find "$modextractdir" -type f ! -name '.*' -printf "%P\n" | while read -r f; do
       if [ ! -f "$modsrcdir/$f" ] && [ ! -f "$modsrcdir/${f}.z" ]; then
         rm "$modextractdir/$f"
       fi
     done
 
-    find "$modextractdir" -depth -type d -printf "%P\n" | while read d; do
+    find "$modextractdir" -depth -type d -printf "%P\n" | while read -r d; do
       if [ ! -d "$modsrcdir/$d" ]; then
         rmdir "$modextractdir/$d"
       fi
     done
 
-    find "$modsrcdir" -type f ! \( -name '*.z' -or -name '*.z.uncompressed_size' \) -printf "%P\n" | while read f; do
+    find "$modsrcdir" -type f ! \( -name '*.z' -or -name '*.z.uncompressed_size' \) -printf "%P\n" | while read -r f; do
       if [ ! -f "$modextractdir/$f" ] || [ "$modsrcdir/$f" -nt "$modextractdir/$f" ]; then
         printf "%10d  %s  " "$(stat -c '%s' "$modsrcdir/$f")" "$f"
         if [[ -n "$useRefLinks" && "$(stat -c "%d" "$modsrcdir")" == "$(stat -c "%d" "$modextractdir")" ]]; then
@@ -2691,7 +2698,7 @@ doExtractMod(){
       fi
     done
 
-    find "$modsrcdir" -type f -name '*.z' -printf "%P\n" | while read f; do
+    find "$modsrcdir" -type f -name '*.z' -printf "%P\n" | while read -r f; do
       if [ ! -f "$modextractdir/${f%.z}" ] || [ "$modsrcdir/$f" -nt "$modextractdir/${f%.z}" ]; then
         printf "%10d  %s  " "$(stat -c '%s' "$modsrcdir/$f")" "${f%.z}"
         perl -M'Compress::Raw::Zlib' -e '
@@ -2788,12 +2795,12 @@ doExtractMod(){
       else
         cp -au --remove-destination "${modextractdir}/." "${moddestdir}"
       fi
-      find "${moddestdir}" -type f ! -name '.*' -printf "%P\n" | while read f; do
+      find "${moddestdir}" -type f ! -name '.*' -printf "%P\n" | while read -r f; do
         if [ ! -f "${modextractdir}/${f}" ]; then
           rm "${moddestdir}/${f}"
         fi
       done
-      find "$modextractdir" -depth -type d -printf "%P\n" | while read d; do
+      find "$modextractdir" -depth -type d -printf "%P\n" | while read -r d; do
         if [ ! -d "$modsrcdir/$d" ]; then
           rmdir "$modextractdir/$d"
         fi
@@ -2814,14 +2821,14 @@ doInstallMod(){
   local modid
   local steamworkshopdir="$(getSteamWorkshopDir)"
   for modid in ${1//,/ }; do
-    if [[ " $* " =~ *" --validate " ]]; then
+    if [[ " $* " = *" --validate "* ]]; then
       if [ -f "${steamworkshopdir}/appworkshop_${mod_appid}.acf" ]; then
         sed -i "/^\\t\\t\"${modid}\"/,/^\\t\\t}/d" "${steamworkshopdir}/appworkshop_${mod_appid}.acf"
       fi
     fi
 
-    if doDownloadMod $modid; then
-      doExtractMod $modid
+    if doDownloadMod "$modid"; then
+      doExtractMod "$modid"
       echo "Mod $modid installed"
     fi
   done
@@ -3116,7 +3123,7 @@ doBackup(){
   backupfile="${arkbackupdir}/${daystamp}/${instance}.${datestamp}.tar.bz2"
 
   tar -jcf "${backupfile}" -C "${arkbackupdir}" "${datestamp}"
-  rm -rf ${backupdir}
+  rm -rf "${backupdir}"
 
   if [ -f "${backupfile}" ]; then
    echo -e "${NORMAL}\e[68G[   ${GREEN}OK${NORMAL}   ]"
@@ -3133,7 +3140,7 @@ doBackup(){
     find "${arkbackupdir}" -type f -printf "%T@\t%s\t%p\n" |
       sort -n -r |
       cut -f2-3 |
-      (sz=0; while read fsz f; do
+      (sz=0; while read -r fsz f; do
         if (( sz / 1048576 > arkMaxBackupSizeMB )); then
           rm "$f"
         fi
@@ -3329,12 +3336,12 @@ printStatus(){
   if [[ -n "$arkflag_crossplay" || -n "$arkflag_epiconly" ]]; then
     players="$(rconcmd listplayers 2>/dev/null)"
     if [[ "$players" == '"'?*'"' ]]; then
-      echo "Active Players: $(echo "$players" | grep '[0-9]\.' | wc -l)"
+      echo "Active Players: $(echo "$players" | grep -c '[0-9]\.')"
     fi
   fi
 
   instver="$(getCurrentVersion)"
-  echo -e "$NORMAL" "Server build ID: " "$GREEN" $instver "$NORMAL"
+  echo -e "$NORMAL" "Server build ID: " "$GREEN" "$instver" "$NORMAL"
   instbeta="$(getCurrentBranch)"
   if [ -n "$instbeta" ]; then
     echo -e "$NORMAL" "Server branch: " "$GREEN" "$instbeta" "$NORMAL"
@@ -3418,7 +3425,7 @@ getAllInstanceNames(){
     echo "${defaultinstance}"
   fi
   if [ -f "${HOME}/${arkstUserCfgFile}" ]; then
-    while read l <&3; do
+    while read -r l <&3; do
       v="${l%%=*}"
       if [[ "${v}" = configfile_* ]]; then
         if [ -n "${!v}" ]; then
@@ -3432,7 +3439,7 @@ getAllInstanceNames(){
     done 3<"${HOME}/${arkstUserCfgFile}"
   fi
   if [ -f "${arkstGlobalCfgFile}" ]; then
-    while read l <&3; do
+    while read -r l <&3; do
       v="${l%%=*}"
       if [[ "${v}" = configfile_* ]]; then
         if [ -n "${!v}" ]; then
@@ -3445,7 +3452,7 @@ getAllInstanceNames(){
       fi
     done 3<"${arkstGlobalCfgFile}"
   fi
-  for f in ${HOME}/.config/arkmanager/instances/*.cfg; do
+  for f in "${HOME}"/.config/arkmanager/instances/*.cfg; do
     if [ -f "${f}" ]; then
       instancename="${f##*/}"
       instancename="${instancename%.cfg}"
@@ -3490,8 +3497,9 @@ doPrintConfig(){
   done
   for cfgfile in "$configfile" "${HOME}/${arkstUserCfgFile}" "${arkstGlobalCfgFile}"; do
     if [ -r "$cfgfile" ]; then
-      while read v; do
-        val="$(source "$cfgfile"; echo "${!v}")"
+      while read -r v; do
+        # shellcheck source=arkmanager.cfg,instance.cfg.example
+	val="$(source "$cfgfile"; echo "${!v}")"
         if [[ "$val" = "${vals[$v]}" && -z "${vars[$v]}" ]]; then
           vars["$v"]="$cfgfile"
           echo "${cfgfile} => ${v}"
@@ -3504,14 +3512,17 @@ doPrintConfig(){
 doTestConfig(){
   set -e
   if [ -r "${arkstGlobalCfgFile}" ]; then
+      # shellcheck source=arkmanager.cfg
       source "${arkstGlobalCfgFile}"
   fi
 
   if [ -r "${HOME}/${arkstUserCfgFile}" ]; then
+      # shellcheck source=arkmanager.cfg
       source "${HOME}/${arkstUserCfgFile}"
   fi
 
   if [ -r "$configfile" ]; then
+      # shellcheck source=instance.cfg.example
       source "$configfile"
   fi
 
@@ -3554,6 +3565,7 @@ useConfig() {
       echo "Error: config file $configfile does not exist"
       exit 1
     fi
+    # shellcheck source=instance.cfg.example
     source "$configfile"
   fi
   if [ -z "$arkserverroot" ]; then
@@ -3701,10 +3713,12 @@ EOE
 
 main(){
   if [ -f "${arkstGlobalCfgFile}" ]; then
+      # shellcheck source=arkmanager.cfg
       source "${arkstGlobalCfgFile}"
   fi
 
   if [ -f "${HOME}/${arkstUserCfgFile}" ]; then
+      # shellcheck source=arkmanager.cfg
       source "${HOME}/${arkstUserCfgFile}"
   fi
 
@@ -3885,7 +3899,7 @@ main(){
 
     # Handle all instances being requested
     if [[ "$allinstances" == "yes" ]]; then
-      instances=( $(getAllInstanceNames) )
+      read -r -a instances < <(getAllInstanceNames)
     fi
 
     # Handle wait command specially
@@ -3988,7 +4002,7 @@ main(){
           printStatus
         ;;
         getpid)
-          echo "$(getServerPID)"
+          getServerPID
         ;;
         *)
           echo -n "arkmanager v${arkstVersion}: unknown command '$command' specified"
@@ -4027,6 +4041,6 @@ main(){
 
 # Only execute main function if script is not being sourced
 # by another script
-if [[ "$0" = "${BASH_SOURCE[0]}" || -z "${BASH_SOURCE}" ]]; then
+if [[ "$0" = "${BASH_SOURCE[0]}" || -z "${BASH_SOURCE[*]}" ]]; then
   main "$@"
 fi
