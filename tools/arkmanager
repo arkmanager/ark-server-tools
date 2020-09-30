@@ -3899,7 +3899,7 @@ main(){
 
     # Handle all instances being requested
     if [[ "$allinstances" == "yes" ]]; then
-      read -r -a instances < <(getAllInstanceNames)
+      instances=( $(getAllInstanceNames) )
     fi
 
     # Handle wait command specially
