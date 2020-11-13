@@ -1024,6 +1024,7 @@ function numPlayersConnected(){
     players="$(rconcmd listplayers 2>/dev/null)"
     if [[ "$players" == '"'?*'"' ]]; then
       echo "$players" | grep -c '[0-9]\.'
+      return
     fi
   fi
 
