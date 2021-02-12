@@ -774,6 +774,9 @@ the global config.
     Uses the `-MapModID=<modid>?...` option to specify the server map
     mod ID
 
+`arkModCollections="<collection1>,<collection2>,..."`::
+    Specifies collections to include in mod list
+
 `ark_<optname>="<optval>"`::
     Specifies the options to use in the `Map?Option=Val?...` option
     string passed to the server

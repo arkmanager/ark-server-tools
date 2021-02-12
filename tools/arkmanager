@@ -1122,6 +1122,14 @@ doRun() {
     usedoptions[${varname}]="${val}"
   done < <(sed -n 's/^\(arkmod_[^= ]*\)=.*/\1/p' <"$configfile")
 
+  if [ -n "$arkModCollections" ]; then
+    while read -r modid; do
+      if [[ ",${ark_GameModIds}," != *",$modid,"* ]]; then
+        ark_GameModIds="${ark_GameModIds}${ark_GameModIds:+,}${modid}"
+      fi
+    done
+  fi
+
   if [[ ( -z "$serverMap" || "$serverMap" == "TheIsland" ) && -n "$serverMapModId" ]]; then
     serverMap="$(perl -e '
       my $data;
@@ -2357,7 +2365,35 @@ getModIds(){
     if [ -z "$ignoreInstalledMods" ]; then
       find "${arkserverroot}/${arkserverdir}/Content/Mods" -maxdepth 1 -type d -printf "%P\n"
     fi
+    getCollectionMods
   ) | sort | uniq | grep '^[1-9][0-9]*$' | grep -v '^111111111$'
+}
+
+#
+# Get Mod IDs included in collections in rkModCollections
+#
+getCollectionMods(){
+  (
+    for m in ${arkModCollections//,/\ }; do
+      curl \
+          -s \
+          -d \
+          "collectioncount=1&publishedfileids[0]=${m}" \
+          "http://api.steampowered.com/ISteamRemoteStorage/GetCollectionDetails/v1" |
+          perl -e '
+              use JSON;
+              my $js = decode_json <>;
+              my $coll = ${$js}{response}{collectiondetails}[0];
+              if (exists ${$coll}{children}) {
+                  foreach my $mod (@{${$coll}{children}}) {
+                      print "${$mod}{publishedfileid}\n";
+                  }
+              } else {
+                  print "${$coll}{publishedfileid}\n";
+              }
+          ' 2>/dev/null
+    done
+  ) | sort | uniq | grep '^[1-9][0-9]*$'
 }
 
 #
