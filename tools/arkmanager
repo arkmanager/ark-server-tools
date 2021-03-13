@@ -240,7 +240,7 @@ runAsRoot(){
 
 # Check the user is not currently running this script as root
 if [ "$(id -u)" == "0" ]; then
-  if [ "$1" != "--run-as-root-i-know-what-im-doing" ]; then
+  if [ "$1" = "--run-as-root-i-know-what-im-doing" ]; then
     echo "Warning: running as root is dangerous" >&2
   elif [ "$1" = "--runfromroot" ]; then
     echo "Error: still running as root after attempting to drop privileges; aborting" >&2
