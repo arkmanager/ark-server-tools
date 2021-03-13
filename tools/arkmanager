@@ -229,18 +229,26 @@ runAsRoot(){
   elif [ "$1" == "uninstall-tools" ]; then
     doUninstallTools
   elif [ "$steamcmd_user" = "$USERNAME" ]; then
-    echo "Error: steamcmd_user is root; aborting"
+    echo "Error: steamcmd_user is root; aborting" >&2
     exit 1
   else
-    exec /sbin/runuser "$steamcmd_user" -s "$steamcmd_user_shellexec" -c "$(printf "%q" "$0")$(printf " %q" "$@")"
+    echo "Attempting to drop privileges; re-running as $steamcmd_user" >&2
+    exec /sbin/runuser "$steamcmd_user" -s "$steamcmd_user_shellexec" -c "$(printf "%q" "$0") --runfromroot$(printf " %q" "$@")"
     exit 1
   fi
 }
 
 # Check the user is not currently running this script as root
 if [ "$(id -u)" == "0" ]; then
-  runAsRoot "$@"
-  exit 0
+  if [ "$1" != "--run-as-root-i-know-what-im-doing" ]; then
+    echo "Warning: running as root is dangerous" >&2
+  elif [ "$1" = "--runfromroot" ]; then
+    echo "Error: still running as root after attempting to drop privileges; aborting" >&2
+    exit 1
+  else
+    runAsRoot "$@"
+    exit 0
+  fi
 fi
 
 #---------------------
@@ -259,6 +267,7 @@ if [ -f "${HOME}/${arkstUserCfgFile}" ]; then
 fi
 
 if [[ -n "${steamcmd_user}" && "${steamcmd_user}" != "--me" && "$USERNAME" != "${steamcmd_user}" && -n "$usesudo" ]]; then
+    echo "Attempting to run as $steamcmd_user" >&2
     exec sudo --user="${steamcmd_user}" "$0" "$@"
 fi
 
@@ -3789,6 +3798,12 @@ main(){
       ;;
       --cronjob)
         inCronJob=true
+        continue
+      ;;
+      --runfromroot)
+        continue
+      ;;
+      --run-as-root-i-know-what-im-doing)
         continue
       ;;
     esac
