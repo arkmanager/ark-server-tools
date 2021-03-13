@@ -43,6 +43,8 @@ arkstGithubRepo="${arkstGithubRepoOverride:-arkmanager/ark-server-tools}"
 arkstGlobalCfgFile="${arkstGlobalCfgFileOverride:-/etc/arkmanager/arkmanager.cfg}"
 arkstUserCfgFile="${arkstUserCfgFileOverride:-.arkmanager.cfg}"
 
+arkstScriptPath="$(realpath "$0")"
+
 doUpgradeTools() {
   if [ -n "$arkstUsePkgManager" ]; then
     echo "arkmanager v${arkstVersion}: Please check for, and install, updates using your system's package manager"
@@ -102,7 +104,7 @@ doUpgradeToolsFromCommit(){
 
   if [ "$result" = 0 ] || [ "$result" = 2 ]; then
     echo "ARK Server Tools successfully upgraded"
-    "$0" --version
+    "${arkstScriptPath}" --version
   else
     echo "ARK Server Tools upgrade failed"
   fi
@@ -233,7 +235,7 @@ runAsRoot(){
     exit 1
   else
     echo "Attempting to drop privileges; re-running as $steamcmd_user" >&2
-    exec /sbin/runuser "$steamcmd_user" -s "$steamcmd_user_shellexec" -c "$(printf "%q" "$0") --runfromroot$(printf " %q" "$@")"
+    exec /sbin/runuser "$steamcmd_user" -s "$steamcmd_user_shellexec" -c "$(printf "%q" "${arkstScriptPath}") --runfromroot$(printf " %q" "$@")"
     exit 1
   fi
 }
@@ -268,7 +270,7 @@ fi
 
 if [[ -n "${steamcmd_user}" && "${steamcmd_user}" != "--me" && "$USERNAME" != "${steamcmd_user}" && -n "$usesudo" ]]; then
     echo "Attempting to run as $steamcmd_user" >&2
-    exec sudo --user="${steamcmd_user}" "$0" "$@"
+    exec sudo --user="${steamcmd_user}" "${arkstScriptPath}" "$@"
 fi
 
 if [[ -n "${serverbasedir}" && -d "${serverbasedir}" ]]; then
@@ -3906,8 +3908,8 @@ main(){
         if [ -n "${arkstTag}" ]; then
           echo "Release Tag: ${arkstTag}"
         fi
-        blobsize="$(sed "s@^\\(arkst\\(Commit\\|Tag\\|RootUseEnv\\|UsePkgManager\\|GithubRepoOverride\\|GlobalCfgFileOverride\\|UserCfgFileOverride\\)\\)=.*@\\1=''@" "$0" | wc -c)"
-        echo "Blob SHA: $( (echo -ne "blob ${blobsize}\0"; sed "s@^\\(arkst\\(Commit\\|Tag\\|RootUseEnv\\|UsePkgManager\\|GithubRepoOverride\\|GlobalCfgFileOverride\\|UserCfgFileOverride\\)\\)=.*@\\1=''@" "$0") | sha1sum | cut -d' ' -f1)"
+        blobsize="$(sed "s@^\\(arkst\\(Commit\\|Tag\\|RootUseEnv\\|UsePkgManager\\|GithubRepoOverride\\|GlobalCfgFileOverride\\|UserCfgFileOverride\\)\\)=.*@\\1=''@" "${arkstScriptPath}" | wc -c)"
+        echo "Blob SHA: $( (echo -ne "blob ${blobsize}\0"; sed "s@^\\(arkst\\(Commit\\|Tag\\|RootUseEnv\\|UsePkgManager\\|GithubRepoOverride\\|GlobalCfgFileOverride\\|UserCfgFileOverride\\)\\)=.*@\\1=''@" "${arkstScriptPath}") | sha1sum | cut -d' ' -f1)"
         exit 1
       ;;
       -h|--help)
