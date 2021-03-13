@@ -43,7 +43,10 @@ arkstGithubRepo="${arkstGithubRepoOverride:-arkmanager/ark-server-tools}"
 arkstGlobalCfgFile="${arkstGlobalCfgFileOverride:-/etc/arkmanager/arkmanager.cfg}"
 arkstUserCfgFile="${arkstUserCfgFileOverride:-.arkmanager.cfg}"
 
-arkstScriptPath="$(realpath "$0")"
+arkstScriptPath="${0}"
+if [[ "${arkstScriptPath}" != /* ]]; then
+  arkstScriptPath="$(realpath "$0")"
+fi
 
 doUpgradeTools() {
   if [ -n "$arkstUsePkgManager" ]; then
