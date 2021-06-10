@@ -1620,6 +1620,7 @@ doInstall() {
     # If it does not exist, try create it
     echo -e "Creating the ARK server root directory ($arkserverroot)"
     mkdir -p "$arkserverroot"
+    mkdir -p "${arkserverroot}/steamapps"
     if [ ! $? ] ; then
       echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tFailed to create the defined ARK server root directory ($arkserverroot)"
       exit 1
