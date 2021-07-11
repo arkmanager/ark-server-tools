@@ -3174,7 +3174,12 @@ doBackup(){
   echo -ne "${NORMAL} Compressing Backup "
   backupfile="${arkbackupdir}/${daystamp}/${instance}.${datestamp}.tar.bz2"
 
-  tar -jcf "${backupfile}" -C "${arkbackupdir}" "${datestamp}"
+  if [ "$arkAutoUpdateOnStart" == "false" ]; then
+    tar -cf "${backupfile}" -C "${arkbackupdir}" "${datestamp}"
+  else
+    tar -jcf "${backupfile}" -C "${arkbackupdir}" "${datestamp}"
+  fi
+
   rm -rf "${backupdir}"
 
   if [ -f "${backupfile}" ]; then

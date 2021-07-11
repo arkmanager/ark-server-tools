@@ -564,6 +564,11 @@ For the standard ARK server, this should be `ShooterGame/Binaries/Linux/ShooterG
     The directory in which to store backups.  Can be overridden in
     the instance config.
 
+`arkbackupcompress`::
+    Enable/Disable backup compression. Default true. 
+    Helps to remove the load on the CPU, but increases the size of backups, 
+    see arkMaxBackupSizeMB
+
 `arkBackupPostCommand`::
     Command to be run using `eval` after backup completes.
     `$backupfile` will be set to the full path of the backup tar.bz2 file.
