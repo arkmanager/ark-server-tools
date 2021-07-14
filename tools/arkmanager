@@ -968,7 +968,7 @@ function isTheServerRunning(){
 function isTheServerUp(){
   local ip="$(getMultiHome)"
   result=1
-  if [ -x "$lsof" ]; then
+  if [ -x "$( which "$lsof" )" ]; then
     "$lsof" -w -i "${ip:+udp@}${ip}:$(getGamePort)" > /dev/null
     result=$?
   fi
