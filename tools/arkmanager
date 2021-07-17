@@ -3172,11 +3172,12 @@ doBackup(){
   #Tar the files and remove the original Backup Directory.  Saves about 50MB of disk space per backup
 
   echo -ne "${NORMAL} Compressing Backup "
-  backupfile="${arkbackupdir}/${daystamp}/${instance}.${datestamp}.tar.bz2"
+  backupfile="${arkbackupdir}/${daystamp}/${instance}.${datestamp}.tar"
 
   if [ "$arkbackupcompress" == "false" ]; then
     tar -cf "${backupfile}" -C "${arkbackupdir}" "${datestamp}"
   else
+    backupfile="${backupfile}.bz2"
     tar -jcf "${backupfile}" -C "${arkbackupdir}" "${datestamp}"
   fi
 
