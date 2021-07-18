@@ -3026,11 +3026,13 @@ doBackup(){
       echo "${NORMAL}\e[68G[  ${YELLOW}WARN${NORMAL}  ]"
       logprint "Saved ark file not found, but temporary file was"
     else
-      echo "${NORMAL}\e[68G[ ${RED}FAILED${NORMAL} ]"
       cimapfile="$(find "${savedir}" -maxdepth 1 -iname "${mapname}.ark" -or -iname "${mapname}.tmp" | head -n1)"
       if [ -n "${cimapfile}" ]; then
+        echo "${NORMAL}\e[68G[  ${YELLOW}WARN${NORMAL}  ]"
         logprint "Inconsistent casing in map name - ${mapname}.ark does not exist, but ${cimapfile##*/} does"
+        cp -p "${cimapfile}" "${backupdir}/${mapname}.ark"
       else
+        echo "${NORMAL}\e[68G[ ${RED}FAILED${NORMAL} ]"
         logprint "Saved ark file could not be found"
         logprint "Candidates:"
         for f in "${savedir}"/*.ark; do
