@@ -474,65 +474,95 @@ getQueryPort(){
 # Determine SteamCMD data directory
 #
 getSteamWorkshopDir(){
+  if [[ -d "${steamworkshopdir}" && -f "${steamworkshopdir}/appworkshop_${mod_appid}.acf" ]]; then
+    echo "${steamworkshopdir}"
+    return
+  fi
+
   if [[ -z "${steamcmdhome}" || ! -d "${steamcmdhome}" ]]; then
     steamcmdhome="${HOME}"
   fi
 
-  for d in "$steamworkshopdir" \
-           "$steamcmdhome/.steam/SteamApps/workshop" \
-           "$steamcmdhome/.steam/steamapps/workshop" \
-           "$steamcmdhome/Steam/SteamApps/workshop" \
-           "$steamcmdhome/Steam/steamapps/workshop" \
-           "${steamdataroot:-$steamcmdroot}/steamapps/workshop"; do
-    if [[ -d "${d}" && -f "${d}/appworkshop_${mod_appid}.acf" ]]; then
-      echo "$d"
-      return
-    fi
-  done
-  # default
-  echo "$steamcmdhome/Steam/steamapps/workshop"
+  local wsfile="$(
+    for d in "$steamcmdhome/.steam/steam" "$steamcmdhome/.steam" "$steamcmdhome/Steam"; do
+      for d2 in "${d}/steamapps/workshop" "${d}/SteamApps/workshop"; do
+        if [[ -d "${d2}" && -f "${d2}/appworkshop_${mod_appid}.acf" ]]; then
+          stat -c "%Y %n" "${d2}/appworkshop_${mod_appid}.acf"
+        fi
+      done
+    done |
+      sort -n |
+      tail -n1 |
+      cut -d' ' -f2-
+  )"
+
+  if [[ -n "$wsfile" && -f "$wsfile" ]]; then
+    echo "${wsfile%/*}"
+  else
+    echo "$steamcmdhome/Steam/steamapps/workshop"
+  fi
 }
 
 #
 # Determine SteamCMD data directory
 #
 getSteamAppInfoCache(){
+  if [[ -n "${steamcmd_appinfocache}" && -f "${steamcmd_appinfocache}" ]]; then
+    echo "${steamcmd_appinfocache}"
+    return
+  fi
+
   if [[ -z "${steamcmdhome}" || ! -d "${steamcmdhome}" ]]; then
     steamcmdhome="${HOME}"
   fi
 
-  for d in "${steamcmd_appinfocache}" \
-           "$steamcmdhome/.steam/appcache/appinfo.vdf" \
-           "$steamcmdhome/Steam/appcache/appinfo.vdf" \
-           "${steamdataroot:-$steamcmdroot}/appcache/appinfo.vdf"; do
-    if [[ -f "${d}" ]]; then
-      echo "$d"
-      return
-    fi
-  done
-  # default
-  echo "${steamcmd_appinfocache:-$steamcmdhome/Steam/appcache/appinfo.vdf}"
+  local appcachefile="$(
+    for d in "$steamcmdhome/.steam/steam" "$steamcmdhome/.steam" "$steamcmdhome/Steam"; do
+      if [[ -d "${d}" && -f "${d}/appcache/appinfo.vdf" ]]; then
+        stat -c "%Y %n" "${d}/appcache/appinfo.vdf"
+      fi
+    done |
+      sort -n
+      tail -n1 |
+      cut -d' ' -f2-
+  )"
+
+  if [[ -n "$appcachefile" && -f "$appcachefile" ]]; then
+    echo "${appcachefile}"
+  else
+    echo "${steamcmd_appinfocache:-$steamcmdhome/Steam/appcache/appinfo.vdf}"
+  fi
 }
 
 #
 # Determine SteamCMD data directory
 #
 getSteamWorkshopLog(){
+  if [[ -n "${steamcmd_workshoplog}" && -f "${steamcmd_workshoplog}" ]]; then
+    echo "${steamcmd_workshoplog}"
+  fi
+
   if [[ -z "${steamcmdhome}" || ! -d "${steamcmdhome}" ]]; then
     steamcmdhome="${HOME}"
   fi
 
-  for d in "${steamcmd_workshoplog}" \
-           "$steamcmdhome/.steam/logs/workshop_log.txt" \
-           "$steamcmdhome/Steam/logs/workshop_log.txt" \
-           "${steamdataroot:-$steamcmdroot}/logs/workshop_log.txt"; do
-    if [[ -f "${d}" ]]; then
-      echo "$d"
-      return
-    fi
-  done
-  # default
-  echo "${steamcmd_workshoplog:-$steamcmdhome/logs/workshop_log.txt}"
+
+  local wslogfile="$(
+    for d in "$steamcmdhome/.steam/steam" "$steamcmdhome/.steam" "$steamcmdhome/Steam"; do
+      if [[ -d "${d}" && -f "${d}/logs/workshop_log.txt" ]]; then
+        stat -c "%Y %n" "${d}/logs/workshop_log.txt"
+      fi
+    done |
+      sort -n |
+      tail -n1 |
+      cut -d' ' -f2-
+  )"
+
+  if [[ -n "$wslogfile" && -f "$wslogfile" ]]; then
+    echo "${wslogfile}"
+  else
+    echo "${steamcmd_workshoplog:-$steamcmdhome/Steam/logs/workshop_log.txt}"
+  fi
 }
 
 #
