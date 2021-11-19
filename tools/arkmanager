@@ -3332,7 +3332,7 @@ doInstallCronJob(){
     esac
   done
 
-  if [ -n "$allinstances" ]; then
+  if [ "$allinstances" == "yes" ]; then
     instargs="@all"
   else
     for inst in "${instances[@]}"; do
