@@ -399,7 +399,7 @@ checkConfig() {
   # Service configuration
   # logdir
   if [ ! -w "$logdir" ] ; then
-    echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tYou do not permission to write to the log directory." >&2
+    echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tYou do not have permission to write to the log directory." >&2
   fi
 }
 
