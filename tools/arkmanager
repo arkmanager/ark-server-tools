@@ -3679,13 +3679,14 @@ addArkOpt() {
   local optname="${1%%=*}"
   local optval="${1#*=}"
   local optdash="${optname:0:1}"
-  
+
+  if [[ "${optval}" == "${1}" ]]; then
+    optval=""
+  fi
+
   optname="${optname#-}"
   optname="${optname//[^A-Za-z0-9_]/_}"
   
-  if [[ "${optval}" == "${optname}" ]]; then
-    optval=""
-  fi
   if [[ "${optdash}" == "-" ]]; then
     if [[ -z "${optval}" ]]; then
       IFS="" read -r "arkflag_${optname}" <<<"true"
