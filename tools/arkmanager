@@ -712,13 +712,13 @@ function runSteamCMD(){
   if [[ -z "${steamcmdhome}" || ! -d "${steamcmdhome}" ]]; then
     steamcmdhome="${HOME}"
   fi
-  HOME="${steamcmdhome}" "$steamcmdroot/$steamcmdexec" +@NoPromptForPassword 1 ${steamcmd_cmds_prelogin} +login "${steamlogin:-anonymous}" ${steamcmd_cmds_postlogin} "$@" +quit
+  HOME="${steamcmdhome}" "$steamcmdroot/$steamcmdexec" +@NoPromptForPassword 1 ${steamcmd_cmds_prelogin} "${steamcmd_force_install_dir[@]}" +login "${steamlogin:-anonymous}" ${steamcmd_cmds_postlogin} "$@" +quit
 }
 
 function runSteamCMDspinner(){
   if [ -n "$verbose" ]; then
     printf "Executing"
-    printf " %q" "$steamcmdroot/$steamcmdexec" +@NoPromptForPassword 1 ${steamcmd_cmds_prelogin} +login "${steamlogin:-anonymous}" ${steamcmd_cmds_postlogin} "$@" +quit
+    printf " %q" "$steamcmdroot/$steamcmdexec" +@NoPromptForPassword 1 ${steamcmd_cmds_prelogin} "${steamcmd_force_install_dir[@]}" +login "${steamlogin:-anonymous}" ${steamcmd_cmds_postlogin} "$@" +quit
     printf "\n"
     if (command >&3) 2>/dev/null; then
       runSteamCMD "$@" > >(tee /dev/fd/3)
@@ -1638,7 +1638,8 @@ doStopAll(){
 runSteamCMDAppUpdate(){
   local installdir="$1"
   shift
-  runSteamCMDspinner +force_install_dir "$installdir" +app_update "$appid" $steamcmd_appextraopts "$@"
+  local steamcmd_force_install_dir=( +force_install_dir "$installdir" )
+  runSteamCMDspinner +app_update "$appid" $steamcmd_appextraopts "$@"
 }
 
 #
