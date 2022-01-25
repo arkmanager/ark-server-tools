@@ -522,7 +522,7 @@ getSteamAppInfoCache(){
         stat -c "%Y %n" "${d}/appcache/appinfo.vdf"
       fi
     done |
-      sort -n
+      sort -n |
       tail -n1 |
       cut -d' ' -f2-
   )"
