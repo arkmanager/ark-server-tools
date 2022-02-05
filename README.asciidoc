@@ -81,6 +81,8 @@ To allow your ARK server to communicate with the outside you have to open some p
 ```sh
 iptables -I INPUT -p udp --dport 27016 -j ACCEPT
 iptables -I INPUT -p tcp --dport 27016 -j ACCEPT
+iptables -I INPUT -p udp --dport 7777 -j ACCEPT
+iptables -I INPUT -p tcp --dport 7777 -j ACCEPT
 iptables -I INPUT -p udp --dport 7778 -j ACCEPT
 iptables -I INPUT -p tcp --dport 7778 -j ACCEPT
 iptables -I INPUT -p tcp --dport 32330 -j ACCEPT
