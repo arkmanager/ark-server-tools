@@ -2523,7 +2523,6 @@ getAvailModLastUpdated(){
 # Checks if a mod update is available before trying to download it
 isModUpdateAvailable(){
   local modid="$1"
-  local localupd="$(getLocalModLastUpdated "$modid")"
   local remupd="$(getAvailModLastUpdated "$modid")"
   local instupd="$(getInstalledModLastUpdated "$modid")"
 
@@ -2533,6 +2532,8 @@ isModUpdateAvailable(){
 
   local steamworkshopdir="$(getSteamWorkshopDir)"
   if [ ! -f "${steamworkshopdir}/appworkshop_${mod_appid}.acf" ]; then return 0; fi
+
+  local localupd="$(getLocalModLastUpdated "$modid")"
   if [[ -n "${remupd}" && "${localupd}" != "${remupd}" ]]; then
     return 0 # true
   fi
