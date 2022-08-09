@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2031,SC2155
 
 # ARK: survival evolved manager
 #
@@ -262,12 +263,12 @@ fi
 
 # Global variables
 if [ -f "${arkstGlobalCfgFile}" ]; then
-    # shellcheck source=arkmanager.cfg
+    # shellcheck source=arkmanager.cfg.shellcheck
     source "${arkstGlobalCfgFile}"
 fi
 
 if [ -f "${HOME}/${arkstUserCfgFile}" ]; then
-    # shellcheck source=arkmanager.cfg
+    # shellcheck source=arkmanager.cfg.shellcheck
     source "${HOME}/${arkstUserCfgFile}"
 fi
 
@@ -298,7 +299,6 @@ GREEN="\\033[1;32m"
 RED="\\033[1;31m"
 YELLOW="\\e[0;33m"
 NORMAL="\\033[0;39m"
-maxOpenFiles=100000
 
 # Set TERM to "dumb" if TERM is not set
 export TERM=${TERM:-dumb}
@@ -409,15 +409,20 @@ checkConfig() {
 # $2 is the default
 #
 getArkServerSetting() {
+  # shellcheck disable=SC2018,SC2019
   local lcname="$(tr 'A-Z' 'a-z' <<<"${1}")"
   local varname
+  # shellcheck disable=SC2154
   for varname in "${!ark_@}"; do
+    # shellcheck disable=SC2018,SC2019
     if [ "$(tr 'A-Z' 'a-z' <<<"$varname")" == "ark_${lcname}" ]; then
       echo "${!varname}"
       return
     fi
   done
+  # shellcheck disable=SC2154
   for varname in "${!arkopt_@}"; do
+    # shellcheck disable=SC2018,SC2019
     if [ "$(tr 'A-Z' 'a-z' <<<"$varname")" == "arkopt_${lcname}" ]; then
       echo "${!varname}"
       return
@@ -448,10 +453,12 @@ getRconPort() {
 #
 # Gets server bind IP
 #
+# shellcheck disable=SC2120
 getMultiHome() {
   getArkServerSetting "MultiHome" "${1}"
 }
 
+# shellcheck disable=SC2120
 getMultiHomeIP() {
   getArkServerSetting "MultiHome" "${1:-127.0.0.1}"
 }
@@ -676,10 +683,11 @@ function notify(){
     local msg
     local notifymsg="$1"
     msg="${notifyTemplate:-Message from instance \`{instance\}\` on server \`{server\}\`: {msg\}}"
-    msg="${msg//\{msg\}/${1}}"
+    msg="${msg//\{msg\}/${notifymsg}}"
     msg="${msg//\{instance\}/${instance}}"
     msg="${msg//\{server\}/${HOSTNAME}}"
 
+    #shellcheck disable=SC2154
     for v in "${!notifyvar_@}"; do
         vn="${v#notifyvar_}"
         msg="${msg//\{${vn}\}/${!v}}"
@@ -712,12 +720,14 @@ function runSteamCMD(){
   if [[ -z "${steamcmdhome}" || ! -d "${steamcmdhome}" ]]; then
     steamcmdhome="${HOME}"
   fi
+  # shellcheck disable=SC2086
   HOME="${steamcmdhome}" "$steamcmdroot/$steamcmdexec" +@NoPromptForPassword 1 ${steamcmd_cmds_prelogin} "${steamcmd_force_install_dir[@]}" +login "${steamlogin:-anonymous}" ${steamcmd_cmds_postlogin} "$@" +quit
 }
 
 function runSteamCMDspinner(){
   if [ -n "$verbose" ]; then
     printf "Executing"
+    # shellcheck disable=SC2086
     printf " %q" "$steamcmdroot/$steamcmdexec" +@NoPromptForPassword 1 ${steamcmd_cmds_prelogin} "${steamcmd_force_install_dir[@]}" +login "${steamlogin:-anonymous}" ${steamcmd_cmds_postlogin} "$@" +quit
     printf "\n"
     if (command >&3) 2>/dev/null; then
@@ -741,6 +751,7 @@ function runSteamCMDspinner(){
     fi
     local scpid=$!
     local pos=0
+    # shellcheck disable=SC1003
     local spinner=( '\b-' '\b/' '\b|' '\b\\' )
     if [ "$progressDisplayType" == "dots" ]; then
       spinner=( '.' )
@@ -1231,6 +1242,7 @@ doRun() {
   done < <(sed -n 's/^\(ark\(\|opt\|flag\)_[^= ]*\)=.*/\1/p' <"$configfile")
 
   # bring in ark_... options
+  # shellcheck disable=SC2154
   for varname in "${!ark_@}"; do
     if [ -z "${usedoptions[${varname}]}" ]; then
       name="${varname#ark_}"
@@ -1253,6 +1265,7 @@ doRun() {
   done
 
   # bring in arkflag_... flags
+  # shellcheck disable=SC2154
   for varname in "${!arkflag_@}"; do
     if [ -z "${usedoptions[${varname}]}" ]; then
       name="${varname#arkflag_}"
@@ -1263,6 +1276,7 @@ doRun() {
   done
 
   # bring in arkopt_... options
+  # shellcheck disable=SC2154
   for varname in "${!arkopt_@}"; do
     if [ -z "${usedoptions[${varname}]}" ]; then
       name="${varname#arkopt_}"
@@ -1533,10 +1547,11 @@ doStart() {
 #
 doStartAll(){
   doStart
+  # shellcheck disable=SC2154
   for cfg in "${!configfile_@}"; do
     if [ -f "${!cfg}" ]; then
       (
-        # shellcheck source=instance.cfg.example
+        # shellcheck source=arkmanager.cfg.shellcheck
         source "${!cfg}"
         doStart
       )
@@ -1624,7 +1639,7 @@ doStopAll(){
   for cfg in "${!configfile_@}"; do
     if [ -f "${!cfg}" ]; then
       (
-        # shellcheck source=instance.cfg.example
+        # shellcheck source=arkmanager.cfg.shellcheck
         source "${!cfg}"
         doStop
       )
@@ -1639,6 +1654,7 @@ runSteamCMDAppUpdate(){
   local installdir="$1"
   shift
   local steamcmd_force_install_dir=( +force_install_dir "$installdir" )
+  # shellcheck disable=SC2086
   runSteamCMDspinner +app_update "$appid" $steamcmd_appextraopts "$@"
 }
 
@@ -1737,8 +1753,8 @@ printWarnMessage(){
           reason="an update to mod(s) {modnamesupdated}"
         fi
       fi
-    elif [ -n "$shutdownreason" ]; then
-      reason="$shutdownreason"
+    elif [ -n "$2" ]; then
+      reason="$2"
     elif [ "$1" == "restart" ]; then
       if [ -n "$msgReasonRestart" ]; then
         reason="$msgReasonRestart"
@@ -1876,7 +1892,6 @@ doWarn(){
       usenotify=
     fi
     if [ -n "$pid" ]; then
-      local warnmsg
       local warnminutes=$(( arkwarnminutes ))
       if (( warnminutes == 0 )); then
         warnminutes=60
@@ -2109,6 +2124,8 @@ doUpdate() {
         doDownloadSteamCMD
         cd "$steamcmdroot"
         runSteamCMDAppUpdate "$arkStagingDir" ${appbeta:+-beta} $appbeta ${appbetapass:+-betapassword} $appbetapass $validate
+
+        # shellcheck disable=SC2181
         if [ $? -eq 0 ]; then
           rm -rf "${arkStagingDir}/steamapps/downloading/${appid}"
         elif [ $? -eq 5 ]; then
@@ -2152,6 +2169,7 @@ doUpdate() {
     fi
     logprint "Not applying update - download-only requested"
   elif [ -n "$appupdate" ] || [ -n "$modupdate" ] || [ -n "$bgupdate" ]; then
+    # version.txt is frequently missing, empty, or out of date
     if false && [ -f "$arkserverroot/version.txt" ]; then
       arkversion="$(<"$arkserverroot/version.txt")"
     else
@@ -2319,8 +2337,6 @@ doUpdate() {
 #
 checkForModUpdate(){
   local updateavail=
-  local instmft=
-  local availmft=
   local modname=
   local steamworkshopdir="$(getSteamWorkshopDir)"
   local cancheckmodavail=1
@@ -2407,6 +2423,7 @@ getModIds(){
     echo "${serverMapModId}"
     echo "${ark_TotalConversionMod}"
     echo "${ark_GameModIds}" | tr ',' '\n'
+    # shellcheck disable=SC2154
     for v in "${!arkmod_@}"; do
       if [ "${!v}" != "disabled" ]; then
         echo "${v#arkmod_}"
@@ -2451,7 +2468,7 @@ getCollectionMods(){
 #
 listMods(){
   local modlist
-  local modid moddir moddesc
+  local modid moddir
   declare -A modlist
   if [ -n "${serverMapModId}" ]; then
     modlist[${serverMapModId}]="serverMapModId"
@@ -2638,6 +2655,7 @@ isModUpdateNeeded(){
     modsrcdir="${modsrcdirs[$modid]}"
   fi
 
+  # shellcheck disable=SC2154
   for varname in "${!mod_branch_@}"; do
     if [ "mod_branch_$modid" == "$varname" ]; then
       modbranch="${!varname}"
@@ -3299,6 +3317,7 @@ doRestore(){
     if [ -n "${restorePath}" ]; then
       echo "Restoring ${file} to ${restorePath}"
       tar -xjvf "${backupFile}" -C "${restorePath}" --strip-components=1 "${file}"
+      # shellcheck disable=SC2181
       if [ $? == 0 ] ; then
         echo -e "${NORMAL}\e[68G[   ${GREEN}OK${NORMAL}   ]"
       else
@@ -3606,7 +3625,7 @@ doPrintConfig(){
   for cfgfile in "$configfile" "${HOME}/${arkstUserCfgFile}" "${arkstGlobalCfgFile}"; do
     if [ -r "$cfgfile" ]; then
       while read -r v; do
-        # shellcheck source=arkmanager.cfg,instance.cfg.example
+        # shellcheck source=arkmanager.cfg.shellcheck
         val="$(source "$cfgfile"; echo "${!v}")"
         if [[ "$val" = "${vals[$v]}" && -z "${vars[$v]}" ]]; then
           vars["$v"]="$cfgfile"
@@ -3620,17 +3639,17 @@ doPrintConfig(){
 doTestConfig(){
   set -e
   if [ -r "${arkstGlobalCfgFile}" ]; then
-      # shellcheck source=arkmanager.cfg
+      # shellcheck source=arkmanager.cfg.shellcheck
       source "${arkstGlobalCfgFile}"
   fi
 
   if [ -r "${HOME}/${arkstUserCfgFile}" ]; then
-      # shellcheck source=arkmanager.cfg
+      # shellcheck source=arkmanager.cfg.shellcheck
       source "${HOME}/${arkstUserCfgFile}"
   fi
 
   if [ -r "$configfile" ]; then
-      # shellcheck source=instance.cfg.example
+      # shellcheck source=arkmanager.cfg.shellcheck
       source "$configfile"
   fi
 
@@ -3673,7 +3692,7 @@ useConfig() {
       echo "Error: config file $configfile does not exist"
       exit 1
     fi
-    # shellcheck source=instance.cfg.example
+    # shellcheck source=arkmanager.cfg.shellcheck
     source "$configfile"
   fi
   if [ -z "$arkserverroot" ]; then
@@ -3822,12 +3841,12 @@ EOE
 
 main(){
   if [ -f "${arkstGlobalCfgFile}" ]; then
-      # shellcheck source=arkmanager.cfg
+      # shellcheck source=arkmanager.cfg.shellcheck
       source "${arkstGlobalCfgFile}"
   fi
 
   if [ -f "${HOME}/${arkstUserCfgFile}" ]; then
-      # shellcheck source=arkmanager.cfg
+      # shellcheck source=arkmanager.cfg.shellcheck
       source "${HOME}/${arkstUserCfgFile}"
   fi
 
@@ -3860,6 +3879,7 @@ main(){
         continue
       ;;
       --cronjob)
+        # shellcheck disable=SC2034
         inCronJob=true
         continue
       ;;
@@ -4014,6 +4034,7 @@ main(){
 
     # Handle all instances being requested
     if [[ "$allinstances" == "yes" ]]; then
+      # shellcheck disable=SC2207
       instances=( $(getAllInstanceNames) )
     fi
 

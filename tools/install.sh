@@ -93,12 +93,12 @@ while [ -n "$1" ]; do
   shift
 done
 
-if [ "$userinstall" == "yes" -a "$UID" -eq 0 ]; then
+if [ "$userinstall" == "yes" ] && [ "$UID" -eq 0 ]; then
   echo "Refusing to perform user-install as root"
   showusage=yes
 fi
 
-if [ "$showusage" == "no" -a -z "$steamcmd_user" ]; then
+if [ "$showusage" == "no" ] && [ -z "$steamcmd_user" ]; then
   echo "No user specified"
   showusage=yes
 fi
@@ -245,7 +245,7 @@ else
           chmod +x "${INSTALL_ROOT}/etc/init.d/arkmanager"
           sed -i "s|^DAEMON=\"/usr/bin/|DAEMON=\"${BINDIR}/|" "${INSTALL_ROOT}/etc/init.d/arkmanager"
           # add to startup if the system use sysinit
-          if [ -x /usr/sbin/update-rc.d -a -z "${INSTALL_ROOT}" ]; then
+          if [ -x /usr/sbin/update-rc.d ] && [ -z "${INSTALL_ROOT}" ]; then
             update-rc.d arkmanager defaults
             echo "Ark server will now start on boot, if you want to remove this feature run the following line"
             echo "update-rc.d -f arkmanager remove"
@@ -272,7 +272,7 @@ else
           cp redhat/arkdaemon "${INSTALL_ROOT}/etc/rc.d/init.d/arkmanager"
           chmod +x "${INSTALL_ROOT}/etc/rc.d/init.d/arkmanager"
           sed -i "s@^DAEMON=\"/usr/bin/@DAEMON=\"${BINDIR}/@" "${INSTALL_ROOT}/etc/rc.d/init.d/arkmanager"
-          if [ -x /sbin/chkconfig -a -z "${INSTALL_ROOT}" ]; then
+          if [ -x /sbin/chkconfig ] && [ -z "${INSTALL_ROOT}" ]; then
             chkconfig --add arkmanager
             echo "Ark server will now start on boot, if you want to remove this feature run the following line"
             echo "chkconfig arkmanager off"
@@ -282,7 +282,7 @@ else
         cp openrc/arkdaemon "${INSTALL_ROOT}/etc/init.d/arkmanager"
         chmod +x "${INSTALL_ROOT}/etc/init.d/arkmanager"
         sed -i "s@^DAEMON=\"/usr/bin/@DAEMON=\"${BINDIR}/@" "${INSTALL_ROOT}/etc/init.d/arkmanager"
-        if [ -x /sbin/rc-update -a -z "${INSTALL_ROOT}" ]; then
+        if [ -x /sbin/rc-update ] && [ -z "${INSTALL_ROOT}" ]; then
           rc-update add arkmanager default
           echo "Ark server will now start on boot, if you want to remove this feature run the following line"
           echo "rc-update del arkmanager default"

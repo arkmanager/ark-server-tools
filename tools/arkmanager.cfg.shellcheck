@@ -1,0 +1,417 @@
+### arkmanager variables
+
+# Script version
+arkstVersion='1.6'
+
+# Set by installer to git tag (i.e. release version)
+arkstTag=
+
+# Set by installer to git commit
+arkstCommit=
+
+# Set this if you are a distribution package maintainer otherwise leave empty
+arkstUsePkgManager=
+
+# Set this to allow variable expansion in variables sourced from arkmanager.cfg
+arkstRootUseEnv=
+
+# Set this to override the main fork
+arkstGithubRepoOverride=
+
+# Set this to override the global config file path
+arkstGlobalCfgFileOverride=
+
+# Set this to override the user config file path
+arkstUserCfgFileOverride=
+
+### arkmanager.cfg
+
+# Git branch in above ${arkstGithubRepoOverride} repository
+arkstChannel="master"
+
+# Set by installer to directory containing installed executable.
+install_bindir="/usr/bin"
+
+# Set by installer to directory containing installed miscellaneous executables.
+install_libexecdir="/usr/libexec/arkmanager"
+
+# Set by installer to directory containing installed miscellaneous data.
+install_datadir="/usr/share/arkmanager"
+
+## SteamCMD Configuration
+
+# Path to SteamCMD directory - change this to "/usr/games" on Debian/Ubuntu/CentOS if you have the steamcmd package installed.
+steamcmdroot="/home/steam/steamcmd"
+
+# Name of SteamCMD executable - change this to "steamcmd" on Debian/Ubuntu/CentOS if you have the steamcmd package installed.
+steamcmdexec="steamcmd.sh"
+
+# User under which this script should be run.
+steamcmd_user="steam"
+
+# Use sudo when executing user does not match ${steamcmd_user}
+usesudo=
+
+# Path to SteamCMD AppInfo cache (appinfo.vdf) - change this to "/home/steam/.steam/appcache/appinfo.vdf" on Debian/Ubuntu/CentOS if you have the steamcmd package installed.
+steamcmd_appinfocache="/home/steam/Steam/appcache/appinfo.vdf"
+
+# Path to SteamCMD Workshop log (workshop_log.txt) - change this to "/home/steam/.steam/logs/workshop_log.txt" on Debian/Ubuntu/CentOS if you have the steamcmd package installed.
+steamcmd_workshoplog="/home/steam/Steam/logs/workshop_log.txt"
+
+# SteamCMD login - may be required for non-public mods. Must have already been logged in manually.
+steamlogin=
+
+# SteamCMD home directory override
+steamcmdhome=
+
+# SteamCMD commands to execute before login command
+steamcmd_cmds_prelogin=
+
+# SteamCMD commands to execute after login but before main command
+steamcmd_cmds_postlogin=
+
+# SteamCMD extra options to app_update command
+steamcmd_appextraopts=
+
+## ARK server global config
+
+# Working directory
+serverbasedir=
+
+# Path of server executable relative to ${arkserverroot}
+arkserverexec="ShooterGame/Binaries/Linux/ShooterGameServer"
+
+# Path in which to store ARK server backups
+arkbackupdir="/home/steam/ARK-Backups"
+
+# Compress ARK server backups - true to enable, false to disable
+arkbackupcompress="true"
+
+# Disable old Port - 1 behaviour - true to disable behaviour, false to use old behaviour
+arkNoPortDecrement="true"
+
+# Auto-restart file path relative to ${arkserverroot} - used to signal if server should be automatically restarted if it exits
+arkautorestartfile="ShooterGame/Saved/.autorestart"
+
+# Update ARK server before startup - true to enable, false to disable
+arkAutoUpdateOnStart="false"
+
+# Backup ARK server config and save before updating - true to enable, false to disable
+arkBackupPreUpdate="false"
+
+# Command to run after creating backup - e.g. to upload backup to an external service
+# Executed using eval
+# ${backupfile} will be set to path of backup file
+arkBackupPostCommand='aws s3 cp "$backupfile" "s3://bucket_name/backups"'
+
+# Maximum delay before starting next instance - 0 or unset for no delay
+arkStartDelay=20
+
+# Same as above, for v1.6.43 compatibility
+defaultinstance_max=20
+
+# SteamCMD staging directory - used to enable updates to be fully downloaded before restarting the server (reduces downtime while updating).
+# Also used for reducing disk space used by multiple instances
+arkStagingDir="/home/steam/ARK-Staging"
+
+# Use reflinks instead of hard links when updating from staging directory
+# Only on filesystems that support reflinks - e.g. btrfs
+useRefLinks=
+
+# Ignore installed mods when checking for mods to update
+ignoreInstalledMods=
+
+# Extra options to pass when creating cron job
+arkCronExtraOpts=
+
+## Options to automatically remove old backups to keep backup size in check
+## Each compressed backup is generally about 1-2MB in size.
+
+# Maximum backup directory usage in Megabytes - old backups will be deleted to keep the backup directory usage below this size
+arkMaxBackupSizeMB="500"
+
+# Maximum backup directory usage in whole Gigabytes - alternative for above ${arkMaxBackupSizeMB}
+arkMaxBackupSizeGB="2"
+
+## Shutdown warnings
+
+# Number of minutes to warn players when using --warn
+arkwarnminutes="60"
+
+# Obey ${arkwarnminutes} even if no players are connected - true to enable, false to disable
+arkprecisewarn="false"
+
+## Warning messages
+## Modify as desired, putting the %d replacement operator where the number belongs
+
+# Message template when updating with 1 or more minutes remaining
+msgWarnUpdateMinutes="This ARK server will shutdown for an update in %d minutes"
+
+# Message template when updating with less than 1 minute remaining
+msgWarnUpdateSeconds="This ARK server will shutdown for an update in %d seconds"
+
+# Message template when restarting with 1 or more minutes remaining
+msgWarnRestartMinutes="This ARK server will shutdown for a restart in %d minutes"
+
+# Message template when restarting with less than 1 minute remaining
+msgWarnRestartSeconds="This ARK server will shutdown for a restart in %d seconds"
+
+# Message template when shutting down with 1 or more minutes remaining
+msgWarnShutdownMinutes="This ARK server will shutdown in %d minutes"
+
+# Message template when shutting down with less than 1 minute remaining
+msgWarnShutdownSeconds="This ARK server will shutdown in %d seconds"
+
+# Message when update / restart / shutdown cancelled by player request
+msgWarnCancelled="Restart cancelled by player request"
+
+# Message when update / restart / shutdown cancelled by operator
+msgUpdateCancelled="Shutdown cancelled by operator (%s)"
+
+# RCON command to use for broadcast command
+broadcastcmd="broadcast"
+#broadcastcmd="serverchat"
+
+## Notifications
+
+# Discord Webhook URL
+discordWebhookURL="https://discordapp.com/api/webhooks/{webhook.id}/{webhook.token}"
+
+# Notify template {msg} when shutting down
+notifyMsgShuttingDown="Shutting down"
+
+# Notify template {msg} when starting
+notifyMsgStarting="Starting"
+
+# Notify template {msg} when server is up
+notifyMsgServerUp="Server is up"
+
+# Notify template {msg} when server has stopped listening
+notifyMsgStoppedListening="Server has stopped listening - restarting"
+
+# Notify template {msg} when server has unexpectedly exited
+notifyMsgServerTerminated="Server exited - restarting"
+
+# Warning message template - alternative to msgWarn* above
+# {time} is replaced with msgTimeMinutes or msgTimeSeconds
+# {reason} is replaced with the reason appropriate for the update / shutdown / restart
+msgWarnReason="This ARK server will shut down in {time} {reason}"
+
+# {time} template used when time remaining is 1 or more minutes
+msgTimeMinutes="{minutes} minutes"
+
+# {time} template used when time remaining is less than 1 minute
+msgTimeSeconds="{seconds} seconds"
+
+# {reason} template used for app-only updates
+msgReasonUpdateApp="for an update to the game"
+
+# {update} template used for mod-only updates
+# {modnames} is replaced with names of mods updated
+msgReasonUpdateMod="for an update to mod(s) {modnamesupdated}"
+
+# {update} template used for app and mod updates
+# {modnames} is replaced with names of mods updated
+msgReasonUpdateAppMod="for an update to the game and an update to mod(s) {modnamesupdated}"
+
+# {update} template used for restarts
+msgReasonRestart="for a server restart"
+
+# {update} template used for shutdown
+msgReasonShutdown=""
+
+# Notification template
+# {instance} is replaced with instance name
+# {server} is replaced with server name
+# {msg} is replaced with template {msg} above
+notifyTemplate="Message from instance {instance} on server {server}: {msg}"
+
+# Disable sending update / shutdown / restart warnings via notifications
+noNotifyWarn=true
+
+# Additional command to send notifications
+# Executed using eval
+# ${instance} is expanded to instance name
+# ${msg} is expanded to message
+notifyCommand='echo "$msg" | mailx -s "Message from instance ${instance} on server ${HOSTNAME}" "email@domain.com"'
+
+# Chat message players can use to cancel update / restart
+chatCommandRestartCancel="/cancelupdate"
+
+# Server map
+serverMap="TheIsland"
+
+# Server map mod Id (<fileid> in http://steamcommunity.com/sharedfiles/filedetails/?id=<fileid>) - alternative to above ${serverMap}
+serverMapModId="469987622"
+
+## ARK server common options - use ark_<optionname>=<value>
+## comment out these values if you want to define them
+## inside your GameUserSettings.ini file
+## This is not an exhaustive list of options
+
+# Total Conversion Mod Id
+ark_TotalConversionMod="496735411"
+
+# Enable RCON
+ark_RCONEnabled="True"
+
+# ARK server password, empty: no password required to login
+ark_ServerPassword=""
+
+# ARK server admin password
+ark_ServerAdminPassword="keyboardcat"
+
+# Maximum player connection count
+ark_MaxPlayers="70"
+
+# Additional game Mod Ids
+ark_GameModIds="487516323,487516324,487516325"
+
+# Alternative Save Directory name
+ark_AltSaveDirectoryName="SotF"
+
+## ARK server flags - use arkflag_<optionname>=true
+## These are only examples - this is not an exhaustive list of options
+
+# Only allow admins to rejoin as spectator
+arkflag_OnlyAdminRejoinAsSpectator=true
+
+# Disallow players from becoming spectators when they die
+arkflag_DisableDeathSpectator=true
+
+# ARK server manages mods itself
+arkflag_automanagedmods=
+
+## ARK server options - i.e. for -optname=val, use arkopt_optname=val
+## These are only examples - this is not an exhaustive list of options
+
+# Structure Destruction Tag - This was a one-time option when upgrading from before ARK v216
+arkopt_StructureDestructionTag=DestroySwampSnowStructures
+
+# Logs path (default /var/log/arktools)
+logdir="/var/log/arktools"
+
+# ARK server Steam App ID
+appid=376030
+
+# Steam App ID for downloading mods
+mod_appid=346110
+
+# Mod OS Selection - should be Windows - Linux mods are known to be incompatible with the ARK server
+mod_branch=Windows
+
+# Mod-specific OS selection
+mod_branch_496735411=Windows
+
+# Specify that you understand the above warning about Linux mods, and want to use Linux mods anyway
+nowarnmodbranch=
+
+# alternate configs
+# example for config name "ark1":
+configfile_ark1="/path/to/config/file"
+
+# Default instance when no instance is specified when running commands
+defaultinstance="main"
+
+# Single-instance mode
+arkSingleInstance=
+
+### instance.cfg
+
+# Absolute path of ARK server instance
+arkserverroot="/home/steam/ARK"
+
+# Server map
+serverMap="TheIsland"
+
+# Server map mod Id (<fileid> in http://steamcommunity.com/sharedfiles/filedetails/?id=<fileid>) - alternative to above ${serverMap}
+serverMapModId="469987622"
+
+# Custom Dynamic Config URL
+# This is equivalent to specifying ark_customdynamicconfigurl and arkflag_UseDynamicConfig at the end of the config
+arkCustomDynamicConfigURL="http://arkdedicated.com/dynamicconfig.ini"
+
+# Script to run before instance starts
+arkPreStart="/etc/arkmanager/instances/instance.start"
+
+# Use Steam player list query instead of player count from server query for player count
+arkUsePlayerList=
+
+# Mod collection Ids to include in GameModIds
+arkModCollections=
+
+# Overwrite GameUserSettings.ini from this file
+arkGameUserSettingsIniFile=
+
+# Overwrite Game.ini from this file
+arkGameIniFile=
+
+# Attempt to renice (boost priority) of ARK server process
+arkPriorityBoost=
+
+# Set ARK server CPU affinity
+arkCpuAffinity=
+
+
+
+## ARK server instance options - use ark_<optionname>=<value>
+## comment out these values if you want to define them
+## inside your GameUserSettings.ini file
+## This is not an exhaustive list of options
+
+# Total Conversion Mod Id
+ark_TotalConversionMod="496735411"
+
+# Enable RCON
+ark_RCONEnabled="True"
+
+# RCON Port - this must be unique for each game server running on the host
+ark_RCONPort="32330"
+
+# Server Name - this is the name that appears in the server browser.
+# If this name should contain characters outside the 7-bit ASCII character set, this should be commented out and the server name should be specified in a UTF-16 encoded GameUserSettings.ini instead
+ark_SessionName="ARK Server Tools"
+
+# Game Port - this port and the port above / below it must be unique for each game server running on the host
+ark_Port="7778"
+
+# Query Port - this port must be unique for each game server running on the host
+ark_QueryPort="27015"
+
+# ARK server password, empty: no password required to login
+ark_ServerPassword=""
+
+# ARK server admin password
+ark_ServerAdminPassword="keyboardcat"
+
+# Maximum player connection count
+ark_MaxPlayers="70"
+
+# Additional game Mod Ids
+ark_GameModIds="487516323,487516324,487516325"
+
+# Alternative Save Directory name
+ark_AltSaveDirectoryName="SotF"
+
+## ARK server flags - use arkflag_<optionname>=true
+## These are only examples - this is not an exhaustive list of options
+
+# Only allow admins to rejoin as spectator
+arkflag_OnlyAdminRejoinAsSpectator=true
+
+# Disallow players from becoming spectators when they die
+arkflag_DisableDeathSpectator=true
+
+# Enable crossplay between Steam and Epic players - mods cannot be used
+arkflag_crossplay=
+
+# Enable Epic connections only - mods cannot be used
+arkflag_epiconly=
+
+## ARK server options - i.e. for -optname=val, use arkopt_optname=val
+## These are only examples - this is not an exhaustive list of options
+
+# Structure Destruction Tag - This was a one-time option when upgrading from before ARK v216
+arkopt_StructureDestructionTag=DestroySwampSnowStructures
+
+

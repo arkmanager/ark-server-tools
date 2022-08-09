@@ -24,10 +24,11 @@
 . /etc/rc.d/init.d/functions
 
 # Global variables
+# shellcheck source=../arkmanager.cfg
 source /etc/arkmanager/arkmanager.cfg
 
 NAME="ShooterGameServer"
-LOGFILE="${logdir}/${NAME}.log"
+#LOGFILE="${logdir}/${NAME}.log"
 DAEMON="/usr/bin/arkmanager"
 
 GREEN="\\033[1;32m"
@@ -74,12 +75,12 @@ function start_instance(){
 
 function start_all_instances(){
   local nosuccess=0
-  local anyfailure=0
+  #local anyfailure=0
   for instance in $("${DAEMON}" list-instances --brief); do
     if start_instance "$instance"; then
       nosuccess=0
-    else
-      anyfailure=1
+    #else
+    #  anyfailure=1
     fi
   done
 
