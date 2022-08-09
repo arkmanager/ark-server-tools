@@ -3022,6 +3022,7 @@ doBackup(){
   local saverootdir="${arkserverroot}/${arkserverdir}/Saved"
   local savedcfgdir="${saverootdir}/Config/LinuxServer"
   local savedir="$(getSavedArksDirectory "${saverootdir}")"
+  local clusterdir="$(getArkServerSetting "ClusterDirOverride" "${saverootdir}/clusters/$(getArkServerSetting "clusterid")")"
   local mapname="$(getServerMapName)"
   local backupfile
   mkdir -p "$backupdir"
@@ -3033,6 +3034,8 @@ doBackup(){
       --no-allmaps) backupAllMaps=false; ;;
       --autobackups) includeAutoBackups=true; ;;
       --no-autobackups) includeAutoBackups=false; ;;
+      --cluster) backupCluster=true; ;;
+      --no-cluster) backupCluster=false; ;;
       *)
         echo "Unrecognized option $arg"
         echo "Try 'arkmanager -h' or 'arkmanager --help' for more information."
@@ -3179,6 +3182,11 @@ doBackup(){
     cp -av "${saverootdir}/SaveGames" "${backupdir}/SaveGames"
   fi
 
+  if [[ "$backupCluster" == "true" && -d "${clusterdir}" ]]; then
+    echo -e "${NORMAL} Copying cluster files "
+    cp -av "${clusterdir}" "${backupdir}/Cluster"
+  fi
+
   # ARK server uses Lock-Truncate-Write-Unlock
   echo -ne "${NORMAL} Copying GameUserSettings.ini "
   cp -p "${savedcfgdir}/GameUserSettings.ini" "${backupdir}/GameUserSettings.ini"
@@ -3256,6 +3264,7 @@ doRestore(){
   local savedcfgdir="${saverootdir}/Config/LinuxServer"
   local savedir="$(getSavedArksDirectory "${saverootdir}")"
   local savedir="$(getSavedArksDirectory "${saverootdir}")"
+  local clusterdir="$(getArkServerSetting "ClusterDirOverride" "${saverootdir}/clusters/$(getArkServerSetting "clusterid")")"
   local restorePath=
   if [[ $# -ne 0 ]] ; then
    backupFile=$1
@@ -3276,6 +3285,9 @@ doRestore(){
     case "${file}" in
       SaveGames/*) # mod persistent info
         restorePath="${saverootdir}"
+        ;;
+      Cluster/*) # cluster files
+        restorePath="${clusterdir}"
         ;;
       *.ini) # ini are the config files
         restorePath="${savedcfgdir}"
