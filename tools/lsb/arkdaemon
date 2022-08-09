@@ -11,6 +11,7 @@
 ### END INIT INFO
 
 # Using the lsb functions to perform the operations.
+# shellcheck source=/dev/null
 . /lib/lsb/init-functions
 
 # Global variables
