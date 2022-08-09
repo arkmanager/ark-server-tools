@@ -2331,15 +2331,19 @@ checkForModUpdate(){
   if [[ " $* " =~ " --revstatus " ]]; then
     revstatcode=1
   fi
-  
-  if [ ! -d "${steamworkshopdir}" ]; then
-    echo "Error: ${steamworkshopdir} does not exist"
-    if [ -n "$revstatcode" ]; then return 4; else return 0; fi
-  fi
 
-  if [ ! -f "${steamworkshopdir}/appworkshop_${mod_appid}.acf" ]; then
-    echo "Error: appworkshop_${mod_appid}.acf not found at ${steamworkshopdir}"
+  if [[ " $* " =~ " --skip-workshop-dir " ]]; then
     cancheckmodavail=
+  else
+    if [ ! -d "${steamworkshopdir}" ]; then
+      echo "Error: ${steamworkshopdir} does not exist"
+      if [ -n "$revstatcode" ]; then return 4; else return 0; fi
+    fi
+
+    if [ ! -f "${steamworkshopdir}/appworkshop_${mod_appid}.acf" ]; then
+      echo "Error: appworkshop_${mod_appid}.acf not found at ${steamworkshopdir}"
+      cancheckmodavail=
+    fi
   fi
 
   for modid in $(getModIds); do
