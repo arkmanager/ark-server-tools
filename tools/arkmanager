@@ -3252,7 +3252,7 @@ doBackup(){
   else
     echo -e "${NORMAL}\e[68G[ ${RED}FAILED${NORMAL} ]"
   fi
-  echo -e "${NORMAL} Created Backup: ${GREEN} ${instance}.${datestamp}.tar.bz2${NORMAL}"
+  echo -e "${NORMAL} Created Backup: ${GREEN} ${instance}.${datestamp}.tar.bz2${NORMAL} in ${arkbackupdir}/${daystamp}"
 
   if [ -n "$arkMaxBackupSizeGB" ] && (( arkMaxBackupSizeGB >= 1 )); then
     (( arkMaxBackupSizeMB = arkMaxBackupSizeGB * 1024 ))
@@ -3284,6 +3284,7 @@ doRestore(){
   local savedir="$(getSavedArksDirectory "${saverootdir}")"
   local clusterdir="$(getArkServerSetting "ClusterDirOverride" "${saverootdir}/clusters/$(getArkServerSetting "clusterid")")"
   local restorePath=
+  local stripComponents=1
   if [[ $# -ne 0 ]] ; then
    backupFile=$1
   else
@@ -3300,12 +3301,15 @@ doRestore(){
   echo "Restoring from ${backupFile}"
   for file in $(tar -tjf "${backupFile}") ; do
     restorePath=
-    case "${file}" in
+    stripComponents=1
+    case "${file#*/}" in
       SaveGames/*) # mod persistent info
         restorePath="${saverootdir}"
+	stripComponents=2
         ;;
       Cluster/*) # cluster files
         restorePath="${clusterdir}"
+	stripComponents=2
         ;;
       *.ini) # ini are the config files
         restorePath="${savedcfgdir}"
@@ -3315,8 +3319,8 @@ doRestore(){
         ;;
     esac
     if [ -n "${restorePath}" ]; then
-      echo "Restoring ${file} to ${restorePath}"
-      tar -xjvf "${backupFile}" -C "${restorePath}" --strip-components=1 "${file}"
+      echo "Restoring ${file#*/} to ${restorePath}"
+      tar -xjvf "${backupFile}" -C "${restorePath}" --strip-components=${stripComponents} "${file}"
       # shellcheck disable=SC2181
       if [ $? == 0 ] ; then
         echo -e "${NORMAL}\e[68G[   ${GREEN}OK${NORMAL}   ]"
