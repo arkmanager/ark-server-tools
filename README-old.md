@@ -30,7 +30,7 @@ NB: Change the ports according to the ones set in your `arkmanager.cfg` file.
 To install ARK Server Tools run this command:
 
 ```sh
-curl -sL http://git.io/vtf5N | sudo bash -s steam
+curl -sL https://raw.githubusercontent.com/arkmanager/ark-server-tools/master/netinstall.sh | sudo bash -s steam
 ```
 
 NB: You may want to change the `bash -s` parameter to fit your steam user if different from `steam`.
@@ -40,7 +40,7 @@ This will copy the `arkmanager` script and its daemon to the proper directories 
 To instead perform a user-install of ARK Server Tools as an unprivileged user, run this command:
 
 ```sh
-curl -sL http://git.io/vtf5N | bash -s -- --me
+curl -sL https://raw.githubusercontent.com/arkmanager/ark-server-tools/master/netinstall.sh | bash -s -- --me
 ```
 
 ## Configuration
