@@ -2124,11 +2124,12 @@ doUpdate() {
         doDownloadSteamCMD
         cd "$steamcmdroot"
         runSteamCMDAppUpdate "$arkStagingDir" ${appbeta:+-beta} $appbeta ${appbetapass:+-betapassword} $appbetapass $validate
+	result=$?
 
         # shellcheck disable=SC2181
-        if [ $? -eq 0 ]; then
+        if [ $result -eq 0 ]; then
           rm -rf "${arkStagingDir}/steamapps/downloading/${appid}"
-        elif [ $? -eq 5 ]; then
+        elif [ $result -eq 5 ]; then
           echo "User ${steamlogin:-anonymous} login failed - please login to steamcmd manually"
         fi
 
