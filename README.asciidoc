@@ -846,7 +846,7 @@ Common ARK options
     The TCP port on which the server listens for RCON commands.  Must be unique on the host.
 
 `ark_Port=<portnum>`::
-    The TCP port on which the server listens for client connections.  Must be unique on the host.
+    The UDP port on which the server listens for client connections.  Must be unique on the host.
 
 `ark_QueryPort=<portnum>`::
     The UDP port on which the server listens for queries.  Must be unique on the host.
