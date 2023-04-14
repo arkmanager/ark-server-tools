@@ -1398,8 +1398,8 @@ doRun() {
         fi
       elif [ "$pid" == "$(pgrep --pgroup $serverpid)" ]; then
         restartserver=1
-        echo "${timestamp}: Server has double-forked and cannot be effectively monitored"
-	echo "${timestamp}: Restarting server"
+        echo "$(timestamp): Server has double-forked and cannot be effectively monitored"
+        echo "$(timestamp): Restarting server"
         notify "${notifyMsgDoubleForked:-Server has daemonized itself - restarting}"
         for (( i = 0; i < 5; i++ )); do
           if ! kill -0 "-$serverpid"; then
