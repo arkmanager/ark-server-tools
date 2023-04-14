@@ -980,6 +980,8 @@ function getServerPID(){
     if kill -0 "$serverpid" >/dev/null 2>&1; then
       echo "$serverpid"
       return
+    elif kill -0 "-$serverpid" >/dev/null 2>&1; then
+      pgrep -g "$serverpid" && return
     fi
   fi
   if [ -f "${arkserverroot}/${arkserveroldpidfile}" ]; then
@@ -987,6 +989,8 @@ function getServerPID(){
     if kill -0 "$serverpid" >/dev/null 2>&1; then
       echo "$serverpid"
       return
+    elif kill -0 "-$serverpid" >/dev/null 2>&1; then
+      pgrep -g "$serverpid" && return
     fi
   fi
 }
@@ -1316,12 +1320,15 @@ doRun() {
     notify "${notifyMsgShuttingDown:-Shutting down}"
     rm -f "$arkserverroot/$arkautorestartfile"
     if [ "$serverpid" -ne 0 ]; then
-      kill -INT $serverpid >/dev/null 2>&1
+      kill -INT -$serverpid >/dev/null 2>&1
     fi
     exit 0
   }
 
   trap shutdown_server INT TERM
+
+  # Enable job control so server gets its own process group
+  set -m
 
   # Auto-restart loop
   while [ $restartserver -ne 0 ]; do
@@ -1374,21 +1381,40 @@ doRun() {
             echo "$(timestamp): Restarting server"
             notify "${notifyMsgStoppedListening:-Server has stopped listening - restarting}"
             for (( i = 0; i < 5; i++ )); do
-              if ! kill -0 "$serverpid"; then
+              if ! kill -0 "-$serverpid"; then
                 break
               fi
-              kill -INT "$serverpid"
+              kill -INT "-$serverpid"
               sleep 5
             done
-            if kill -0 "$serverpid"; then
+            if kill -0 "-$serverpid"; then
               echo "$(timestamp): Graceful restart failed - killing server"
-              kill -KILL "$serverpid"
+              kill -KILL "-$serverpid"
             fi
 
             # Exit the server check loop
             break
           fi
         fi
+      elif [ "$pid" == "$(pgrep --pgroup $serverpid)" ]; then
+        restartserver=1
+        echo "${timestamp}: Server has double-forked and cannot be effectively monitored"
+	echo "${timestamp}: Restarting server"
+        notify "${notifyMsgDoubleForked:-Server has daemonized itself - restarting}"
+        for (( i = 0; i < 5; i++ )); do
+          if ! kill -0 "-$serverpid"; then
+            break
+          fi
+          kill -INT "-$serverpid"
+          sleep 5
+        done
+        if kill -0 "-$serverpid"; then
+          echo "$(timestamp): Graceful restart failed - killing server"
+          kill -KILL "-$serverpid"
+        fi
+
+        # Exit the server check loop
+        break
       else
         echo "$(timestamp): Bad PID '$pid'; expected '$serverpid'"
         if [ "$pid" != "" ]; then
