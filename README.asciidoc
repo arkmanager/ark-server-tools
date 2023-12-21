@@ -49,7 +49,7 @@ perl-modules
 curl
 lsof
 libc6-i386
-lib32gcc1
+lib32gcc-s1 (or lib32gcc1 if on Debian Buster or Ubuntu 20.04 or older)
 bzip2
 ```
 
