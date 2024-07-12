@@ -1705,13 +1705,18 @@ doInstall() {
   # install the server
   doDownloadSteamCMD
   runSteamCMDAppUpdate "$arkserverroot" validate
-  if [ $? -eq 5 ]; then
-    echo "User ${steamlogin:-anonymous} login failed - please login to steamcmd manually"
-  elif [ $? -eq 8 ]; then
-    echo "Insufficient disk space to install the ARK server"
+  retval=$?
+
+  if [ $retval -eq 5 ]; then
+    echo "User ${steamlogin:-anonymous} login failed - please login to steamcmd manually" >&2
+  elif [ $retval -eq 8 ]; then
+    echo "Insufficient disk space to install the ARK server" >&2
   fi
+
   # the current version should be the last version. We set our version
   instver="$(getCurrentVersion)"
+
+  return $retval
 }
 
 
