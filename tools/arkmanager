@@ -343,14 +343,18 @@ logprint(){
 #
 checkConfig() {
   # SteamCMD configuration
-  # steamcmdroot
-  if [ ! -d "$steamcmdroot" ] ; then
-    echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tYour SteamCMD root seems not valid." >&2
+  if [ -n "$1" ] && [ "$1" != "install" ]; then
+    # steamcmdroot
+    if [ ! -d "$steamcmdroot" ] ; then
+      echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tYour SteamCMD root seems not valid." >&2
+    fi
+
+    # steamcmdexec
+    if [ ! -f "$steamcmdroot/$steamcmdexec" ] ; then
+      echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tYour SteamCMD exec could not be found." >&2
+    fi
   fi
-  # steamcmdexec
-  if [ ! -f "$steamcmdroot/$steamcmdexec" ] ; then
-    echo -e "[" "$RED" "ERROR" "$NORMAL" "]" "\tYour SteamCMD exec could not be found." >&2
-  fi
+
   # steamcmd_user
   if [ "$steamcmd_user" != "--me" ]; then
     if ! getent passwd "$steamcmd_user" > /dev/null 2>&1 ; then
@@ -359,7 +363,7 @@ checkConfig() {
   fi
 
   # Environment configuration
-  if [ "$1" != "install" ] && [ -n "$instance" ]; then
+  if [ -n "$1" ] && [ "$1" != "install" ] && [ -n "$instance" ]; then
     # arkserverexec
     if [ -n "$arkserverroot" ] && [ ! -f "$arkserverroot/$arkserverexec" ] ; then
       echo -e "[" "$YELLOW" "WARN" "$NORMAL" "]" "\tYour ARK server exec could not be found." >&2
@@ -1700,6 +1704,7 @@ doInstall() {
     fi
   fi
 
+  mkdir -p "$steamcmdroot"
   cd "$steamcmdroot"
   echo -n "Installing ARK server"
   # install the server
