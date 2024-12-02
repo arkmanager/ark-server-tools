@@ -721,19 +721,57 @@ function doDownloadSteamCMD(){
 # SteamCMD helper function
 #
 function runSteamCMD(){
+  local noquit
+
+  if [[ "$1" == "noquit" ]]; then
+    shift
+    noquit=1
+  fi
+
   if [[ -z "${steamcmdhome}" || ! -d "${steamcmdhome}" ]]; then
     steamcmdhome="${HOME}"
   fi
+
+  local args=(
+    +@NoPromptForPassword 1
+    ${steamcmd_cmds_prelogin}
+    "${steamcmd_force_install_dir[@]}"
+    +login "${steamlogin:-anonymous}"
+    ${steamcmd_cmds_postlogin}
+    "$@"
+  )
+
+  if [[ -z "$noquit" ]]; then
+    args+=( +quit )
+  fi
+
+  local cmdfile="$(mktemp "${TMPDIR:-/tmp}/arkmanager.steamscript.XXXXXXXX")"
+
+  for arg in "${args[@]}"; do
+    if [ "${arg:0:1}" == '+' ]; then
+      printf "\n"
+      arg="${arg#+}"
+    fi
+    printf "%s " "${arg}"
+  done >"${cmdfile}"
+
+  if [ -n "$verbose" ]; then
+    printf "Executing" >&2
+    # shellcheck disable=SC2086
+    printf " %q" "$steamcmdroot/$steamcmdexec" "+runscript" "${cmdfile}" >&2
+    printf "\n" >&2
+    printf "With commands:\n" >&2
+    cat "${cmdfile}" >&2
+    printf "\n" >&2
+  fi
   # shellcheck disable=SC2086
-  HOME="${steamcmdhome}" "$steamcmdroot/$steamcmdexec" +@NoPromptForPassword 1 ${steamcmd_cmds_prelogin} "${steamcmd_force_install_dir[@]}" +login "${steamlogin:-anonymous}" ${steamcmd_cmds_postlogin} "$@" +quit
+  HOME="${steamcmdhome}" "$steamcmdroot/$steamcmdexec" "+runscript" "${cmdfile}"
+
+  rm "${cmdfile}"
 }
 
 function runSteamCMDspinner(){
   if [ -n "$verbose" ]; then
-    printf "Executing"
-    # shellcheck disable=SC2086
-    printf " %q" "$steamcmdroot/$steamcmdexec" +@NoPromptForPassword 1 ${steamcmd_cmds_prelogin} "${steamcmd_force_install_dir[@]}" +login "${steamlogin:-anonymous}" ${steamcmd_cmds_postlogin} "$@" +quit
-    printf "\n"
     if (command >&3) 2>/dev/null; then
       runSteamCMD "$@" > >(tee /dev/fd/3)
     else
@@ -796,7 +834,12 @@ function checkForUpdate(){
     tput rc; tput ed;
     echo -e "Current version:" "$GREEN" "$instver" "$NORMAL"
     echo -e "Available version:" "$GREEN" "$bnumber" "$NORMAL"
-    echo "Your server is up to date!"
+
+    if [ -z "$bnumber" ]; then
+      echo "Unable to determine if an update is needed"
+    else
+      echo "Your server is up to date!"
+    fi
     return 0
   fi
 }
@@ -808,11 +851,14 @@ function checkForUpdate(){
 function isUpdateNeeded(){
   instver="$(getCurrentVersion)"
   bnumber="$(getAvailableVersion)"
-  if [[ -z "$bnumber" || "$bnumber" -eq "$instver" ]]; then
+  if [[ -z "$bnumber" ]]; then
+    echo "Unable to retrieve update Build ID"
+    return 2
+  elif [[ "$bnumber" -eq "$instver" ]]; then
     return 1   # no update needed
   elif checkUpdateManifests; then
     echo "Build ID changed but manifests have not changed"
-    return 1
+    return 2
   else
     return 0   # update needed
   fi
@@ -885,11 +931,28 @@ function getCurrentBranch(){
 # Get the current available server version on steamdb
 #
 function getAvailableVersion(){
-  rm -f "$(getSteamAppInfoCache)"
+  local appinfocache="$(getSteamAppInfoCache)"
+
+  rm -f "${appinfocache}"
   if [ -z "$appbranch" ]; then
     appbranch="$(getCurrentBranch)"
   fi
-  runSteamCMD +app_info_update 1 +app_info_print "$appid" | while read -r name val; do if [ "${name}" == "{" ]; then parseSteamACF ".depots.branches.${appbranch:-public}" "buildid"; break; fi; done
+
+  runSteamCMD noquit +app_info_update 1 < <(
+    for (( i = 0; i < 60; i++ )); do
+      if [ -f "${appinfocache}" ]; then break; fi
+      sleep 1
+    done
+    sleep 2
+    if [ -n "$verbose" ]; then echo "app_info_request ${appid}" >&2; fi
+    echo "app_info_request ${appid}"
+    sleep 2
+    if [ -n "$verbose" ]; then echo "app_info_print ${appid}" >&2; fi
+    echo "app_info_print ${appid}"
+    sleep 2
+    if [ -n "$verbose" ]; then echo "quit" >&2; fi
+    echo "quit"
+  ) | while read -r name val; do if [ "${name}" == "{" ]; then parseSteamACF ".depots.branches.${appbranch:-public}" "buildid"; break; fi; done
 }
 
 #
