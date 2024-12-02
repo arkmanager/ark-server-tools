@@ -732,6 +732,7 @@ function runSteamCMD(){
     steamcmdhome="${HOME}"
   fi
 
+  #shellcheck disable=SC2206
   local args=(
     +@NoPromptForPassword 1
     ${steamcmd_cmds_prelogin}
