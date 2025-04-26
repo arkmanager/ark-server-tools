@@ -2686,7 +2686,7 @@ doDownloadMod(){
     output=$(runSteamCMDspinnerSubst 5 +workshop_download_item "$mod_appid" "$modid")
     result=$?
     if [ $result -eq 0 ]; then
-      modsrcdir="$(echo "$output" | sed -n 's@^Success. Downloaded item [0-9][0-9]* to "\([^"]*\)" .*@\1@p')"
+      modsrcdir="$(echo "$output" | sed -n 's@^[^ ]*Success. Downloaded item [0-9][0-9]* to "\([^"]*\)" .*@\1@p')"
       break
     elif [ $result -eq 5 ]; then
       echo "User ${steamlogin:-anonymous} login failed - please login to steamcmd manually"
