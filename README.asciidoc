@@ -529,6 +529,9 @@ The following options can be overridden on a per-instance basis:
     The `steamcmd.sh` executable.
     Change this to `steamcmd` if you have the `steamcmd` package installed on Debian, Ubuntu, or CentOS
 
+`steamcmdhome`::
+    The directory to override as `$HOME` when running steamcmd.
+
 `steamcmd_appinfocache`::
     The path to the Steam appinfo cache file.
 +
@@ -561,6 +564,18 @@ Defaults to `$steamdataroot/steamapps/workshop`
 +
 Some SteamCMD installations (especially with the `steamcmd` package installed)
 use `SteamApps` as the steamapps directory instead of `steamapps`
+
+`steamlogin`::
+    Specify previously logged-in steam user. Requires this steam user to have already logged into the installed instance of `steamcmd`.
+
+`steamcmd_cmds_prelogin`::
+    Allows specifying steamcmd commands to run before steamcmd login
+
+`steamcmd_cmds_postlogin`::
+    Allows specifying steamcmd commands to run between steamcmd login and requested command
+
+`steamcmd_appextraopts`::
+    Allows specifying extra options to the steamcmd `app_update` command (or executing extra steamcmd commands after `app_update`)
 
 `arkserverexec`::
     The relative path within an ARK server install where the
