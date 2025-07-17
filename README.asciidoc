@@ -266,6 +266,12 @@ instances.
     Downloads and installs (or validates an existing install) of
     the ARK server
 
+    `--beta=<betaname>`;;
+        Select the beta to install
+
+    `--betapassword=<password>`;;
+        Use password to unlock beta (for password-locked betas).
+
 `update`::
     Updates an install of the ARK server (or installs it if it's
     not already installed)

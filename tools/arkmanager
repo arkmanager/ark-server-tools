@@ -1769,6 +1769,16 @@ runSteamCMDAppUpdate(){
 # install of ARK server
 #
 doInstall() {
+  local appbeta=
+  local appbetapass=
+
+  for arg in "$@"; do
+    case "$arg" in
+      --beta=*) appbeta="${arg#--beta=}"; ;;
+      --betapassword=*) appbetapass="${arg#--betapassword=}"; ;;
+    esac
+  done
+
   # Check if arkserverroot already exists
   if [ ! -d "$arkserverroot" ]; then
     # If it does not exist, try create it
@@ -1786,7 +1796,7 @@ doInstall() {
   echo -n "Installing ARK server"
   # install the server
   doDownloadSteamCMD
-  runSteamCMDAppUpdate "$arkserverroot" validate
+  runSteamCMDAppUpdate "$arkserverroot" ${appbeta:+-beta} $appbeta ${appbetapass:+-betapassword} $appbetapass validate
   retval=$?
 
   if [ $retval -eq 5 ]; then
