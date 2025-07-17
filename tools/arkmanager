@@ -826,6 +826,12 @@ function checkForUpdate(){
 
   if isUpdateNeeded; then
     tput rc; tput ed;
+
+    instbeta="$(getCurrentBranch)"
+    if [ -n "$instbeta" ]; then
+      echo -e "Branch:" "$GREEN" "$instbeta" "$NORMAL"
+    fi
+
     echo -e "Current version:" "$RED" "$instver" "$NORMAL"
     echo -e "Available version:" "$GREEN" "$bnumber" "$NORMAL"
     echo -e "Your server needs to be restarted in order to receive the latest update."
@@ -833,6 +839,12 @@ function checkForUpdate(){
     return 1
   else
     tput rc; tput ed;
+
+    instbeta="$(getCurrentBranch)"
+    if [ -n "$instbeta" ]; then
+      echo -e "Branch:" "$GREEN" "$instbeta" "$NORMAL"
+    fi
+
     echo -e "Current version:" "$GREEN" "$instver" "$NORMAL"
     echo -e "Available version:" "$GREEN" "$bnumber" "$NORMAL"
 
@@ -852,6 +864,7 @@ function checkForUpdate(){
 function isUpdateNeeded(){
   instver="$(getCurrentVersion)"
   bnumber="$(getAvailableVersion)"
+
   if [[ -z "$bnumber" ]]; then
     echo "Unable to retrieve update Build ID"
     return 2
@@ -915,16 +928,16 @@ function getStagingVersion(){
 #
 function getCurrentBranch(){
   if [ -f "${arkserverroot}/steamapps/appmanifest_${appid}.acf" ]; then
-    while read -r name val; do if [ "${name}" == "{" ]; then parseSteamACF ".UserConfig" "betakey"; break; fi; done <"${arkserverroot}/steamapps/appmanifest_${appid}.acf"
+    while read -r name val; do if [ "${name}" == "{" ]; then parseSteamACF ".UserConfig" "BetaKey"; break; fi; done <"${arkserverroot}/steamapps/appmanifest_${appid}.acf"
   fi
 }
 
 #
 # Return the installed beta / branch in staging directory
 #
-function getCurrentBranch(){
+function getStagingBranch(){
   if [ -f "${arkStagingDir}/steamapps/appmanifest_${appid}.acf" ]; then
-    while read -r name val; do if [ "${name}" == "{" ]; then parseSteamACF ".UserConfig" "betakey"; break; fi; done <"${arkStagingDir}/steamapps/appmanifest_${appid}.acf"
+    while read -r name val; do if [ "${name}" == "{" ]; then parseSteamACF ".UserConfig" "BetaKey"; break; fi; done <"${arkStagingDir}/steamapps/appmanifest_${appid}.acf"
   fi
 }
 
