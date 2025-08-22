@@ -1477,7 +1477,7 @@ doRun() {
             break
           fi
         fi
-      elif [ "$pid" == "$(pgrep --pgroup $serverpid)" ]; then
+      elif [[ -n "$pid" && "$pid" == "$(pgrep --pgroup $serverpid)" ]]; then
         restartserver=1
         echo "$(timestamp): Server has double-forked and cannot be effectively monitored"
         echo "$(timestamp): Restarting server"
