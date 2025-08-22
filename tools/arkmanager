@@ -1477,7 +1477,10 @@ doRun() {
             break
           fi
         fi
-      elif [[ -n "$pid" && "$pid" == "$(pgrep --pgroup $serverpid)" ]]; then
+      elif [ -z "$pid" ]; then
+        echo "$(timestamp): Process '$serverpid' has exited"
+        break
+      elif [ "$pid" == "$(pgrep --pgroup $serverpid)" ]; then
         restartserver=1
         echo "$(timestamp): Server has double-forked and cannot be effectively monitored"
         echo "$(timestamp): Restarting server"
@@ -1498,10 +1501,8 @@ doRun() {
         break
       else
         echo "$(timestamp): Bad PID '$pid'; expected '$serverpid'"
-        if [ "$pid" != "" ]; then
-          # Another instance must be running - disable autorestart
-          restartserver=0
-        fi
+        # Another instance must be running - disable autorestart
+        restartserver=0
         break
       fi
       sleep 5
