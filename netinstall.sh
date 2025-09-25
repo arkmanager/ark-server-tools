@@ -22,7 +22,19 @@ for arg in "$@"; do
     --perform-user-install) userinstall2=yes; ;;
     --yes-i-really-want-to-perform-a-user-install) userinstall=yes; ;;
     --commit=*) commit="${arg#--commit=}"; ;;
-    --tag=*) commit="$(curl -s "https://api.github.com/repos/${arkstGithubRepo}/git/refs/tags/${arg#--tag=}" | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p')"; ;;
+    --tag=*)
+      tagname="${arg#--tag=}"
+      commit="$(curl -s "https://api.github.com/repos/${arkstGithubRepo}/git/refs/tags/${tagname}" | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p')"
+      if [ -z "$commit" ]; then
+        echo "Tag ${tagname} not found"
+        exit 1
+      elif [ "$(echo "$commit" | wc -l)" -ne 1 ]; then
+        echo "Tag ${tagname} is matched more than one tag."
+        curl -s "https://api.github.com/repos/${arkstGithubRepo}/git/refs/tags/${tagname}" | sed -n 's/^ *"ref": "refs\/tags\/\(.*\)",.*/\1/p'
+        exit 1
+      fi
+      echo "Tag ${tagname} found at commit ${commit}"
+      ;;
     *)
       if [[ -n "$channel" || "$arg" == --* ]]; then
         args+=("$arg")
