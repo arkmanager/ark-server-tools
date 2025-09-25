@@ -13,6 +13,7 @@ args=()
 unstable=
 userinstall=
 userinstall2=
+commit=
 
 for arg in "$@"; do
   case "$arg" in
@@ -20,6 +21,8 @@ for arg in "$@"; do
     --repo=*) arkstGithubRepo="${arg#--repo=}"; ;;
     --perform-user-install) userinstall2=yes; ;;
     --yes-i-really-want-to-perform-a-user-install) userinstall=yes; ;;
+    --commit=*) commit="${arg#--commit=}"; ;;
+    --tag=*) commit="$(curl -s "https://api.github.com/repos/${arkstGithubRepo}/git/refs/tags/${arg#--tag=}" | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p')"; ;;
     *)
       if [[ -n "$channel" || "$arg" == --* ]]; then
         args+=("$arg")
@@ -128,7 +131,9 @@ function doInstallFromBranch(){
 # Download and untar installation files
 cd "$TEMP" || die "Unable to change to temporary directory"
 
-if [ "$channel" = "master" ] && [ -z "$unstable" ]; then
+if [ -n "$commit" ]; then
+  doInstallFromCommit "$commit" "${args[@]}"
+elif [ "$channel" = "master" ] && [ -z "$unstable" ]; then
   doInstallFromRelease "${args[@]}"
 else
   doInstallFromBranch "$channel" "${args[@]}"
