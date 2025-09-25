@@ -2207,6 +2207,9 @@ doUpdate() {
 
   cd "$arkserverroot"
 
+  # If a beta was requested via --beta, ensure version checks use that branch
+  appbranch="${appbeta:-public}"
+
   if [ -n "$appupdate" ] || isUpdateNeeded; then
     appupdate=1
 
