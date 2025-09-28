@@ -2207,6 +2207,18 @@ doUpdate() {
 
   cd "$arkserverroot"
 
+  if [ -n "$appbeta" ]; then
+    if [ -z "$appbranch" ]; then
+      appbranch="$(getCurrentBranch)"
+    fi
+
+    if [ "$appbeta" != "${appbranch:-public}" ]; then
+      validate=validate
+      appupdate=1
+      force=1
+    fi
+  fi
+
   if [ -n "$appupdate" ] || isUpdateNeeded; then
     appupdate=1
 
