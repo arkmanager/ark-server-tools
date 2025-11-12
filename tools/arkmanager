@@ -662,12 +662,57 @@ doBroadcastWithEcho(){
 }
 
 #
+# Notifiy console
+#
+function notifyConsole(){
+  local msg="$1"
+  if [ -n "$msg" ]; then
+    echo -e "$msg"
+  fi
+}
+
+# Discord notification settings
+discordEmbedMessages=${discordEmbedMessages:-true}
+declare -A discordColorPatterns
+discordColorPatterns=(
+  [' joined this ARK!$']=${discordColorPatterns[' joined this ARK!$']:-'65280'} # green
+  [' left this ARK!$']=${discordColorPatterns[' left this ARK!$']:-'16711680'}  # red
+)
+
+#
+# Discord embed decorator
+#
+function decorateDiscordJson(){
+  local json="$1"
+  local msg="$2"
+  if [ ${#discordColorPatterns[@]} -gt 0 ]; then
+    local pattern
+    for pattern in "${!discordColorPatterns[@]}"; do
+      if [[ "${msg}" =~ ${pattern} ]]; then
+        local color="${discordColorPatterns[${pattern}]}"
+        if [[ -z "${color}" || ! "${color}" =~ ^[0-9]+$ ]]; then
+          color="0"
+        fi
+        json="{\"embeds\":[{\"description\":\"${msg}\",\"color\":${color}}]}"
+        break
+      fi
+    done
+  fi
+  echo "$json"
+}
+
+#
 # Discord Webhook notifier
 #
 function notifyDiscord(){
   if [ -n "$discordWebhookURL" ]; then
     local msg="$(echo -n "${msg}" | tr '\n' '\001' | sed 's/\001/\\n/g;s/["\\]/\\\0/g')"
     local json="{\"content\":\"${msg}\"}"
+
+    if [ "${discordEmbedMessages,,}" = "true" ]; then
+      json=$(decorateDiscordJson "$json" "$msg")
+    fi
+
     curl -s -H "Content-Type: application/json" -d "${json}" "$discordWebhookURL" >/dev/null
   fi
 }
@@ -680,24 +725,50 @@ function notifyOverride(){
 }
 
 #
-# Notification wrapper
+# Apply notification template
 #
-function notify(){
-  if [[ -n "$1" && "$1" != "-" ]]; then
-    local msg
-    local notifymsg="$1"
-    msg="${notifyTemplate:-Message from instance \`{instance\}\` on server \`{server\}\`: {msg\}}"
-    msg="${msg//\{msg\}/${notifymsg}}"
-    msg="${msg//\{instance\}/${instance}}"
-    msg="${msg//\{server\}/${HOSTNAME}}"
-
+function notifyApplyTemplate(){
+  local msg="$1"
+  if [ -n "$msg" ]; then
     #shellcheck disable=SC2154
     for v in "${!notifyvar_@}"; do
         vn="${v#notifyvar_}"
         msg="${msg//\{${vn}\}/${!v}}"
     done
 
+    echo "$msg"
+  fi
+}
+
+#
+# Notification wrapper
+#
+function notify(){
+  if [[ -n "$1" && "$1" != "-" ]]; then
+    local msg
+
+    # Prepare notification variables
+    # shellcheck disable=SC2034
+    local notifyvar_msg="$1"
+    # shellcheck disable=SC2034
+    local notifyvar_instance="$instance"
+    # shellcheck disable=SC2034
+    local notifyvar_serverMap="$serverMap"
+    # shellcheck disable=SC2034
+    local notifyvar_server="$HOSTNAME"
+    # shellcheck disable=SC2034
+    local notifyvar_local_date="${notifyvar_local_date:-$(date +"%Y-%m-%d %H:%M:%S")}"
+
+    # Console notification
+    msg="$(notifyApplyTemplate "${consoleNotifyTemplate:-{local_date\} [{instance\}] {msg\}}")"
+    notifyConsole "$msg"
+
+    # Discord notification
+    msg="$(notifyApplyTemplate "${discordNotifyTemplate:-[{serverMap\}] {msg\}}")"
     notifyDiscord "$msg"
+
+    # Custom notification
+    msg="$(notifyApplyTemplate "${notifyTemplate:-Message from instance \`{instance\}\` on server \`{server\}\`: {msg\}}")"
     notifyOverride "$msg"
 
     if [ -n "${notifyCommand}" ]; then
@@ -1214,6 +1285,128 @@ function numPlayersConnected(){
 }
 
 #
+# ServerGame.*.log parser
+#
+function ServerGameLog_parse(){
+  local logfile="$1"
+  local serverpid="$2"
+  local raw
+  while IFS= read -r raw; do
+    raw="${raw%$'\r'}"
+    [ -z "$raw" ] && continue
+
+    # Example log line:
+    # raw="[2025.11.10-10.32.01:223][ 97]2025.11.10_10.32.01: PlayerX joined this ARK!"
+    # log_date="2025.11.10-10.32.01"
+    # log_msec="223"
+    # log_id=" 97"
+    # log_msg="2025.11.10_10.32.01: PlayerX joined this ARK!"
+    if [[ "$raw" =~ ^\[([^]]*):([0-9]{3})\]\[([^]]*)\](.*)$ ]]; then
+      local log_date="${BASH_REMATCH[1]}"
+      local log_msec="${BASH_REMATCH[2]}"
+      local log_id="${BASH_REMATCH[3]}"
+      local log_msg="${BASH_REMATCH[4]}"
+
+      # date="2025.11.10_10.32.01"
+      # msg="PlayerX joined this ARK!"
+      local date msg
+      if [[ "$log_msg" =~ ^([^:]*):[[:space:]]?(.*)$ ]]; then
+        date="${BASH_REMATCH[1]}"
+        msg="${BASH_REMATCH[2]}"
+      else
+        date="${log_date/-/_}"
+        msg="$log_msg"
+      fi
+
+      # local_date="2025/11/10 19:32:01" ... TZ=Asia/Tokyo example (JST=UTC+9)
+      local local_date=""
+      if [ -n "$date" ]; then
+        local utc_date_part="${date%%_*}"
+        local utc_time_part="${date#*_}"
+        local utc_iso="${utc_date_part//./-} ${utc_time_part//./:}"
+        local epoch="$(date -u -d "${utc_iso} UTC" +%s 2>/dev/null)"
+        if [ -n "$epoch" ]; then
+          local_date="$(date -d "@${epoch}" '+%Y-%m-%d %H:%M:%S' 2>/dev/null)"
+        fi
+        if [ -z "$local_date" ]; then
+          local_date="$utc_iso"
+        fi
+      fi
+
+      # Prepare notification variables
+
+      # shellcheck disable=SC2034
+      local notifyvar_raw="$raw"
+      # shellcheck disable=SC2034
+      local notifyvar_log_date="$log_date"
+      # shellcheck disable=SC2034
+      local notifyvar_log_msec="$log_msec"
+      # shellcheck disable=SC2034
+      local notifyvar_log_id="$log_id"
+      # shellcheck disable=SC2034
+      local notifyvar_log_msg="$log_msg"
+      # shellcheck disable=SC2034
+      local notifyvar_date="$date"
+      # shellcheck disable=SC2034
+      local notifyvar_local_date="$local_date"      
+
+      notify "$msg"
+
+    fi
+  done < <(tail --pid="$serverpid" -f "$logfile" 2>/dev/null)
+}
+
+#
+# Launch a background monitor for the ServerGame log belonging to the given PID
+#
+startServerGameLogMonitor(){
+  local enable=${arkflag_servergamelog:-true}
+  if [[ "${enable,,}" != "true" ]]; then return; fi
+
+  local pid="$1"
+  local start_epoch="$2"
+  local logsdir="${arkserverroot}/${arkserverdir:-ShooterGame}/Saved/Logs"
+  mkdir -p "$logsdir"
+
+  (
+    local start_date="$(date -u -d "@${start_epoch}" '+%Y.%m.%d_%H.%M.%S' 2>/dev/null)"
+    logprint "Waiting for \"${logsdir}/ServerGame.${pid}.*.log\". (since ${start_date} UTC)"
+    while kill -0 "$pid" >/dev/null 2>&1; do
+      # Find the latest ServerGame log file since start_epoch for a given PID.
+      local logfile=""
+      local newest_epoch=0
+      local candidate
+      # shellcheck disable=SC2030
+      while IFS= read -r -d '' candidate; do
+        [ -e "$candidate" ] || continue
+        local stamp="${candidate##*/ServerGame."${pid}".}"
+        if [[ "$stamp" =~ ^([0-9]{4})\.([0-9]{2})\.([0-9]{2})_([0-9]{2})\.([0-9]{2})\.([0-9]{2}) ]]; then
+          local cand_epoch="$(date -u -d "${BASH_REMATCH[1]}-${BASH_REMATCH[2]}-${BASH_REMATCH[3]} ${BASH_REMATCH[4]}:${BASH_REMATCH[5]}:${BASH_REMATCH[6]}" +%s 2>/dev/null)"
+          if [[ -n "$cand_epoch" ]]; then
+            if (( cand_epoch < start_epoch )); then
+              continue
+            fi
+            if (( cand_epoch > newest_epoch )); then
+              newest_epoch=$cand_epoch
+              logfile="$candidate"
+            fi
+          fi
+        fi
+      done < <(find "$logsdir" -maxdepth 1 -type f -name "ServerGame.${pid}.*.log" -print0 2>/dev/null)
+
+      if [ -n "$logfile" ]; then
+        logprint "Monitoring ServerGame log: ${logfile}"
+        ServerGameLog_parse "$logfile" "$pid"
+        logprint "Terminated ServerGame log: ${logfile}"
+        break
+      fi
+
+      sleep 2
+    done
+  ) &
+}
+
+#
 # run function
 #
 doRun() {
@@ -1413,8 +1606,9 @@ doRun() {
 
   # Auto-restart loop
   while [ $restartserver -ne 0 ]; do
-    echo -n "$(timestamp): Running"
+    local server_start_epoch="$(date -u +%s)"
     notify "${notifyMsgStarting:-Starting}"
+    echo -n "$(timestamp): Running"
     printf " %q" "$arkserverroot/$arkserverexec" "$arkserveropts" "${arkextraopts[@]}"
     echo
     # Put the server process into the background so we can monitor it
@@ -1436,6 +1630,8 @@ doRun() {
 
     sleep 5
 
+    startServerGameLogMonitor "$serverpid" "$server_start_epoch"
+
     while true; do
       # Grab the current server PID
       local pid="$(getServerPID)"
@@ -1445,7 +1641,6 @@ doRun() {
           # Check if the server has fully started
           if ! isTheServerUp; then
             # Enable auto-restart if the server is up
-            echo "$(timestamp): server is up"
             notify "${notifyMsgServerUp:-Server is up}"
             if [ "$restartserver" -eq 0 ]; then
               touch "$arkserverroot/$arkautorestartfile"
@@ -1458,8 +1653,6 @@ doRun() {
 
           if (( serverdowntries > 12 )); then
             # Server has not been listening for 60 seconds, so restart it.
-            echo "$(timestamp): The server has stopped listening"
-            echo "$(timestamp): Restarting server"
             notify "${notifyMsgStoppedListening:-Server has stopped listening - restarting}"
             for (( i = 0; i < 5; i++ )); do
               if ! kill -0 "-$serverpid"; then
@@ -1482,8 +1675,6 @@ doRun() {
         break
       elif [ "$pid" == "$(pgrep --pgroup $serverpid)" ]; then
         restartserver=1
-        echo "$(timestamp): Server has double-forked and cannot be effectively monitored"
-        echo "$(timestamp): Restarting server"
         notify "${notifyMsgDoubleForked:-Server has daemonized itself - restarting}"
         for (( i = 0; i < 5; i++ )); do
           if ! kill -0 "-$serverpid"; then
@@ -1520,7 +1711,6 @@ doRun() {
 
     if [ "$restartserver" -ne 0 ]; then
       notify "${notifyMsgServerTerminated:-Server exited - restarting}"
-      echo "$(timestamp): restarting server"
     fi
   done
 }
@@ -2040,7 +2230,6 @@ doWarn(){
                 numplayers=$(numPlayersConnected)
                 echo "There are ${numplayers} players connected"
                 if [[ "${numplayers}" == "-1" ]]; then
-                  echo "Server is not running.  Shutting down immediately"
                   notify "${notifyMsgServerNotRunning:-Server is not running.  Shutting down immediately}"
                   return 0
                 elif (( (numplayers + 0) == 0 )); then
@@ -2087,7 +2276,6 @@ doWarn(){
             numplayers=$(numPlayersConnected)
             echo "There are ${numplayers} players connected"
             if [[ "${numplayers}" == "-1" ]]; then
-              echo "Server is not running.  Shutting down immediately"
               notify "${notifyMsgServerNotRunning:-Server is not running.  Shutting down immediately}"
               return 0
             elif (( (numplayers + 0) == 0 )); then
