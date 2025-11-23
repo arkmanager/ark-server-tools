@@ -1440,7 +1440,6 @@ doRun() {
       # Grab the current server PID
       local pid="$(getServerPID)"
       if [ "$pid" == "$serverpid" ]; then
-        serverdowntries=0
         if [ "$serveronline" -eq 0 ]; then
           # Check if the server has fully started
           if ! isTheServerUp; then
@@ -1451,6 +1450,7 @@ doRun() {
               touch "$arkserverroot/$arkautorestartfile"
               restartserver=1
             fi
+            serverdowntries=0
             serveronline=1
           fi
         elif isTheServerUp; then
@@ -1476,6 +1476,8 @@ doRun() {
             # Exit the server check loop
             break
           fi
+        else
+          serverdowntries=0
         fi
       elif [ -z "$pid" ]; then
         echo "$(timestamp): Process '$serverpid' has exited"
