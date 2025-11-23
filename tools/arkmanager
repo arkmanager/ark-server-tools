@@ -298,6 +298,7 @@ bnumber=""
 GREEN="\\033[1;32m"
 RED="\\033[1;31m"
 YELLOW="\\e[0;33m"
+CYAN="\\e[0;36m"
 NORMAL="\\033[0;39m"
 
 # Set TERM to "dumb" if TERM is not set
@@ -662,13 +663,109 @@ doBroadcastWithEcho(){
 }
 
 #
+# Apply notification template
+#
+function notifyApplyTemplate(){
+  local msg="$1"
+  #shellcheck disable=SC2154
+  for v in "${!notifyvar_@}"; do
+    vn="${v#notifyvar_}"
+    msg="${msg//\{${vn}\}/${!v}}"
+  done
+  echo "$msg"
+}
+
+#
+# Notifiy console
+#
+function notifyConsole(){
+  local msg="${1//\\/\\\\}"
+  local type=""
+  case "$2" in
+    info*) type="${CYAN}[INFO]${NORMAL} ";;
+    warn*) type="${YELLOW}[WARN]${NORMAL} ";;
+    err*)  type="${RED}[ERROR]${NORMAL} ";;
+  esac
+  # shellcheck disable=SC2034
+  local notifyvar_type="$type"
+  # shellcheck disable=SC2034
+  local notifyvar_msg="$msg"
+  msg="$(notifyApplyTemplate "${consoleNotifyTemplate:-"{local_date} {type}({instance}) {msg}"}")"
+  echo -e "${msg}${NORMAL}"
+}
+
+#
+# Hex color codes
+#
+declare -A HexColorCodes=(
+  ['black']='000000'
+  ['red']='ff0000'
+  ['green']='00ff00'
+  ['yellow']='ffff00'
+  ['blue']='0000ff'
+  ['purple']='800080'
+  ['cyan']='00ffff'
+  ['white']='ffffff'
+)
+
+#
+# Convert hex color to Discord color integer
+#
+function hexToDiscordColor(){
+  local hex="${1}"
+  local r g b
+  r=$(( 0x${hex:0:2} ))
+  g=$(( 0x${hex:2:2} ))
+  b=$(( 0x${hex:4:2} ))
+  echo $(( (r * 65536) + (g * 256) + b ))
+}
+
+#
+# Escape string for JSON
+#
+function jsonEscape(){
+  local msg=${1//\\/\\\\} # backslash to escape
+  msg=${msg//\"/\\\"}     # double quote to escape
+  msg=${msg//$'\r'/\\r}   # carriage return to \r
+  msg=${msg//$'\n'/\\n}   # newline to \n
+  msg=${msg//$'\t'/\\t}   # tab to \t
+  printf '%s' "$msg"
+}
+
+#
 # Discord Webhook notifier
 #
 function notifyDiscord(){
   if [ -n "$discordWebhookURL" ]; then
-    local msg="$(echo -n "${msg}" | tr '\n' '\001' | sed 's/\001/\\n/g;s/["\\]/\\\0/g')"
-    local json="{\"content\":\"${msg}\"}"
-    curl -s -H "Content-Type: application/json" -d "${json}" "$discordWebhookURL" >/dev/null
+    if [[ "${discordNotifyAdminCmd}" != "true" ]] && [[ "$1" =~ ^AdminCmd: ]]; then
+      return
+    fi
+    local msg="$(jsonEscape "$1")"
+    local type="$2"
+    local color=""
+    local template="${discordNotifyPlainTemplate:-"{\"content\": \"[{serverMap}] {msg}\"}"}"
+    case "$type" in
+      info*) template="${discordNotifyInfoTemplate:-"{\"embeds\": [{\"title\": \"📢 INFO - {msg}\", \"color\": 3447003, \"fields\": [{\"name\": \"{serverMap}\", \"value\": \"\"}]}]}"}";;
+      warn*) template="${discordNotifyWarnTemplate:-"{\"embeds\": [{\"title\": \"⚠️ WARN - {msg}\", \"color\": 15105570, \"fields\": [{\"name\": \"{serverMap}\", \"value\": \"\"}]}]}"}";;
+      err*)  template="${discordNotifyErrorTemplate:-"{\"embeds\": [{\"title\": \"❗ ERROR - {msg}\", \"color\": 15158332, \"fields\": [{\"name\": \"{serverMap}\", \"value\": \"\"}]}]}"}";;
+      *)
+        if [[ "$type" =~ ^#([0-9A-Fa-f]{6})$ ]]; then
+          color=$(hexToDiscordColor "${BASH_REMATCH[1]}")
+        elif [ -n "$type" ]; then
+          color=$(hexToDiscordColor "${HexColorCodes[$type]:-808080}")
+        fi
+        if [ -n "$color" ]; then
+          template="${discordNotifyColorTemplate:-"{\"embeds\": [{\"color\": {color}, \"fields\": [{\"name\": \"{serverMap}\", \"value\": \"{msg}\"}]}]}"}"
+        fi
+        ;;
+    esac
+    # shellcheck disable=SC2034
+    local notifyvar_msg="$msg"
+    # shellcheck disable=SC2034
+    local notifyvar_color="$color"
+    local json="$(notifyApplyTemplate "${template}")"
+    local result=$(curl -sS -H "Content-Type: application/json" -d "${json}" "$discordWebhookURL" 2>/dev/null)
+    echo "${result}" | grep -q '"message"' && echo -e "Discord notification failed: ${result}\n----\n${json}\n----" >&2
   fi
 }
 
@@ -684,21 +781,30 @@ function notifyOverride(){
 #
 function notify(){
   if [[ -n "$1" && "$1" != "-" ]]; then
-    local msg
-    local notifymsg="$1"
-    msg="${notifyTemplate:-Message from instance \`{instance\}\` on server \`{server\}\`: {msg\}}"
-    msg="${msg//\{msg\}/${notifymsg}}"
-    msg="${msg//\{instance\}/${instance}}"
-    msg="${msg//\{server\}/${HOSTNAME}}"
+    local msg="$1"
+    local type="$2" # info, warn, err, ...
 
-    #shellcheck disable=SC2154
-    for v in "${!notifyvar_@}"; do
-        vn="${v#notifyvar_}"
-        msg="${msg//\{${vn}\}/${!v}}"
-    done
+    # Prepare notification variables
+    # shellcheck disable=SC2034
+    local notifyvar_instance="$instance"
+    # shellcheck disable=SC2034
+    local notifyvar_serverMap="$serverMap"
+    # shellcheck disable=SC2034
+    local notifyvar_server="$HOSTNAME"
+    # shellcheck disable=SC2034
+    local notifyvar_local_date="$(timestamp)"
 
-    notifyDiscord "$msg"
-    notifyOverride "$msg"
+    # Console notification
+    notifyConsole "$msg" "$type"
+
+    # Discord notification
+    notifyDiscord "$msg" "$type"
+
+    # Custom notification
+    # shellcheck disable=SC2034
+    local notifyvar_msg="$msg"
+    msg="$(notifyApplyTemplate "${notifyTemplate:-"Message from instance \`{instance}\` on server \`{server}\`: {msg}"}")"
+    notifyOverride "$msg" "$type"
 
     if [ -n "${notifyCommand}" ]; then
       eval " ${notifyCommand}"
@@ -1398,7 +1504,7 @@ doRun() {
   # Shutdown the server when we are terminated
   shutdown_server(){
     restartserver=0
-    notify "${notifyMsgShuttingDown:-Shutting down}"
+    notify "${notifyMsgShuttingDown:-Shutting down}" 'info'
     rm -f "$arkserverroot/$arkautorestartfile"
     if [ "$serverpid" -ne 0 ]; then
       kill -INT -$serverpid >/dev/null 2>&1
@@ -1413,8 +1519,8 @@ doRun() {
 
   # Auto-restart loop
   while [ $restartserver -ne 0 ]; do
+    notify "${notifyMsgStarting:-Starting}" 'info'
     echo -n "$(timestamp): Running"
-    notify "${notifyMsgStarting:-Starting}"
     printf " %q" "$arkserverroot/$arkserverexec" "$arkserveropts" "${arkextraopts[@]}"
     echo
     # Put the server process into the background so we can monitor it
@@ -1444,8 +1550,7 @@ doRun() {
           # Check if the server has fully started
           if ! isTheServerUp; then
             # Enable auto-restart if the server is up
-            echo "$(timestamp): server is up"
-            notify "${notifyMsgServerUp:-Server is up}"
+            notify "${notifyMsgServerUp:-Server is up}" 'info'
             if [ "$restartserver" -eq 0 ]; then
               touch "$arkserverroot/$arkautorestartfile"
               restartserver=1
@@ -1458,9 +1563,7 @@ doRun() {
 
           if (( serverdowntries > 12 )); then
             # Server has not been listening for 60 seconds, so restart it.
-            echo "$(timestamp): The server has stopped listening"
-            echo "$(timestamp): Restarting server"
-            notify "${notifyMsgStoppedListening:-Server has stopped listening - restarting}"
+            notify "${notifyMsgStoppedListening:-Server has stopped listening - restarting}" 'err'
             for (( i = 0; i < 5; i++ )); do
               if ! kill -0 "-$serverpid"; then
                 break
@@ -1484,9 +1587,7 @@ doRun() {
         break
       elif [ "$pid" == "$(pgrep --pgroup $serverpid)" ]; then
         restartserver=1
-        echo "$(timestamp): Server has double-forked and cannot be effectively monitored"
-        echo "$(timestamp): Restarting server"
-        notify "${notifyMsgDoubleForked:-Server has daemonized itself - restarting}"
+        notify "${notifyMsgDoubleForked:-Server has daemonized itself - restarting}" 'err'
         for (( i = 0; i < 5; i++ )); do
           if ! kill -0 "-$serverpid"; then
             break
@@ -1521,8 +1622,7 @@ doRun() {
     fi
 
     if [ "$restartserver" -ne 0 ]; then
-      notify "${notifyMsgServerTerminated:-Server exited - restarting}"
-      echo "$(timestamp): restarting server"
+      notify "${notifyMsgServerTerminated:-Server exited - restarting}" 'warn'
     fi
   done
 }
@@ -2002,7 +2102,7 @@ doWarn(){
         msg="Shutdown cancelled by operator ($1)"
       fi
       doBroadcastWithEcho "${msg}"
-      notify "${msg}"
+      notify "${msg}" 'warn'
       exit 1
     }
 
@@ -2042,19 +2142,18 @@ doWarn(){
                 numplayers=$(numPlayersConnected)
                 echo "There are ${numplayers} players connected"
                 if [[ "${numplayers}" == "-1" ]]; then
-                  echo "Server is not running.  Shutting down immediately"
-                  notify "${notifyMsgServerNotRunning:-Server is not running.  Shutting down immediately}"
+                  notify "${notifyMsgServerNotRunning:-Server is not running.  Shutting down immediately}" 'warn'
                   return 0
                 elif (( (numplayers + 0) == 0 )); then
                   doBroadcastWithEcho "Nobody is connected.  Shutting down immediately"
-                  notify "${notifyMsgNobodyConnected:-Nobody is connected.  Shutting down immediately}"
+                  notify "${notifyMsgNobodyConnected:-Nobody is connected.  Shutting down immediately}" 'info'
                   rm -f "${arkserverroot}/${arkwarnlockfile}"
                   return 0
                 fi
               fi
               if isUpdateCancelRequested; then
                 doBroadcastWithEcho "Restart cancelled by player request"
-                notify "${notifyMsgRestartCancelled:-Restart cancelled by player request}"
+                notify "${notifyMsgRestartCancelled:-Restart cancelled by player request}" 'warn'
                 return 1
               fi
               wait $sleeppid
@@ -2089,19 +2188,18 @@ doWarn(){
             numplayers=$(numPlayersConnected)
             echo "There are ${numplayers} players connected"
             if [[ "${numplayers}" == "-1" ]]; then
-              echo "Server is not running.  Shutting down immediately"
-              notify "${notifyMsgServerNotRunning:-Server is not running.  Shutting down immediately}"
+              notify "${notifyMsgServerNotRunning:-Server is not running.  Shutting down immediately}" 'warn'
               return 0
             elif (( (numplayers + 0) == 0 )); then
               doBroadcastWithEcho "Nobody is connected.  Shutting down immediately"
-              notify "${notifyMsgNobodyConnected:-Nobody is connected.  Shutting down immediately}"
+              notify "${notifyMsgNobodyConnected:-Nobody is connected.  Shutting down immediately}" 'info'
               rm -f "${arkserverroot}/${arkwarnlockfile}"
               return 0
             fi
           fi
           if isUpdateCancelRequested; then
             doBroadcastWithEcho "Restart cancelled by player request"
-            notify "${notifyMsgRestartCancelled:-Restart cancelled by player request}"
+            notify "${notifyMsgRestartCancelled:-Restart cancelled by player request}" 'warn'
             return 1
           fi
         fi
