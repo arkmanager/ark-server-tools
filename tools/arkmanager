@@ -2163,7 +2163,7 @@ doUpdate() {
       --systemd) use_systemd=1; ;;
       --service) use_service=1; ;;
       --upstart) use_upstart=1; ;;
-      --beta=*) appbeta="${arg#--beta=}"; ;;
+      --beta=*) appbeta="${arg#--beta=}"; validate=validate; appupdate=1; force=1; ;;
       --betapassword=*) appbetapass="${arg#--betapassword=}"; ;;
       *)
         echo "Unrecognized option $arg"
