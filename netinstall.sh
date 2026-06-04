@@ -141,7 +141,7 @@ function doInstallFromBranch(){
 }
 
 # Download and untar installation files
-cd "$TEMP" || die "Unable to change to temporary directory"
+cd "${TMPDIR:-/tmp}" || die "Unable to change to temporary directory"
 
 if [ -n "$commit" ]; then
   doInstallFromCommit "$commit" "${args[@]}"
