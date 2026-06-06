@@ -1242,12 +1242,37 @@ doRun() {
     kill -STOP $BASHPID # wait for caller to renice us
   fi
 
-  arkserveropts="$serverMap"
   declare -A usedoptions
+  declare -A arkmods
 
   while read -r varname; do
     val="${!varname}"
     modid="${varname#arkmod_}"
+    arkmods["$modid"]="$val"
+    usedoptions[${varname}]="${val}"
+  done < <(sed -n 's/^\(arkmod_[^= ]*\)=.*/\1/p' <"$configfile")
+
+  for arg in "$@"; do
+    case "$arg" in
+      --map=*)
+        serverMap="${arg#*=}"
+        ;;
+      --map-mod-id=*)
+        serverMapModId="${arg#*=}"
+        ;;
+      --arkmod,*=*)
+        val="${arg#*=}"
+        modid="${arg%%=*}"
+        modid="${modid#--arkmod,}"
+        arkmods["${modid}"]="$val"
+        ;;
+    esac
+  done
+
+  arkserveropts="$serverMap"
+
+  for modid in "${!arkmods[@]}"; do
+    val="${arkmods[${modid}]}"
     case "$val" in
       game*|enabled)
         ark_GameModIds="${ark_GameModIds}${ark_GameModIds:+,}${modid}"
@@ -1259,8 +1284,7 @@ doRun() {
         ark_TotalConversionMod="${modid}"
         ;;
     esac
-    usedoptions[${varname}]="${val}"
-  done < <(sed -n 's/^\(arkmod_[^= ]*\)=.*/\1/p' <"$configfile")
+  done
 
   if [ -n "$arkModCollections" ]; then
     while read -r modid; do
@@ -4201,7 +4225,7 @@ main(){
 
       case "$command" in
         run)
-          doRun
+          doRun "${options[@]}"
         ;;
         start)
           doStart "${options[@]}"
