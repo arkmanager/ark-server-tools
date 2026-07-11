@@ -3,6 +3,27 @@
 This tool allows you to manage any ARK: Survival Evolved linux server without having to remember long commands.
 It provides a lot of features, to get the full list check the <<Usage>> section.
 
+Known issue with updating
+-------------------------
+If updating from 1.6.53 or earlier, you will likely get the following message:
+```
+Unable to get latest release
+```
+If updating from 1.6.53 or earlier, and `arkstUnstable` is set, then it is likely to say that a hotfix is available, but fail to install it.
+
+Please either:
+
+* edit `arkmanager` wherever it is installed, and replace
++
+`arkstGithubRepo="FezVrasta/ark-server-tools"`
++
+with
++
+`arkstGithubRepo="arkmanager/ark-server-tools"`
++
+or
+* re-install using the netinstall script below.
+
 Installation
 ------------
 
@@ -28,7 +49,7 @@ perl-modules
 curl
 lsof
 libc6-i386
-lib32gcc1
+lib32gcc-s1 (or lib32gcc1 if on Debian Buster or Ubuntu 20.04 or older)
 bzip2
 ```
 
@@ -44,7 +65,7 @@ tar
 ```
 
 If using CentOS 6 or earlier, or Debian 7 or earlier, you will need to compile a newer version of glibc.
-See https://github.com/FezVrasta/ark-server-tools/wiki/Install-of-required-versions-of-glibc-and-gcc-on-RHEL-CentOS
+See https://github.com/arkmanager/ark-server-tools/wiki/Install-of-required-versions-of-glibc-and-gcc-on-RHEL-CentOS
 
 To use ARK Server Tools, you will need to install **SteamCMD** following this guide:
 
@@ -58,8 +79,10 @@ Requirements
 To allow your ARK server to communicate with the outside you have to open some ports in your firewall:
 
 ```sh
-iptables -I INPUT -p udp --dport 27016 -j ACCEPT
-iptables -I INPUT -p tcp --dport 27016 -j ACCEPT
+iptables -I INPUT -p udp --dport 27015 -j ACCEPT
+iptables -I INPUT -p tcp --dport 27015 -j ACCEPT
+iptables -I INPUT -p udp --dport 7777 -j ACCEPT
+iptables -I INPUT -p tcp --dport 7777 -j ACCEPT
 iptables -I INPUT -p udp --dport 7778 -j ACCEPT
 iptables -I INPUT -p tcp --dport 7778 -j ACCEPT
 iptables -I INPUT -p tcp --dport 32330 -j ACCEPT
@@ -73,16 +96,18 @@ Install ARK Server Tools
 To install ARK Server Tools run this command:
 
 [source,sh]
-curl -sL http://git.io/vtf5N | sudo bash -s steam
+curl -sL https://raw.githubusercontent.com/arkmanager/ark-server-tools/master/netinstall.sh | sudo bash -s steam
 
 NB: You may want to change the `bash -s` parameter to fit your steam user if different from `steam`.
+
+If you want to install the `arkmanager` service, append the `--install-service` option to the install command.
 
 This will copy the `arkmanager` script and its daemon to the proper directories and will create an empty log directory in `/var/log` for ARK Server Tools.
 
 To instead perform a user-install of ARK Server Tools as an unprivileged user, run this command:
 
 [source,sh]
-curl -sL http://git.io/vtf5N | bash -s -- --me
+curl -sL https://raw.githubusercontent.com/arkmanager/ark-server-tools/master/netinstall.sh | bash -s -- --me
 
 Configuration
 ~~~~~~~~~~~~~
@@ -158,6 +183,20 @@ Common Options
 `--spinner`::
     Uses a spinner for progress
 
+`--arkopt,{option}`::
+    Adds the specified option to the server command line; used with `run`, `start`, and `restart`.
++
+Options can be of the form:
+
+    `-<option>`;;
+        Equivalent to adding `arkflag_<option>=true` for this run
+    `-<option>=<value>`;;
+        Equivalent to adding `arkopt_<option>=<value>` for this run
+    `<option>`;;
+        Equivalent to adding `ark_<option>=""` for this run
+    `<option>=<value>`;;
+        Equivalent to adding `ark_<option>=<value>` for this run
+
 Instanceless commands
 ~~~~~~~~~~~~~~~~~~~~~
 
@@ -226,6 +265,12 @@ instances.
 `install`::
     Downloads and installs (or validates an existing install) of
     the ARK server
+
+    `--beta=<betaname>`;;
+        Select the beta to install
+
+    `--betapassword=<password>`;;
+        Use password to unlock beta (for password-locked betas).
 
 `update`::
     Updates an install of the ARK server (or installs it if it's
@@ -326,11 +371,15 @@ instances.
     Runs the `uninstallmod` command followed by the `installmod`
     command
 
+`list-mods`::
+    Lists the mods in the config and/or installed in the server directory
+
 `enablemod <modnum>`::
 `enablemod <modnum>=<modtype>`::
     Enables the `arkmod_<modnum>` setting in the instance config.
     modtype defaults to `game`.
-    Mod types:
++
+Mod types:
 
     `game`;;
         A mod in `GameModIds`
@@ -342,9 +391,16 @@ instances.
     `totalconversion`;;
         The `TotalConversionMod` mod
 
+`disablemod <modnum>`::
+    Disables the `arkmod_<modnum>` setting in the instance config.
+
 `backup`::
     Backs up the saved world and game config files to a compressed
     tar file in the backups directory specified in the config
+
+`restore "<filepath>"`::
+    Restore a Backup
+    If no file is specified, the latest backup is used (helpful for a new server)
 
 `broadcast "message"`::
     Broadcasts a message to players connected to the server using
@@ -363,6 +419,12 @@ instances.
 
 `status`::
     Prints the status of the ARK server
+
+`printconfig`::
+    Prints the config option names and which file they were found in
+
+`getpid`::
+    Prints the server PID
 
 `install-cronjob <command>`::
     Installs a cron job that executes the specified command.
@@ -385,14 +447,16 @@ instances.
         This is the hour field of the cron job.
 	If you want to have the command execute every n hours, then
 	use `--hour='*/n'`
-	Default: `*` (i.e. all hours)
++
+Default: `*` (i.e. all hours)
 
     `--minute=<minute>`;;
         Specifies one or more minutes of the hour when the command
         should execute.  This is the minute field of the cron job.
 	If you want to have the command execute every n minutes,
 	then use `--minute='*/n'`
-	Default: `0` (i.e. the first minute of the hour)
++
+Default: `0` (i.e. the first minute of the hour)
 
     `--enable-output`;;
         Enables the output from the command - the cron daemon usually
@@ -403,6 +467,23 @@ instances.
 
 `remove-cronjob <command>`::
     Removes a cron job previously installed by `install-cronjob`
+
+`wait`::
+    Waits until any or all instances are stopped or online
+    Defaults to any stopped
+
+    `--any`;;
+        Waits until any specified instance is in specified state
+
+    `--all`;;
+        Waits until all specified instances are in specified state
+
+    `--stopped`;;
+        Waits until instances are stopped
+
+    `--online`;;
+        Waits until instances are online
+
 
 Configuration files
 -------------------
@@ -441,44 +522,81 @@ The following options can be overridden on a per-instance basis:
 
 [horizontal]
 `steamcmdroot`::
-    The directory in which `SteamCMD` is installed
+    The directory in which `SteamCMD` is installed.
+    Change this to `/usr/games` if you have the `steamcmd` package installed on Debian, Ubuntu, or CentOS
 
 `steamcmdexec`::
-    The `steamcmd.sh` executable
+    The `steamcmd.sh` executable.
+    Change this to `steamcmd` if you have the `steamcmd` package installed on Debian, Ubuntu, or CentOS
+
+`steamcmdhome`::
+    The directory to override as `$HOME` when running steamcmd.
 
 `steamcmd_appinfocache`::
     The path to the Steam appinfo cache file.
-    Most systems will have this in `$HOME/Steam/appcache/appinfo.vdf`, 
-    but some systems have this instead in `$HOME/.steam/appcache/appinfo.vdf`.
-    You will need to modify this setting if this is the case.
++
+Most systems will have this in `$HOME/Steam/appcache/appinfo.vdf`, 
+but some systems (especially with the `steamcmd` package installed)
+have this instead in `$HOME/.steam/appcache/appinfo.vdf`.
+You will need to modify this setting if this is the case.
 
 `steamcmd_workshoplog`::
     The path to the Steam workshop log file.
-    Most systems will have this in `$HOME/Steam/logs/workshop_log.txt`,
-    but some systems have this instead in `$HOME/.steam/logs/workshop_log.txt`.
-    You will need to modify this setting if this is the case.
++
+Most systems will have this in `$HOME/Steam/logs/workshop_log.txt`,
+but some systems (especially with the `steamcmd` package installed)
+have this instead in `$HOME/.steam/logs/workshop_log.txt`.
+You will need to modify this setting if this is the case.
 
 `steamdataroot`::
     The path to the SteamCMD data.
-    Defaults to `$steamcmdroot`
-    Some SteamCMD installations store downloaded files (workshop
-    files, etc.) in /home/.steam instead of in the steamcmd
-    directory.
++
+Defaults to `$steamcmdroot`
++
+Some SteamCMD installations  (especially with the `steamcmd` package installed)
+store downloaded files (workshop files, etc.) in /home/.steam instead of in the steamcmd
+directory.
 
 `steamworkshopdir`::
     The path to the SteamCMD workshop directory.
-    Defaults to `$steamdataroot/steamapps/workshop`
-    Some SteamCMD installations use `SteamApps` as the steamapps directory
-    instead of `steamapps`
++
+Defaults to `$steamdataroot/steamapps/workshop`
++
+Some SteamCMD installations (especially with the `steamcmd` package installed)
+use `SteamApps` as the steamapps directory instead of `steamapps`
+
+`steamlogin`::
+    Specify previously logged-in steam user. Requires this steam user to have already logged into the installed instance of `steamcmd`.
+
+`steamcmd_cmds_prelogin`::
+    Allows specifying steamcmd commands to run before steamcmd login
+
+`steamcmd_cmds_postlogin`::
+    Allows specifying steamcmd commands to run between steamcmd login and requested command
+
+`steamcmd_appextraopts`::
+    Allows specifying extra options to the steamcmd `app_update` command (or executing extra steamcmd commands after `app_update`)
 
 `arkserverexec`::
     The relative path within an ARK server install where the
     ARK server executable can be found.
-    For the standard ARK server, this should be `ShooterGame/Binaries/Linux/ShooterGameServer`
++
+For the standard ARK server, this should be `ShooterGame/Binaries/Linux/ShooterGameServer`
 
 `arkbackupdir`::
     The directory in which to store backups.  Can be overridden in
     the instance config.
+
+`arkbackupcompress`::
+    Enable/Disable backup compression. Default true. 
+    Helps to remove the load on the CPU, but increases the size of backups, 
+    see arkMaxBackupSizeMB
+
+`arkBackupPostCommand`::
+    Command to be run using `eval` after backup completes.
+    `$backupfile` will be set to the full path of the backup tar.bz2 file.
++
+e.g. `arkBackupPostCommand='aws s3 cp "$backupfile" "s3://bucket_name/backups"'`
 
 `arkwarnminutes`::
     The number of minutes over which the shutdown and update warnings
@@ -491,14 +609,30 @@ The following options can be overridden on a per-instance basis:
 `arkAlwaysRestartOnCrash`::
     Set to `true` to enable automatically restarting even when the
     server has not become ready for player connections.
-    Be aware that this may cause the server to enter an endless
-    crash-restart loop if the cause of the crash is not resolved.
++
+Be aware that this may cause the server to enter an endless
+crash-restart loop if the cause of the crash is not resolved.
 
 `arkAutoUpdateOnStart`::
     Set to `true` to enable updating before server startup
 
 `arkBackupPreUpdate`::
     Set to `true` to enable automatic backups before updating
+
+`arkPreStart`::
+    Set to the path to a script to execute on startup if it exists
++
+default: `/path/to/instance/config.start` where `/path/to/instance/config` is the path to the instance config file with the `.cfg` extension removed - e.g. `/etc/arkmanager/instances/main.start`
+
+`arkGameUserSettingsIniFile`::
+    Set to the path to an ini file that, if it exists, will overwrite `${arkserverroot}/ShooterGame/Saved/Config/LinuxServer/GameUserSettings.ini` on startup
++
+default: `/path/to/instance/config.GameUserSettings.ini` where `/path/to/instance/config` is the path to the instance config file with the `.cfg` extension removed - e.g. `/etc/arkmanager/instances/main.GameUserSettings.ini`
+
+`arkGameIniFile`::
+    Set to the path to an ini file that, if it exists, will overwrite `${arkserverroot}/ShooterGame/Saved/Config/LinuxServer/Game.ini` on startup
++
+default: `/path/to/instance/config.Game.ini` where `/path/to/instance/config` is the path to the instance config file with the `.cfg` extension removed - e.g. `/etc/arkmanager/instances/main.Game.ini`
 
 `arkStagingDir`::
     Sets the staging directory in order to download updates
@@ -552,6 +686,11 @@ The following options can be overridden on a per-instance basis:
     `{seconds}`;;
         Valid in `msgTimeSeconds`, replaced at runtime with seconds remaining until shutdown
 
+`broadcastcmd`::
+    Used to override which rcon command to use for server broadcasts - e.g. serverchat
++
+default: `broadcast`
+
 `discordWebhookURL`::
     Discord Webhook URL - server status messages and update warning messages will be sent through
     this if specified
@@ -584,8 +723,18 @@ The following options can be overridden on a per-instance basis:
 `notifyMsgServerTerminated`::
     Message to be sent when server has crashed and is being restarted. Use `-` to disable.
 
+`notifyvar_<varname>`::
+    Extra variables to be used to replace `{<varname>}` replacement parameters in notify message.
++
+e.g. `notifyvar_instancename="My Instance"` will replace `{instancename}` with `My Instance` in the notify message.
+
 `noNotifyWarn`::
     Disable notification at start of shutdown warning period
+
+`notifyCommand`::
+    Notify command to run.  Notify message will be in `${notifymsg}`, and templated message will be in `${msg}`
++
+e.g. `notifyCommand='echo "$msg" | mailx -s "Message from instance ${instance} on server ${HOSTNAME}" "email@domain.com"'`
 
 `logdir`::
     Specifies where to store log files
@@ -629,6 +778,10 @@ ARK server options:
     the `-StructureDestructionTag=DestroySwampSnowStructures`
     option.
 
+`arkNoPortDecrement="<bool>"`::
+    True if the `Port` option should be passed untouched.
+    False for the old behaviour of decrementing the `Port`.
+
 Instance config files
 ~~~~~~~~~~~~~~~~~~~~~
 
@@ -648,6 +801,9 @@ the global config.
 `serverMapModId`::
     Uses the `-MapModID=<modid>?...` option to specify the server map
     mod ID
+
+`arkModCollections="<collection1>,<collection2>,..."`::
+    Specifies collections to include in mod list
 
 `ark_<optname>="<optval>"`::
     Specifies the options to use in the `Map?Option=Val?...` option
@@ -708,13 +864,13 @@ Common ARK options
     Enabled RCON
 
 `ark_RCONPort=<portnum>`::
-    The port on which the server listens for RCON commands.  Must be unique on the host.
+    The TCP port on which the server listens for RCON commands.  Must be unique on the host.
 
 `ark_Port=<portnum>`::
-    The port on which the server listens for client connections.  Must be unique on the host.
+    The UDP port on which the server listens for client connections.  Must be unique on the host.
 
 `ark_QueryPort=<portnum>`::
-    The port on which the server listens for queries.  Must be unique on the host.
+    The UDP port on which the server listens for queries.  Must be unique on the host.
 
 `ark_ServerPassword="<password>"`::
     Specifies the password needed to connect to the server
@@ -734,5 +890,3 @@ Common ARK options
 
 `arkflag_NoBattlEye=true`::
     Disables BattlEye
-
-

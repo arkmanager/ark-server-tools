@@ -4,6 +4,7 @@ userinstall=no
 steamcmd_user=
 showusage=no
 migrateconfig=no
+installservice=no
 
 while [ -n "$1" ]; do
   case "$1" in
@@ -67,6 +68,9 @@ while [ -n "$1" ]; do
     --migrate-config)
       migrateconfig=yes
     ;;
+    --install-service)
+      installservice=yes
+    ;;
     -*)
       echo "Invalid option '$1'"
       showusage=yes
@@ -89,12 +93,12 @@ while [ -n "$1" ]; do
   shift
 done
 
-if [ "$userinstall" == "yes" -a "$UID" -eq 0 ]; then
+if [ "$userinstall" == "yes" ] && [ "$UID" -eq 0 ]; then
   echo "Refusing to perform user-install as root"
   showusage=yes
 fi
 
-if [ "$showusage" == "no" -a -z "$steamcmd_user" ]; then
+if [ "$showusage" == "no" ] && [ -z "$steamcmd_user" ]; then
   echo "No user specified"
   showusage=yes
 fi
@@ -131,7 +135,7 @@ if [ "$showusage" == "yes" ]; then
     echo "                [PREFIX=${PREFIX}]"
     echo "--exec-prefix   Specify the prefix under which to install executables"
     echo "                [EXECPREFIX=${EXECPREFIX}]"
-    echo "--data-prefix   Specify the prefix under which to install suppor files"
+    echo "--data-prefix   Specify the prefix under which to install support files"
     echo "                [DATAPREFIX=${DATAPREFIX}]"
     echo "--install-root  Specify the staging directory in which to perform the install"
     echo "                [INSTALL_ROOT=${INSTALL_ROOT}]"
@@ -141,6 +145,8 @@ if [ "$showusage" == "yes" ]; then
     echo "                [LIBEXECDIR=${LIBEXECDIR}]"
     echo "--datadir       Specify the directory under which to install support files"
     echo "                [DATADIR=${DATADIR}]"
+    echo "--install-service"
+    echo "                Install the service"
     exit 1
 fi
 
@@ -215,38 +221,73 @@ else
            -e "s|^DATADIR=.*|DATADIR=\"${DATADIR}\"|" \
            "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager-uninstall.sh"
 
-    # Copy arkdaemon to /etc/init.d ,set permissions and add it to boot
-    if [ -f /lib/lsb/init-functions ]; then
-      # on debian 8, sysvinit and systemd are present. If systemd is available we use it instead of sysvinit
-      if [ -f /etc/systemd/system.conf ]; then   # used by systemd
-        mkdir -p "${INSTALL_ROOT}${LIBEXECDIR}"
-        cp systemd/arkmanager.init "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
-        sed -i "s|^DAEMON=\"/usr/bin/|DAEMON=\"${BINDIR}/|" "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
-        chmod +x "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
-        cp systemd/arkmanager.service "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
-        sed -i "s|=/usr/libexec/arkmanager/|=${LIBEXECDIR}/|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
-        cp systemd/arkmanager@.service "${INSTALL_ROOT}/etc/systemd/system/arkmanager@.service"
-        sed -i "s|=/usr/bin/|=${BINDIR}/|;s|=steam$|=${steamcmd_user}|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager@.service"
-        if [ -z "${INSTALL_ROOT}" ]; then
-          systemctl daemon-reload
-          systemctl enable arkmanager.service
-          echo "Ark server will now start on boot, if you want to remove this feature run the following line"
-          echo "systemctl disable arkmanager.service"
-	fi
-      else  # systemd not present, so use sysvinit
-        cp lsb/arkdaemon "${INSTALL_ROOT}/etc/init.d/arkmanager"
+    if [ "$installservice" = "yes" ]; then
+      # Copy arkdaemon to /etc/init.d ,set permissions and add it to boot
+      if [ -f /lib/lsb/init-functions ]; then
+        # on debian 8, sysvinit and systemd are present. If systemd is available we use it instead of sysvinit
+        if [ -f /etc/systemd/system.conf ]; then   # used by systemd
+          mkdir -p "${INSTALL_ROOT}${LIBEXECDIR}"
+          cp systemd/arkmanager.init "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
+          sed -i "s|^DAEMON=\"/usr/bin/|DAEMON=\"${BINDIR}/|" "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
+          chmod +x "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
+          cp systemd/arkmanager.service "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
+          sed -i "s|=/usr/libexec/arkmanager/|=${LIBEXECDIR}/|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
+          cp systemd/arkmanager@.service "${INSTALL_ROOT}/etc/systemd/system/arkmanager@.service"
+          sed -i "s|=/usr/bin/|=${BINDIR}/|;s|=steam$|=${steamcmd_user}|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager@.service"
+          if [ -z "${INSTALL_ROOT}" ]; then
+            systemctl daemon-reload
+            systemctl enable arkmanager.service
+            echo "Ark server will now start on boot, if you want to remove this feature run the following line"
+            echo "systemctl disable arkmanager.service"
+          fi
+        else  # systemd not present, so use sysvinit
+          cp lsb/arkdaemon "${INSTALL_ROOT}/etc/init.d/arkmanager"
+          chmod +x "${INSTALL_ROOT}/etc/init.d/arkmanager"
+          sed -i "s|^DAEMON=\"/usr/bin/|DAEMON=\"${BINDIR}/|" "${INSTALL_ROOT}/etc/init.d/arkmanager"
+          # add to startup if the system use sysinit
+          if [ -x /usr/sbin/update-rc.d ] && [ -z "${INSTALL_ROOT}" ]; then
+            update-rc.d arkmanager defaults
+            echo "Ark server will now start on boot, if you want to remove this feature run the following line"
+            echo "update-rc.d -f arkmanager remove"
+          fi
+        fi
+      elif [ -f /etc/rc.d/init.d/functions ]; then
+        # on RHEL 7, sysvinit and systemd are present. If systemd is available we use it instead of sysvinit
+        if [ -f /etc/systemd/system.conf ]; then   # used by systemd
+          mkdir -p "${INSTALL_ROOT}${LIBEXECDIR}"
+          cp systemd/arkmanager.init "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
+          sed -i "s|^DAEMON=\"/usr/bin/|DAEMON=\"${BINDIR}/|" "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
+          chmod +x "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
+          cp systemd/arkmanager.service "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
+          sed -i "s|=/usr/libexec/arkmanager/|=${LIBEXECDIR}/|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
+          cp systemd/arkmanager@.service "${INSTALL_ROOT}/etc/systemd/system/arkmanager@.service"
+          sed -i "s|=/usr/bin/|=${BINDIR}/|;s|=steam$|=${steamcmd_user}|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager@.service"
+          if [ -z "${INSTALL_ROOT}" ]; then
+            systemctl daemon-reload
+            systemctl enable arkmanager.service
+            echo "Ark server will now start on boot, if you want to remove this feature run the following line"
+            echo "systemctl disable arkmanager.service"
+          fi
+        else # systemd not preset, so use sysvinit
+          cp redhat/arkdaemon "${INSTALL_ROOT}/etc/rc.d/init.d/arkmanager"
+          chmod +x "${INSTALL_ROOT}/etc/rc.d/init.d/arkmanager"
+          sed -i "s@^DAEMON=\"/usr/bin/@DAEMON=\"${BINDIR}/@" "${INSTALL_ROOT}/etc/rc.d/init.d/arkmanager"
+          if [ -x /sbin/chkconfig ] && [ -z "${INSTALL_ROOT}" ]; then
+            chkconfig --add arkmanager
+            echo "Ark server will now start on boot, if you want to remove this feature run the following line"
+            echo "chkconfig arkmanager off"
+          fi
+        fi
+      elif [ -f /sbin/runscript ]; then
+        cp openrc/arkdaemon "${INSTALL_ROOT}/etc/init.d/arkmanager"
         chmod +x "${INSTALL_ROOT}/etc/init.d/arkmanager"
-        sed -i "s|^DAEMON=\"/usr/bin/|DAEMON=\"${BINDIR}/|" "${INSTALL_ROOT}/etc/init.d/arkmanager"
-        # add to startup if the system use sysinit
-        if [ -x /usr/sbin/update-rc.d -a -z "${INSTALL_ROOT}" ]; then
-          update-rc.d arkmanager defaults
+        sed -i "s@^DAEMON=\"/usr/bin/@DAEMON=\"${BINDIR}/@" "${INSTALL_ROOT}/etc/init.d/arkmanager"
+        if [ -x /sbin/rc-update ] && [ -z "${INSTALL_ROOT}" ]; then
+          rc-update add arkmanager default
           echo "Ark server will now start on boot, if you want to remove this feature run the following line"
-          echo "update-rc.d -f arkmanager remove"
+          echo "rc-update del arkmanager default"
         fi
-      fi
-    elif [ -f /etc/rc.d/init.d/functions ]; then
-      # on RHEL 7, sysvinit and systemd are present. If systemd is available we use it instead of sysvinit
-      if [ -f /etc/systemd/system.conf ]; then   # used by systemd
+      elif [ -f /etc/systemd/system.conf ]; then   # used by systemd
         mkdir -p "${INSTALL_ROOT}${LIBEXECDIR}"
         cp systemd/arkmanager.init "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
         sed -i "s|^DAEMON=\"/usr/bin/|DAEMON=\"${BINDIR}/|" "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
@@ -261,39 +302,6 @@ else
           echo "Ark server will now start on boot, if you want to remove this feature run the following line"
           echo "systemctl disable arkmanager.service"
         fi
-      else # systemd not preset, so use sysvinit
-        cp redhat/arkdaemon "${INSTALL_ROOT}/etc/rc.d/init.d/arkmanager"
-        chmod +x "${INSTALL_ROOT}/etc/rc.d/init.d/arkmanager"
-        sed -i "s@^DAEMON=\"/usr/bin/@DAEMON=\"${BINDIR}/@" "${INSTALL_ROOT}/etc/rc.d/init.d/arkmanager"
-        if [ -x /sbin/chkconfig -a -z "${INSTALL_ROOT}" ]; then
-          chkconfig --add arkmanager
-          echo "Ark server will now start on boot, if you want to remove this feature run the following line"
-          echo "chkconfig arkmanager off"
-        fi
-      fi
-    elif [ -f /sbin/runscript ]; then
-      cp openrc/arkdaemon "${INSTALL_ROOT}/etc/init.d/arkmanager"
-      chmod +x "${INSTALL_ROOT}/etc/init.d/arkmanager"
-      sed -i "s@^DAEMON=\"/usr/bin/@DAEMON=\"${BINDIR}/@" "${INSTALL_ROOT}/etc/init.d/arkmanager"
-      if [ -x /sbin/rc-update -a -z "${INSTALL_ROOT}" ]; then
-        rc-update add arkmanager default
-        echo "Ark server will now start on boot, if you want to remove this feature run the following line"
-        echo "rc-update del arkmanager default"
-      fi
-    elif [ -f /etc/systemd/system.conf ]; then   # used by systemd
-      mkdir -p "${INSTALL_ROOT}${LIBEXECDIR}"
-      cp systemd/arkmanager.init "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
-      sed -i "s|^DAEMON=\"/usr/bin/|DAEMON=\"${BINDIR}/|" "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
-      chmod +x "${INSTALL_ROOT}${LIBEXECDIR}/arkmanager.init"
-      cp systemd/arkmanager.service "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
-      sed -i "s|=/usr/libexec/arkmanager/|=${LIBEXECDIR}/|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager.service"
-      cp systemd/arkmanager@.service "${INSTALL_ROOT}/etc/systemd/system/arkmanager@.service"
-      sed -i "s|=/usr/bin/|=${BINDIR}/|;s|=steam$|=${steamcmd_user}|" "${INSTALL_ROOT}/etc/systemd/system/arkmanager@.service"
-      if [ -z "${INSTALL_ROOT}" ]; then
-        systemctl daemon-reload
-        systemctl enable arkmanager.service
-        echo "Ark server will now start on boot, if you want to remove this feature run the following line"
-        echo "systemctl disable arkmanager.service"
       fi
     fi
 
@@ -313,6 +321,7 @@ else
            "${INSTALL_ROOT}${INSTANCEDIR}/instance.cfg.example"
 
     # Copy arkmanager bash_completion into /etc/bash_completion.d/
+    mkdir -p "${INSTALL_ROOT}/etc/bash_completion.d"
     cp bash_completion/arkmanager "${INSTALL_ROOT}/etc/bash_completion.d/arkmanager"
 
     # Copy arkmanager.cfg inside linux configuation folder if it doesn't already exists
