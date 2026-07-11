@@ -1,6 +1,8 @@
 name: ShellCheck
 
-on: [push]
+on:
+  - push
+  - pull_request
 
 jobs:
   shellcheck:
@@ -8,11 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v7
     - name: Run ShellCheck
-      uses: ludeeus/action-shellcheck@master
+      uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38 # v2.0.0
       with:
         severity: warning
       env:
         SHELLCHECK_OPTS: --norc --external-sources --source-path=SCRIPTDIR
-
