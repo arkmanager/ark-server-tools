@@ -1598,17 +1598,18 @@ doRunBG(){
     [[ $fd -gt 2 && $fd != 255 ]] && exec {fd}<&-
   done
 
-  if [ -n "$server_runas" ]; then
-    sudo -u "$server_runas" "$0" --run-instance "$instance" <(cat "${arkstGlobalCfgFile}" "${HOME}/${arkstUserCfgFile}" 2>/dev/null; if [ -z "arkSingleInstance" && -n "$configfile" ]; then cat "$configfile" 2>/dev/null; fi) > >(while read -r l; do printf "%s: [%s] %s\n" "$(timestamp)" "${instance}" "${l}"; done) 2>&1
+  (if [ -n "$server_runas" ]; then
+    sudo -u "$server_runas" "$0" --run-instance "$instance" <(cat "${arkstGlobalCfgFile}" "${HOME}/${arkstUserCfgFile}" 2>/dev/null; if [[ -z "$arkSingleInstance" && -n "$configfile" ]]; then cat "$configfile" 2>/dev/null; fi) "$@"
   else
-    doRun "$@" > >(while read -r l; do printf "%s: [%s] %s\n" "$(timestamp)" "${instance}" "${l}"; done) 2>&1
-  fi
+    doRun "$@"
+  fi) > >(while read -r l; do printf "%s: [%s] %s\n" "$(timestamp)" "${instance}" "${l}"; done) 2>&1
 }
 
 doRunInstance(){
   instance="$1"
   
   if [[ -n "$2" && -r "$2" ]]; then
+    # shellcheck source=arkmanager.cfg.shellcheck
     . "$2"
   fi
 
@@ -3948,21 +3949,6 @@ loadGlobalConfig() {
       source "${HOME}/${arkstUserCfgFile}"
   fi
 
-  if [[ -n "${steamcmd_user}" && "${steamcmd_user}" != "--me" && "$USERNAME" != "${steamcmd_user}" && -n "$usesudo" ]]; then
-      echo "Attempting to run as $steamcmd_user" >&2
-      exec sudo --user="${steamcmd_user}" "${arkstScriptPath}" "$@"
-  fi
-
-  if [[ -n "${serverbasedir}" && -d "${serverbasedir}" ]]; then
-      cd "${serverbasedir}"
-  elif [ -d "${HOME}" ]; then
-      cd "${HOME}"
-  elif [ -d "${steamcmdroot}" ]; then
-      cd "${steamcmdroot}"
-  elif [[ ! -d "${PWD}" || ! -r "${PWD}" || ! -x "${PWD}" ]]; then
-      cd /
-  fi
-
   lsof=lsof
   if [ -x /usr/sbin/lsof ]; then
     lsof=/usr/sbin/lsof
@@ -4145,7 +4131,12 @@ main(){
   fi
   
   # Global variables
-  loadGlobalConfig
+  loadGlobalConfig "$@"
+
+  if [[ -n "${steamcmd_user}" && "${steamcmd_user}" != "--me" && "$USERNAME" != "${steamcmd_user}" && -n "$usesudo" && " $* " != *" --no-sudo "* ]]; then
+      echo "Attempting to run as $steamcmd_user" >&2
+      exec sudo --user="${steamcmd_user}" "${arkstScriptPath}" "$@"
+  fi
 
   setScriptWorkingDir
 
@@ -4481,4 +4472,6 @@ main(){
 # by another script
 if [[ "$0" = "${BASH_SOURCE[0]}" || -z "${BASH_SOURCE[*]}" ]]; then
   main "$@"
+elif [[ " $* " != *" --no-def-globals "* ]]; then
+  loadGlobalConfig "$@"
 fi
