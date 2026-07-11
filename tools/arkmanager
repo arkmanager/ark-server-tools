@@ -243,7 +243,7 @@ runAsRoot(){
     exit 1
   else
     echo "Attempting to drop privileges; re-running as $steamcmd_user" >&2
-    exec "${arkstRunUserCommandOverride:-/sbin/runuser}" "$steamcmd_user" -s "$steamcmd_user_shellexec" -c "$(printf "%q" "${arkstScriptPath}") --runfromroot"$(printf " %q" "$@")"
+    exec "${arkstRunUserCommandOverride:-/sbin/runuser}" "$steamcmd_user" -s "$steamcmd_user_shellexec" -c "$(printf "%q" "${arkstScriptPath}") --runfromroot$(printf " %q" "$@")"
     exit 1
   fi
 }
