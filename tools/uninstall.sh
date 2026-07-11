@@ -3,6 +3,7 @@
 # uninstall.sh
 
 BINDIR="/usr/bin"
+# shellcheck disable=SC2034
 DATADIR="/usr/share/arkmanager"
 LIBEXECDIR="/usr/libexec/arkmanager"
 INITSCRIPT=

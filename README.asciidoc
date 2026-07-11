@@ -3,6 +3,27 @@
 This tool allows you to manage any ARK: Survival Evolved linux server without having to remember long commands.
 It provides a lot of features, to get the full list check the <<Usage>> section.
 
+Known issue with updating
+-------------------------
+If updating from 1.6.53 or earlier, you will likely get the following message:
+```
+Unable to get latest release
+```
+If updating from 1.6.53 or earlier, and `arkstUnstable` is set, then it is likely to say that a hotfix is available, but fail to install it.
+
+Please either:
+
+* edit `arkmanager` wherever it is installed, and replace
++
+`arkstGithubRepo="FezVrasta/ark-server-tools"`
++
+with
++
+`arkstGithubRepo="arkmanager/ark-server-tools"`
++
+or
+* re-install using the netinstall script below.
+
 Installation
 ------------
 
@@ -28,7 +49,7 @@ perl-modules
 curl
 lsof
 libc6-i386
-lib32gcc1
+lib32gcc-s1 (or lib32gcc1 if on Debian Buster or Ubuntu 20.04 or older)
 bzip2
 ```
 
@@ -44,7 +65,7 @@ tar
 ```
 
 If using CentOS 6 or earlier, or Debian 7 or earlier, you will need to compile a newer version of glibc.
-See https://github.com/FezVrasta/ark-server-tools/wiki/Install-of-required-versions-of-glibc-and-gcc-on-RHEL-CentOS
+See https://github.com/arkmanager/ark-server-tools/wiki/Install-of-required-versions-of-glibc-and-gcc-on-RHEL-CentOS
 
 To use ARK Server Tools, you will need to install **SteamCMD** following this guide:
 
@@ -58,8 +79,10 @@ Requirements
 To allow your ARK server to communicate with the outside you have to open some ports in your firewall:
 
 ```sh
-iptables -I INPUT -p udp --dport 27016 -j ACCEPT
-iptables -I INPUT -p tcp --dport 27016 -j ACCEPT
+iptables -I INPUT -p udp --dport 27015 -j ACCEPT
+iptables -I INPUT -p tcp --dport 27015 -j ACCEPT
+iptables -I INPUT -p udp --dport 7777 -j ACCEPT
+iptables -I INPUT -p tcp --dport 7777 -j ACCEPT
 iptables -I INPUT -p udp --dport 7778 -j ACCEPT
 iptables -I INPUT -p tcp --dport 7778 -j ACCEPT
 iptables -I INPUT -p tcp --dport 32330 -j ACCEPT
@@ -73,7 +96,7 @@ Install ARK Server Tools
 To install ARK Server Tools run this command:
 
 [source,sh]
-curl -sL http://git.io/vtf5N | sudo bash -s steam
+curl -sL https://raw.githubusercontent.com/arkmanager/ark-server-tools/master/netinstall.sh | sudo bash -s steam
 
 NB: You may want to change the `bash -s` parameter to fit your steam user if different from `steam`.
 
@@ -84,7 +107,7 @@ This will copy the `arkmanager` script and its daemon to the proper directories 
 To instead perform a user-install of ARK Server Tools as an unprivileged user, run this command:
 
 [source,sh]
-curl -sL http://git.io/vtf5N | bash -s -- --me
+curl -sL https://raw.githubusercontent.com/arkmanager/ark-server-tools/master/netinstall.sh | bash -s -- --me
 
 Configuration
 ~~~~~~~~~~~~~
@@ -242,6 +265,12 @@ instances.
 `install`::
     Downloads and installs (or validates an existing install) of
     the ARK server
+
+    `--beta=<betaname>`;;
+        Select the beta to install
+
+    `--betapassword=<password>`;;
+        Use password to unlock beta (for password-locked betas).
 
 `update`::
     Updates an install of the ARK server (or installs it if it's
@@ -500,6 +529,9 @@ The following options can be overridden on a per-instance basis:
     The `steamcmd.sh` executable.
     Change this to `steamcmd` if you have the `steamcmd` package installed on Debian, Ubuntu, or CentOS
 
+`steamcmdhome`::
+    The directory to override as `$HOME` when running steamcmd.
+
 `steamcmd_appinfocache`::
     The path to the Steam appinfo cache file.
 +
@@ -533,6 +565,18 @@ Defaults to `$steamdataroot/steamapps/workshop`
 Some SteamCMD installations (especially with the `steamcmd` package installed)
 use `SteamApps` as the steamapps directory instead of `steamapps`
 
+`steamlogin`::
+    Specify previously logged-in steam user. Requires this steam user to have already logged into the installed instance of `steamcmd`.
+
+`steamcmd_cmds_prelogin`::
+    Allows specifying steamcmd commands to run before steamcmd login
+
+`steamcmd_cmds_postlogin`::
+    Allows specifying steamcmd commands to run between steamcmd login and requested command
+
+`steamcmd_appextraopts`::
+    Allows specifying extra options to the steamcmd `app_update` command (or executing extra steamcmd commands after `app_update`)
+
 `arkserverexec`::
     The relative path within an ARK server install where the
     ARK server executable can be found.
@@ -542,6 +586,11 @@ For the standard ARK server, this should be `ShooterGame/Binaries/Linux/ShooterG
 `arkbackupdir`::
     The directory in which to store backups.  Can be overridden in
     the instance config.
+
+`arkbackupcompress`::
+    Enable/Disable backup compression. Default true. 
+    Helps to remove the load on the CPU, but increases the size of backups, 
+    see arkMaxBackupSizeMB
 
 `arkBackupPostCommand`::
     Command to be run using `eval` after backup completes.
@@ -753,6 +802,9 @@ the global config.
     Uses the `-MapModID=<modid>?...` option to specify the server map
     mod ID
 
+`arkModCollections="<collection1>,<collection2>,..."`::
+    Specifies collections to include in mod list
+
 `ark_<optname>="<optval>"`::
     Specifies the options to use in the `Map?Option=Val?...` option
     string passed to the server
@@ -812,13 +864,13 @@ Common ARK options
     Enabled RCON
 
 `ark_RCONPort=<portnum>`::
-    The port on which the server listens for RCON commands.  Must be unique on the host.
+    The TCP port on which the server listens for RCON commands.  Must be unique on the host.
 
 `ark_Port=<portnum>`::
-    The port on which the server listens for client connections.  Must be unique on the host.
+    The UDP port on which the server listens for client connections.  Must be unique on the host.
 
 `ark_QueryPort=<portnum>`::
-    The port on which the server listens for queries.  Must be unique on the host.
+    The UDP port on which the server listens for queries.  Must be unique on the host.
 
 `ark_ServerPassword="<password>"`::
     Specifies the password needed to connect to the server
@@ -838,5 +890,3 @@ Common ARK options
 
 `arkflag_NoBattlEye=true`::
     Disables BattlEye
-
-

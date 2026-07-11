@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2034
 
 configfile="$1"
 newopts=( arkbackupdir arkautorestartfile install_bindir install_libexecdir install_datadir mod_appid )

@@ -4,28 +4,40 @@
 # Net Installer, used with curl
 #
 
-arkstGithubRepo="FezVrasta/ark-server-tools"
+arkstGithubRepo="arkmanager/ark-server-tools"
 
 steamcmd_user="$1"
 shift
 
 args=()
-output=/dev/null
 unstable=
 userinstall=
 userinstall2=
-installservice=
+commit=
 
 for arg in "$@"; do
   case "$arg" in
-    --verbose) output=/dev/fd/1; ;;
-    --output=*) output="${1#--output=}"; ;;
     --unstable) unstable=1; ;;
+    --repo=*) arkstGithubRepo="${arg#--repo=}"; ;;
     --perform-user-install) userinstall2=yes; ;;
     --yes-i-really-want-to-perform-a-user-install) userinstall=yes; ;;
+    --commit=*) commit="${arg#--commit=}"; ;;
+    --tag=*)
+      tagname="${arg#--tag=}"
+      commit="$(curl -s "https://api.github.com/repos/${arkstGithubRepo}/git/refs/tags/${tagname}" | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p')"
+      if [ -z "$commit" ]; then
+        echo "Tag ${tagname} not found"
+        exit 1
+      elif [ "$(echo "$commit" | wc -l)" -ne 1 ]; then
+        echo "Tag ${tagname} is matched more than one tag."
+        curl -s "https://api.github.com/repos/${arkstGithubRepo}/git/refs/tags/${tagname}" | sed -n 's/^ *"ref": "refs\/tags\/\(.*\)",.*/\1/p'
+        exit 1
+      fi
+      echo "Tag ${tagname} found at commit ${commit}"
+      ;;
     *)
       if [[ -n "$channel" || "$arg" == --* ]]; then
-        args+="$arg"
+        args+=("$arg")
       else
         channel="$arg"
       fi
@@ -56,15 +68,20 @@ elif [[ "$steamcmd_user" == "--me" ]]; then
   echo "You have been warned."
 fi
 
+function die(){
+  echo "$@" >&2
+  exit
+}
+
 function doInstallFromCommit(){
   local commit="$1"
   shift
   tmpdir="$(mktemp -t -d "ark-server-tools-XXXXXXXX")"
   if [ -z "$tmpdir" ]; then echo "Unable to create temporary directory"; exit 1; fi
-  cd "$tmpdir"
+  cd "$tmpdir" || die "Unable to change to temporary directory"
   echo "Downloading installer"
   curl -s -L "https://github.com/${arkstGithubRepo}/archive/${commit}.tar.gz" | tar -xz
-  cd "ark-server-tools-${commit}/tools"
+  cd "ark-server-tools-${commit}/tools" || die "Unable to change to extracted directory"
   if [ ! -f "install.sh" ]; then echo "install.sh not found in $PWD"; exit 1; fi
   sed -i -e "s|^arkstCommit='.*'|arkstCommit='${commit}'|" \
          -e "s|^arkstTag='.*'|arkstTag='${tagname}'|" \
@@ -85,20 +102,19 @@ function doInstallFromCommit(){
 
 function doInstallFromRelease(){
   local tagname=
-  local desc=
 
   echo "Getting latest release..."
   # Read the variables from github
-  while IFS=$'\t' read n v; do
+  while IFS=$'\t' read -r n v; do
     case "${n}" in
       tag_name) tagname="${v}"; ;;
-      body) desc="${v}"
     esac
   done < <(curl -s "https://api.github.com/repos/${arkstGithubRepo}/releases/latest" | sed -n 's/^  "\([^"]*\)": "*\([^"]*\)"*,*/\1\t\2/p')
 
   if [ -n "$tagname" ]; then
     echo "Latest release is ${tagname}"
     echo "Getting commit for latest release..."
+    # shellcheck disable=SC2155
     local commit="$(curl -s "https://api.github.com/repos/${arkstGithubRepo}/git/refs/tags/${tagname}" | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p')"
     doInstallFromCommit "$commit" "$@"
   else
@@ -110,7 +126,7 @@ function doInstallFromRelease(){
 function doInstallFromBranch(){
   channel="$1"
   shift
-  commit="`curl -s "https://api.github.com/repos/${arkstGithubRepo}/git/refs/heads/${channel}" | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p'`"
+  commit="$(curl -s "https://api.github.com/repos/${arkstGithubRepo}/git/refs/heads/${channel}" | sed -n 's/^ *"sha": "\(.*\)",.*/\1/p')"
   
   if [ -z "$commit" ]; then
     if [ -n "$unstable" ]; then
@@ -125,9 +141,11 @@ function doInstallFromBranch(){
 }
 
 # Download and untar installation files
-cd "$TEMP"
+cd "${TMPDIR:-/tmp}" || die "Unable to change to temporary directory"
 
-if [ "$channel" = "master" ] && [ -z "$unstable" ]; then
+if [ -n "$commit" ]; then
+  doInstallFromCommit "$commit" "${args[@]}"
+elif [ "$channel" = "master" ] && [ -z "$unstable" ]; then
   doInstallFromRelease "${args[@]}"
 else
   doInstallFromBranch "$channel" "${args[@]}"
