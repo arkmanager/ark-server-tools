@@ -262,69 +262,6 @@ if [ "$(id -u)" == "0" ]; then
 fi
 
 #---------------------
-# Variables
-#---------------------
-
-# Global variables
-if [ -f "${arkstGlobalCfgFile}" ]; then
-    # shellcheck source=arkmanager.cfg.shellcheck
-    source "${arkstGlobalCfgFile}"
-fi
-
-if [ -f "${HOME}/${arkstUserCfgFile}" ]; then
-    # shellcheck source=arkmanager.cfg.shellcheck
-    source "${HOME}/${arkstUserCfgFile}"
-fi
-
-if [[ -n "${steamcmd_user}" && "${steamcmd_user}" != "--me" && "$USERNAME" != "${steamcmd_user}" && -n "$usesudo" ]]; then
-    echo "Attempting to run as $steamcmd_user" >&2
-    exec sudo --user="${steamcmd_user}" "${arkstScriptPath}" "$@"
-fi
-
-if [[ -n "${serverbasedir}" && -d "${serverbasedir}" ]]; then
-    cd "${serverbasedir}"
-elif [ -d "${HOME}" ]; then
-    cd "${HOME}"
-elif [ -d "${steamcmdroot}" ]; then
-    cd "${steamcmdroot}"
-elif [[ ! -d "${PWD}" || ! -r "${PWD}" || ! -x "${PWD}" ]]; then
-    cd /
-fi
-
-lsof=lsof
-if [ -x /usr/sbin/lsof ]; then
-  lsof=/usr/sbin/lsof
-fi
-
-# Local variables
-instver=""
-bnumber=""
-GREEN="\\033[1;32m"
-RED="\\033[1;31m"
-YELLOW="\\e[0;33m"
-CYAN="\\e[0;36m"
-NORMAL="\\033[0;39m"
-
-# Set TERM to "dumb" if TERM is not set
-export TERM=${TERM:-dumb}
-
-arkmanagerLog="arkmanager.log"  # here are logged the actions performed by arkmanager
-arkserverLog="arkserver.log"    # here is logged the output of ShooterGameServer
-
-appid="${appid:-376030}"
-mod_appid="${mod_appid:-346110}"
-install_bindir="${install_bindir:-${0%/*}}"
-install_libexecdir="${install_libexecdir:-${install_bindir%/*}/libexec/arkmanager}"
-
-if [ "$steamcmd_user" == "--me" ]; then
-  install_datadir="${install_datadir:-${HOME}/.share/local/arkmanager}"
-else
-  install_datadir="${install_datadir:-${install_bindir%/*}/share/arkmanager}"
-fi
-
-declare -A modsrcdirs
-
-#---------------------
 # functions
 #---------------------
 
@@ -1661,7 +1598,25 @@ doRunBG(){
     [[ $fd -gt 2 && $fd != 255 ]] && exec {fd}<&-
   done
 
-  doRun "$@" > >(while read -r l; do printf "%s: [%s] %s\n" "$(timestamp)" "${instance}" "${l}"; done) 2>&1
+  (if [ -n "$server_runas" ]; then
+    sudo -u "$server_runas" "$0" --run-instance "$instance" <(cat "${arkstGlobalCfgFile}" "${HOME}/${arkstUserCfgFile}" 2>/dev/null; if [[ -z "$arkSingleInstance" && -n "$configfile" ]]; then cat "$configfile" 2>/dev/null; fi) "$@"
+  else
+    doRun "$@"
+  fi) > >(while read -r l; do printf "%s: [%s] %s\n" "$(timestamp)" "${instance}" "${l}"; done) 2>&1
+}
+
+doRunInstance(){
+  instance="$1"
+  
+  if [[ -n "$2" && -r "$2" ]]; then
+    # shellcheck source=arkmanager.cfg.shellcheck
+    . "$2"
+  fi
+
+  shift
+  shift
+
+  doRun "$@"
 }
 
 #
@@ -2270,6 +2225,7 @@ doUpdate() {
   local appbeta=
   local appbetapass=
   local mapfile=
+  declare -A modsrcdirs
 
   for arg in "$@"; do
     case "$arg" in
@@ -3981,6 +3937,64 @@ useConfig() {
   broadcastcmd="${broadcastcmd:-broadcast}"
 }
 
+loadGlobalConfig() {
+  # Global variables
+  if [ -f "${arkstGlobalCfgFile}" ]; then
+      # shellcheck source=arkmanager.cfg.shellcheck
+      source "${arkstGlobalCfgFile}"
+  fi
+
+  if [ -f "${HOME}/${arkstUserCfgFile}" ]; then
+      # shellcheck source=arkmanager.cfg.shellcheck
+      source "${HOME}/${arkstUserCfgFile}"
+  fi
+
+  lsof=lsof
+  if [ -x /usr/sbin/lsof ]; then
+    lsof=/usr/sbin/lsof
+  fi
+
+  # Local variables
+  instver=""
+  bnumber=""
+  GREEN="\\033[1;32m"
+  RED="\\033[1;31m"
+  YELLOW="\\e[0;33m"
+  CYAN="\\e[0;36m"
+  NORMAL="\\033[0;39m"
+
+  # Set TERM to "dumb" if TERM is not set
+  export TERM=${TERM:-dumb}
+
+  arkmanagerLog="arkmanager.log"  # here are logged the actions performed by arkmanager
+  arkserverLog="arkserver.log"    # here is logged the output of ShooterGameServer
+
+  appid="${appid:-376030}"
+  mod_appid="${mod_appid:-346110}"
+  install_bindir="${install_bindir:-${0%/*}}"
+  install_libexecdir="${install_libexecdir:-${install_bindir%/*}/libexec/arkmanager}"
+
+  if [ "$steamcmd_user" == "--me" ]; then
+    install_datadir="${install_datadir:-${HOME}/.share/local/arkmanager}"
+  else
+    install_datadir="${install_datadir:-${install_bindir%/*}/share/arkmanager}"
+  fi
+
+  declare -A modsrcdirs
+}
+
+setScriptWorkingDir() {
+  if [[ -n "${serverbasedir}" && -d "${serverbasedir}" ]]; then
+      cd "${serverbasedir}"
+  elif [ -d "${HOME}" ]; then
+      cd "${HOME}"
+  elif [ -d "${steamcmdroot}" ]; then
+      cd "${steamcmdroot}"
+  elif [[ ! -d "${PWD}" || ! -r "${PWD}" || ! -x "${PWD}" ]]; then
+      cd /
+  fi
+}
+
 addArkOpt() {
   local optname="${1%%=*}"
   local optval="${1#*=}"
@@ -4109,15 +4123,22 @@ EOE
 #---------------------
 
 main(){
-  if [ -f "${arkstGlobalCfgFile}" ]; then
-      # shellcheck source=arkmanager.cfg.shellcheck
-      source "${arkstGlobalCfgFile}"
+  # Handle special --run-instance command
+  if [ "$1" == "--run-instance" ]; then
+    shift
+    doRunInstance "$@"
+    exit
+  fi
+  
+  # Global variables
+  loadGlobalConfig "$@"
+
+  if [[ -n "${steamcmd_user}" && "${steamcmd_user}" != "--me" && "$USERNAME" != "${steamcmd_user}" && -n "$usesudo" && " $* " != *" --no-sudo "* ]]; then
+      echo "Attempting to run as $steamcmd_user" >&2
+      exec sudo --user="${steamcmd_user}" "${arkstScriptPath}" "$@"
   fi
 
-  if [ -f "${HOME}/${arkstUserCfgFile}" ]; then
-      # shellcheck source=arkmanager.cfg.shellcheck
-      source "${HOME}/${arkstUserCfgFile}"
-  fi
+  setScriptWorkingDir
 
   # check the configuration and throw errors or warnings if needed
   checkConfig
@@ -4355,6 +4376,7 @@ main(){
           checkForModUpdate "${options[@]}"
         ;;
         installmod)
+          declare -A modsrcdirs
           doInstallMod "${args[@]}" "${options[@]}"
         ;;
         enablemod)
@@ -4364,6 +4386,7 @@ main(){
           doDisableMod "${args[@]}"
         ;;
         installmods)
+          declare -A modsrcdirs
           doInstallAllMods "${options[@]}"
         ;;
         uninstallmods)
@@ -4373,6 +4396,7 @@ main(){
           doUninstallMod "${args[@]}"
         ;;
         reinstallmod)
+          declare -A modsrcdirs
           doUninstallMod "${args[@]}"
           doInstallMod "${args[@]}" "${options[@]}"
         ;;
@@ -4448,4 +4472,6 @@ main(){
 # by another script
 if [[ "$0" = "${BASH_SOURCE[0]}" || -z "${BASH_SOURCE[*]}" ]]; then
   main "$@"
+elif [[ " $* " != *" --no-def-globals "* ]]; then
+  loadGlobalConfig "$@"
 fi
