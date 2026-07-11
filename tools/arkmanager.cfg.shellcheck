@@ -235,6 +235,17 @@ noNotifyWarn=true
 # ${msg} is expanded to message
 notifyCommand='echo "$msg" | mailx -s "Message from instance ${instance} on server ${HOSTNAME}" "email@domain.com"'
 
+# Template for structured notifications
+consoleNotifyTemplate="{local_date} {type}({instance}) {msg}"     # Template for console notifications
+discordNotifyInfoTemplate='{"embeds": [{"title": "📢 INFO - {msg}", "color": 3447003, "fields": [{"name": "{serverMap}", "value": ""}]}]}'
+discordNotifyWarnTemplate='{"embeds": [{"title": "⚠️ WARN - {msg}", "color": 15105570, "fields": [{"name": "{serverMap}", "value": ""}]}]}'
+discordNotifyErrorTemplate='{"embeds": [{"title": "❗ ERROR - {msg}", "color": 15158332, "fields": [{"name": "{serverMap}", "value": ""}]}]}'
+discordNotifyColorTemplate='{"embeds": [{"color": {color}, "fields": [{"name": "{serverMap}", "value": "{msg}"}]}]}'
+discordNotifyPlainTemplate='{"content": "[{serverMap}] {msg}"}'
+
+# Set to true to enable AdminCmd notifications
+discordNotifyAdminCmd="false"
+
 # Chat message players can use to cancel update / restart
 chatCommandRestartCancel="/cancelupdate"
 
